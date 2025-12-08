@@ -1,0 +1,388 @@
+basePath: /api/v1
+definitions:
+  controller.ResponseData:
+    properties:
+      code:
+        description: 业务响应状态码
+        type: integer
+      data:
+        description: 数据
+      msg:
+        description: 提示信息
+    type: object
+  models.ApiPostDetail:
+    properties:
+      author_id:
+        example: "0"
+        type: string
+      author_name:
+        description: 作者名称
+        type: string
+      community_id:
+        example: "0"
+        type: string
+      communitydetail:
+        allOf:
+        - $ref: '#/definitions/models.CommunityDetail'
+        description: 内嵌社区详情
+      content:
+        type: string
+      create_time:
+        description: Time 类型
+        type: string
+      id:
+        description: 8 字节字段 (int64)
+        example: "0"
+        type: string
+      status:
+        description: 4 字节字段 (int32)
+        type: integer
+      title:
+        description: 16 字节字段 (string) - 虽然string是指针+长度，但在结构体布局中通常按指针对齐
+        type: string
+      vote_num:
+        description: 投票数（赞成票数）
+        type: integer
+    type: object
+  models.CommunityDetail:
+    properties:
+      create_time:
+        type: string
+      id:
+        example: "0"
+        type: string
+      introduction:
+        type: string
+      name:
+        type: string
+    type: object
+  models.ParamPostList:
+    properties:
+      community_id:
+        description: |-
+          新增的字段，用于区分是否按社区查询
+          'form:"community_id"' 标签允许 Gin 从 URL 查询参数中绑定
+          (例如: /api/v1/posts?community_id=1)
+        type: integer
+      order:
+        type: string
+      page:
+        type: integer
+      size:
+        type: integer
+    type: object
+  models.ParamSignUp:
+    properties:
+      password:
+        type: string
+      re_password:
+        description: re_password 用于确认密码，业务逻辑中会校验两次密码是否一致
+        type: string
+      username:
+        description: binding:"required" 表示该字段必填，如果为空 Gin 会报错
+        type: string
+    required:
+    - password
+    - re_password
+    - username
+    type: object
+  models.ParamVoteData:
+    properties:
+      direction:
+        enum:
+        - 1
+        - 0
+        - -1
+        example: "0"
+        type: string
+      post_id:
+        example: "0"
+        type: string
+    required:
+    - direction
+    - post_id
+    type: object
+  models.Post:
+    properties:
+      author_id:
+        example: "0"
+        type: string
+      community_id:
+        example: "0"
+        type: string
+      content:
+        type: string
+      create_time:
+        description: Time 类型
+        type: string
+      id:
+        description: 8 字节字段 (int64)
+        example: "0"
+        type: string
+      status:
+        description: 4 字节字段 (int32)
+        type: integer
+      title:
+        description: 16 字节字段 (string) - 虽然string是指针+长度，但在结构体布局中通常按指针对齐
+        type: string
+    type: object
+host: 127.0.0.1:8080
+info:
+  contact:
+    email: 这里写联系人邮箱
+    name: 这里写联系人姓名
+    url: http://www.swagger.io/support
+  description: Go语言实战项目——社区web框架
+  termsOfService: http://swagger.io/terms/
+  title: bluebell项目接口文档
+  version: "1.0"
+paths:
+  /community:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有社区的列表信息
+      parameters:
+      - description: Bearer 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/controller.ResponseData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.CommunityDetail'
+                  type: array
+              type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取社区列表
+      tags:
+      - 社区相关
+  /community/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 根据社区ID获取社区的详细信息
+      parameters:
+      - description: 社区ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Bearer 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/controller.ResponseData'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.CommunityDetail'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.ResponseData'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.ResponseData'
+      security:
+      - ApiKeyAuth: []
+      summary: 获取社区详情
+      tags:
+      - 社区相关
+  /post:
+    post:
+      consumes:
+      - application/json
+      description: 创建帖子接口
+      parameters:
+      - description: Bearer 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 创建帖子参数
+        in: body
+        name: object
+        required: true
+        schema:
+          $ref: '#/definitions/models.Post'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.ResponseData'
+      summary: 创建帖子
+      tags:
+      - 帖子相关
+  /post/{id}:
+    get:
+      consumes:
+      - application/json
+      description: 获取帖子详情接口
+      parameters:
+      - description: Bearer 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 帖子ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/controller.ResponseData'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ApiPostDetail'
+              type: object
+      summary: 获取帖子详情
+      tags:
+      - 帖子相关
+  /posts:
+    get:
+      consumes:
+      - application/json
+      description: 分页获取帖子列表接口(旧版)
+      parameters:
+      - description: Bearer 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 页码
+        in: query
+        name: page
+        type: string
+      - description: 每页数量
+        in: query
+        name: size
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/controller.ResponseData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ApiPostDetail'
+                  type: array
+              type: object
+      summary: 获取帖子列表(旧版)
+      tags:
+      - 帖子相关
+  /posts2:
+    get:
+      consumes:
+      - application/json
+      description: 升级版分页获取帖子列表接口，支持按社区和排序规则查询
+      parameters:
+      - description: Bearer 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 获取帖子列表参数
+        in: body
+        name: object
+        required: true
+        schema:
+          $ref: '#/definitions/models.ParamPostList'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/controller.ResponseData'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/models.ApiPostDetail'
+                  type: array
+              type: object
+      summary: 获取帖子列表(新版)
+      tags:
+      - 帖子相关
+  /signup:
+    post:
+      consumes:
+      - application/json
+      description: 用户注册接口
+      parameters:
+      - description: 注册参数
+        in: body
+        name: object
+        required: true
+        schema:
+          $ref: '#/definitions/models.ParamSignUp'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.ResponseData'
+      summary: 用户注册
+      tags:
+      - 用户相关
+  /vote:
+    post:
+      consumes:
+      - application/json
+      description: 为帖子投票，不允许重复投票
+      parameters:
+      - description: Bearer 用户令牌
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 投票参数
+        in: body
+        name: object
+        required: true
+        schema:
+          $ref: '#/definitions/models.ParamVoteData'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.ResponseData'
+      summary: 帖子投票
+      tags:
+      - 投票相关
+swagger: "2.0"

@@ -1,0 +1,32 @@
+app:
+  name: "bluebell"
+  port: 8080
+  mode: "dev"
+  version: "1.0.0"
+
+snowflake:
+  start_time: "2024-01-01"
+  machine_id: 1
+
+log:
+  level: "debug"
+  file_name: "bluebell.log"
+  max_size: 100
+  max_backups: 7
+  max_age: 30
+
+mysql:
+  host: "127.0.0.1"
+  port: 3306
+  password: "15939087780Ll@"
+  db_name: sql_demo
+  user: "root"
+  max_open_conns: 100
+  max_idle_conns: 10
+
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  password: ""
+  db_name: 0
+  pool_size: 100
