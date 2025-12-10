@@ -16,6 +16,13 @@ type ParamLogin struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
+
+
+//这个结构体定义了前端调用接口时需要传递的参数。
+  //  定义位置：models/params.go
+  //  目的：用于 Controller 层 接收和校验前端的请求。
+ //   字段含义：它的字段（如 Page, Size, Order）是为了控制查询行为（分页、排序），这些字段并不存在于数据库的 post 表中。
+
 type ParamPostList struct{
 Page int64 `json:"page" form:"page"`
 Size int64 `json:"size" form:"size"`

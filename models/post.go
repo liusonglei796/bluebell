@@ -3,6 +3,7 @@ package models
 import "time"
 
 // Post 内存对齐优化建议：把相同类型的字段放在一起，宽字段（如 int64, string）放在前面
+// 这个结构体是对数据库表结构的直接映射。
 type Post struct {
 	// 8 字节字段 (int64)
 	ID          int64 `json:"id" db:"post_id"`

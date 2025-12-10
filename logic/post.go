@@ -93,44 +93,9 @@ func GetPostByID(pid int64)(data *models.ApiPostDetail,err error){
 	
 	return
 }
-func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err error) {
-    // 1. 从数据库查询帖子列表 (DAO 层)
-    posts, err := mysql.GetPostList(p.Page, p.Size)
-    if err != nil {
-        return nil, err
-    }
 
-    // 2. 聚合数据：为每个帖子填充作者和社区信息
-    // 初始化返回的数据切片
-    data = make([]*models.ApiPostDetail, 0, len(posts))
-
-    for _, post := range posts {
-        // 根据 AuthorID 查询作者信息 (复用已有 User DAO)
-        user, err := mysql.GetUserByID(post.AuthorID)
-        if err != nil {
-            continue // 如果查不到作者，跳过或记录日志，不中断循环
-        }
-        // 根据 CommunityID 查询社区信息 (复用已有 Community DAO)
-        community, err := mysql.GetCommunityDetailByID(post.CommunityID)
-        if err != nil {
-            continue
-        }
-
-        // 组装 API 详情数据结构
-        postDetail := &models.ApiPostDetail{
-            AuthorName:      user.Username,
-            Post:            post,
-            CommunityDetail: community,
-        }
-        data = append(data, postDetail)
-    }
-
-    return
-}
-
-// GetPostList2 升级版获取帖子列表
 // 从 Redis 获取排序后的 ID，再从 MySQL 查询详情，最后组装投票数据
-func GetPostList2(p *models.ParamPostList) (data []*models.ApiPostDetail, err error) {
+func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err error) {
 	// 1. 从 Redis 查询帖子 ID 列表（已按时间或分数排序）
 	ids, err := redis.GetPostIDsInOrder(p.Order, p.Page, p.Size)
 	if err != nil {
@@ -270,7 +235,7 @@ func GetPostListNew(p *models.ParamPostList) (data []*models.ApiPostDetail, err 
 		// 1. CommunityID 为 0 (或未提供)
 		// 执行"查询所有帖子"的逻辑
 		// GetPostList2 是原有的、用于获取所有帖子的逻辑函数 (视频中已存在)
-		data, err = GetPostList2(p)
+		data, err = GetPostList(p)
 	} else {
 		// 2. CommunityID 不为 0 (已提供)
 		// 执行"根据社区ID查询帖子"的逻辑
