@@ -84,34 +84,7 @@ func GetPostDetailHandler(c *gin.Context) {
 	ResponseSuccess(c, data)
 }
 
-// GetPostListHandler 获取帖子列表
-// @Summary 获取帖子列表(旧版)
-// @Description 分页获取帖子列表接口(旧版)
-// @Tags 帖子相关
-// @Accept application/json
-// @Produce application/json
-// @Param Authorization header string true "Bearer 用户令牌"
-// @Param page query string false "页码"
-// @Param size query string false "每页数量"
-// @Success 200 {object} ResponseData{data=[]models.ApiPostDetail}
-// @Router /posts [get]
-func GetPostListHandler(c *gin.Context) {
-	// 获取分页参数
-	page, size := getPageInfo(c)
-	// 构造参数对象
-	p := &models.ParamPostList{
-		Page: page,
-		Size: size,
-	}
-	// 获取数据
-	data, err := logic.GetPostList(p)
-	if err != nil {
-		zap.L().Error("logic.GetPostList failed", zap.Error(err))
-		ResponseError(c, CodeServerBusy)
-		return
-	}
-	ResponseSuccess(c, data)
-}
+
 
 // GetPostListHandler2 升级版帖子列表接口
 // @Summary 获取帖子列表(新版)
@@ -123,7 +96,7 @@ func GetPostListHandler(c *gin.Context) {
 // @Param object body models.ParamPostList true "获取帖子列表参数"
 // @Success 200 {object} ResponseData{data=[]models.ApiPostDetail}
 // @Router /posts2 [get]
-func GetPostListHandler2(c *gin.Context) {
+func GetPostListHandler(c *gin.Context) {
 	// 根据前端传来的参数动态的获取帖子列表
 	// 按创建时间或按照分数排序
 	p := &models.ParamPostList{
