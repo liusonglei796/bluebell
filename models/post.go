@@ -22,6 +22,13 @@ type Post struct {
 }
 
 // ParamPost 用于接收前端请求的参数
+//这个结构体用于创建帖子的请求参数：
+//作用：
+
+//用于创建新帖子时接收前端传递的数据
+//包含帖子的基本信息：标题(Title)、内容(Content)、所属社区ID(CommunityID)
+//AuthorID 字段是从 JWT token 中提取的，不需要前端传递
+
 type ParamPost struct {
 	Title       string `json:"title" binding:"required"`
 	Content     string `json:"content" binding:"required"`

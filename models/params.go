@@ -18,11 +18,11 @@ type ParamLogin struct {
 }
 
 
-//这个结构体定义了前端调用接口时需要传递的参数。
-  //  定义位置：models/params.go
-  //  目的：用于 Controller 层 接收和校验前端的请求。
- //   字段含义：它的字段（如 Page, Size, Order）是为了控制查询行为（分页、排序），这些字段并不存在于数据库的 post 表中。
 
+ //用于获取帖子列表时的分页和排序参数
+//Page 和 Size 用于分页控制
+//Order 用于指定排序方式（按时间或按分数）
+//CommunityID 用于筛选特定社区的帖子
 type ParamPostList struct{
 Page int64 `json:"page" form:"page"`
 Size int64 `json:"size" form:"size"`
