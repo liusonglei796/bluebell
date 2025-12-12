@@ -60,7 +60,7 @@ func SetupRouter(mode string) *gin.Engine {
 
 		// 2. 帖子相关
 		authGroup.POST("/post", controller.CreatePostHandler)         // 创建帖子
-		authGroup.GET("/post/:id", controller.GetPostDetailHandler)   // 获取帖子详情
+		authGroup.GET("/post/:id", controller.GetPostDetailHandler)   // 获取帖子
 		authGroup.GET("/posts", controller.GetPostListHandler)      // 获取帖子列表（升级版，支持按时间/分数排序
 		// 3. 投票相关
 		authGroup.POST("/vote", controller.PostVoteHandler)           // 帖子投票

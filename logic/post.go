@@ -23,12 +23,16 @@ func CreatePost(p *models.ParamPost) (postID int64, err error) {
 		CommunityID: p.CommunityID,
 		Title:       p.Title,
 		Content:     p.Content,
-		Status:      1, // 默认状态为1，表示正常
+		Status:      1, // 默认状态为1,表示正常
 	}
 
 	// 3. 保存到数据库
 	err = mysql.CreatePost(post)
 	if err != nil {
+		// Logic层处理错误:记录日志并返回错误
+		zap.L().Error("mysql.CreatePost failed",
+			zap.Int64("post_id", postID),
+			zap.Error(err))
 		return 0, err
 	}
 

@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
-
-	"go.uber.org/zap"
 )
 	
 
@@ -90,19 +88,18 @@ func CheckLogin(user *models.User) (err error) {
 func verifyPassword(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
-// 注意函数名：FindUserByUserID (明确是查业务ID)
+// GetUserByID 根据用户ID查询用户信息
+// DAO层只返回错误,不打印日志,由上层统一处理
 func GetUserByID(uid int64) (*models.User, error) {
     user := &models.User{}
     sqlStr := `SELECT user_id, username FROM user WHERE user_id = ?`
-    
+
     err := db.Get(user, sqlStr, uid)
     if err != nil {
         if err == sql.ErrNoRows {
-            zap.L().Warn("there is no user in db", zap.Int64("user_id", uid))
-            return nil, nil // 返回nil而不是error，让上层决定如何处理
+            return nil, nil // 查不到数据返回nil,不是错误
         }
-        zap.L().Error("query user failed", zap.Int64("user_id", uid), zap.Error(err))
-        return nil, err
+        return nil, fmt.Errorf("query user by id failed: %w", err)
     }
     return user, nil
 }
