@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"golang.org/x/crypto/bcrypt"
 
 	"go.uber.org/zap"
@@ -104,4 +105,21 @@ func GetUserByID(uid int64) (*models.User, error) {
         return nil, err
     }
     return user, nil
+}
+
+// GetUsersByIDs 根据用户ID列表批量获取用户信息
+func GetUsersByIDs(ids []int64) (users []*models.User, err error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	// 构造 IN 查询
+	query, args, err := sqlx.In("SELECT user_id, username FROM user WHERE user_id IN (?)", ids)
+	if err != nil {
+		return nil, err
+	}
+
+	users = make([]*models.User, 0, len(ids))
+	err = db.Select(&users, db.Rebind(query), args...)
+	return users, err
 }

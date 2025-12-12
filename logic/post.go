@@ -127,28 +127,60 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 		return
 	}
 
-	// 5. 组装数据：填充作者、社区、投票数据
+	// 5. 收集所有用户ID和社区ID
+	userIDs := make([]int64, 0, len(posts))
+	communityIDs := make([]int64, 0, len(posts))
+	
+	for _, post := range posts {
+		userIDs = append(userIDs, post.AuthorID)
+		communityIDs = append(communityIDs, post.CommunityID)
+	}
+
+	// 6. 批量查询用户信息
+	users, err := mysql.GetUsersByIDs(userIDs)
+	if err != nil {
+		zap.L().Error("mysql.GetUsersByIDs failed", zap.Error(err))
+		return nil, err
+	}
+	
+	// 构建用户ID到用户名的映射
+	userMap := make(map[int64]string, len(users))
+	for _, user := range users {
+		userMap[user.UserID] = user.Username
+	}
+
+	// 7. 批量查询社区信息
+	communities, err := mysql.GetCommunitiesByIDs(communityIDs)
+	if err != nil {
+		zap.L().Error("mysql.GetCommunitiesByIDs failed", zap.Error(err))
+		return nil, err
+	}
+	
+	// 构建社区ID到社区详情的映射
+	communityMap := make(map[int64]*models.CommunityDetail, len(communities))
+	for _, community := range communities {
+		communityMap[community.ID] = community
+	}
+
+	// 8. 组装数据：填充作者、社区、投票数据
 	data = make([]*models.ApiPostDetail, 0, len(posts))
 	for idx, post := range posts {
-		// 查询作者信息
-		user, err := mysql.GetUserByID(post.AuthorID)
-		if err != nil {
-			zap.L().Error("mysql.GetUserByID(post.AuthorID) failed",
-				zap.Int64("author_id", post.AuthorID), zap.Error(err))
-			continue
+		// 从映射中获取作者名和社区详情
+		authorName, ok := userMap[post.AuthorID]
+		if !ok {
+			zap.L().Error("user not found for post", zap.Int64("author_id", post.AuthorID))
+			authorName = "" // 设置默认值
 		}
-
-		// 查询社区信息
-		community, err := mysql.GetCommunityDetailByID(post.CommunityID)
-		if err != nil {
-			zap.L().Error("mysql.GetCommunityDetailByID(post.CommunityID) failed",
-				zap.Int64("community_id", post.CommunityID), zap.Error(err))
-			continue
+		
+		community, ok := communityMap[post.CommunityID]
+		if !ok {
+			zap.L().Error("community not found for post", zap.Int64("community_id", post.CommunityID))
+			community = &models.CommunityDetail{} // 设置默认值
 		}
 
 		// 组装最终数据
 		postDetail := &models.ApiPostDetail{
-			AuthorName:      user.Username,
+			AuthorName:      authorName,
 			CommunityDetail: community,
 			Post:            post,
 			VoteNum:         voteData[idx], // 填充投票数

@@ -4,6 +4,7 @@ import (
 	"bluebell/models"
 	"bluebell/pkg/errno"
 	"database/sql"
+	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
@@ -51,4 +52,24 @@ func GetCommunityDetailByID(id int64) (community *models.CommunityDetail, err er
 		return nil, err
 	}
 	return 
+}
+
+// GetCommunitiesByIDs 根据社区ID列表批量获取社区信息
+func GetCommunitiesByIDs(ids []int64) (communities []*models.CommunityDetail, err error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	// 构造 IN 查询
+	query, args, err := sqlx.In(`SELECT 
+								community_id, community_name, introduction, create_time 
+								FROM community 
+								WHERE community_id IN (?)`, ids)
+	if err != nil {
+		return nil, err
+	}
+
+	communities = make([]*models.CommunityDetail, 0, len(ids))
+	err = db.Select(&communities, db.Rebind(query), args...)
+	return communities, err
 }

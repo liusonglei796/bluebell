@@ -37,21 +37,6 @@ func GetPostByID(pid int64) (post *models.Post, err error) {
 	return
 }
 
-// GetPostList 查询帖子列表
-func GetPostList(page, size int64) (posts []*models.Post, err error) {
-	sqlStr := `SELECT post_id, title, content, author_id, community_id, status, create_time 
-				FROM post 
-				ORDER BY create_time 
-				DESC limit ?,?`
-	posts = make([]*models.Post, 0, size)
-	err = db.Select(&posts, sqlStr, (page-1)*size, size)
-	if err == sql.ErrNoRows {
-		zap.L().Warn("there is no post in db")
-		err = nil
-	}
-	return
-}
-
 // GetPostListByCommunityID 根据社区ID查询帖子列表
 func GetPostListByCommunityID(communityID int64, page, size int64) (posts []*models.Post, err error) {
 	sqlStr := `SELECT post_id, title, content, author_id, community_id, status, create_time 
