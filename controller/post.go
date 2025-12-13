@@ -39,7 +39,7 @@ func CreatePostHandler(c *gin.Context) {
 	}
 	p.AuthorID = userID.(int64)
 
-	// 3. 保存到数据库
+	
 	if _, err := logic.CreatePost(p); err != nil {
 		zap.L().Error("logic.CreatePost failed", zap.Error(err))
 		ResponseError(c, CodeServerBusy)
