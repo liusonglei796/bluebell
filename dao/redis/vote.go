@@ -192,15 +192,20 @@ func GetPostIDsInOrder(orderKey string, page, size int64) ([]string, error) {
 	if orderKey == "score" {
 		key = getRedisKey(KeyPostScoreZSet)
 	}
-
 	// 2. 计算分页的起始和结束位置
 	// Redis ZSet 的索引从0开始
 	start := (page - 1) * size
 	end := start + size - 1
-
-	// 3. 按分数从大到小查询 (ZREVRANGE)
+	// 3. 按分数从大到小查询 (ZRangeArgs)
 	// 返回的是帖子ID列表
-	return rdb.ZRevRange(ctx, key, start, end).Result()
+	return rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
+    Key:   key,
+    Start: start,
+    Stop:  end,
+    Rev:   true, // 关键：启用降序
+}).Result()
+
+
 }
 
 // GetPostScore 获取帖子的当前分数
