@@ -6,3 +6,8 @@
 {"L":"INFO","time":"2025-12-10T12:09:02.893+0800","C":"redis/redis.go:45","M":"init redis success","addr":"127.0.0.1:6379","db":0}
 {"L":"INFO","time":"2025-12-10T12:09:02.893+0800","C":"Go/main.go:110","M":"Server is running...","port":8080}
 {"L":"INFO","time":"2025-12-10T23:28:19.090+0800","C":"Go/main.go:128","M":"Shutdown Server ..."}
+{"L":"INFO","time":"2025-12-13T14:00:34.552+0800","C":"mysql/mysql.go:71","M":"init mysql success","dsn_host":"127.0.0.1"}
+{"L":"INFO","time":"2025-12-13T14:00:34.553+0800","C":"redis/redis.go:49","M":"init redis success","addr":"127.0.0.1:6379","db":0}
+{"L":"INFO","time":"2025-12-13T14:00:34.553+0800","C":"Go/main.go:110","M":"Server is running...","port":8080}
+{"L":"INFO","time":"2025-12-13T14:00:59.235+0800","C":"Go/main.go:128","M":"Shutdown Server ..."}
+{"L":"INFO","time":"2025-12-13T14:00:59.235+0800","C":"Go/main.go:142","M":"Server exiting"}

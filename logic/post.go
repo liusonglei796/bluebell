@@ -6,7 +6,6 @@ import (
 	"bluebell/models"
 	"bluebell/pkg/snowflake"
 	"errors"
-	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -195,20 +194,20 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	return
 }
 
-// GetCommunityPostList 根据社区ID获取帖子列表
+// GetCommunityPostList 根据社区ID获取帖子列表 (优化版: 解决N+1问题)
 func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err error) {
-	// 按社区查询时,直接从 MySQL 查询
-	// 因为 Redis 中没有按社区分类存储帖子 ID
-	posts, err := mysql.GetPostListByCommunityID(p.CommunityID, p.Page, p.Size)
+	// 1. 从 Redis 查询指定社区的帖子 ID 列表 (已按时间或分数排序)
+	ids, err := redis.GetCommunityPostIDsInOrder(p.CommunityID, p.Order, p.Page, p.Size)
 	if err != nil {
-		zap.L().Error("mysql.GetPostListByCommunityID failed",
+		zap.L().Error("redis.GetCommunityPostIDsInOrder failed",
 			zap.Int64("community_id", p.CommunityID),
+			zap.String("order", p.Order),
 			zap.Error(err))
 		return nil, err
 	}
 
-	// 处理空数据情况
-	if len(posts) == 0 {
+	// 2. 处理空数据情况
+	if len(ids) == 0 {
 		zap.L().Info("GetCommunityPostList: no posts found",
 			zap.Int64("community_id", p.CommunityID))
 		// 返回空切片而不是 nil
@@ -216,45 +215,91 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 		return data, nil
 	}
 
-	// 初始化返回的数据切片
-	data = make([]*models.ApiPostDetail, 0, len(posts))
+	zap.L().Debug("GetCommunityPostList", zap.Any("ids", ids))
+
+	// 3. 根据 ID 列表从 MySQL 批量查询帖子详细信息 (保持顺序)
+	posts, err := mysql.GetPostListByIDs(ids)
+	if err != nil {
+		zap.L().Error("mysql.GetPostListByIDs failed", zap.Error(err))
+		return nil, err
+	}
+
+	// 4. 使用 Pipeline 批量查询每个帖子的投票数据
+	voteData, err := redis.GetPostsVoteData(ids)
+	if err != nil {
+		zap.L().Error("redis.GetPostsVoteData failed", zap.Error(err))
+		return nil, err
+	}
+
+	// 5. 收集所有唯一的用户ID和社区ID
+	// 注意: 同一个社区的所有帖子社区ID相同,但作者可能不同
+	userIDs := make([]int64, 0, len(posts))
+	communityIDs := make([]int64, 0, 1) // 社区ID只有一个
+
+	// 用于去重用户ID
+	userIDSet := make(map[int64]struct{})
 
 	for _, post := range posts {
-		// 根据 AuthorID 查询作者信息
-		user, err := mysql.GetUserByID(post.AuthorID)
-		if err != nil {
-			zap.L().Error("mysql.GetUserByID failed",
-				zap.Int64("author_id", post.AuthorID),
-				zap.Error(err))
-			continue
+		// 用户ID去重
+		if _, exists := userIDSet[post.AuthorID]; !exists {
+			userIDSet[post.AuthorID] = struct{}{}
+			userIDs = append(userIDs, post.AuthorID)
 		}
 
-		// 根据 CommunityID 查询社区信息
-		community, err := mysql.GetCommunityDetailByID(post.CommunityID)
-		if err != nil {
-			zap.L().Error("mysql.GetCommunityDetailByID failed",
-				zap.Int64("community_id", post.CommunityID),
-				zap.Error(err))
-			continue
+		// 社区ID (理论上所有帖子的社区ID应该相同)
+		if len(communityIDs) == 0 || communityIDs[0] != post.CommunityID {
+			communityIDs = append(communityIDs, post.CommunityID)
+		}
+	}
+
+	// 6. 批量查询用户信息
+	users, err := mysql.GetUsersByIDs(userIDs)
+	if err != nil {
+		zap.L().Error("mysql.GetUsersByIDs failed", zap.Error(err))
+		return nil, err
+	}
+
+	// 构建用户ID到用户名的映射
+	userMap := make(map[int64]string, len(users))
+	for _, user := range users {
+		userMap[user.UserID] = user.Username
+	}
+
+	// 7. 批量查询社区信息
+	communities, err := mysql.GetCommunitiesByIDs(communityIDs)
+	if err != nil {
+		zap.L().Error("mysql.GetCommunitiesByIDs failed", zap.Error(err))
+		return nil, err
+	}
+
+	// 构建社区ID到社区详情的映射
+	communityMap := make(map[int64]*models.CommunityDetail, len(communities))
+	for _, community := range communities {
+		communityMap[community.ID] = community
+	}
+
+	// 8. 组装数据: 填充作者、社区、投票数据
+	data = make([]*models.ApiPostDetail, 0, len(posts))
+	for idx, post := range posts {
+		// 从映射中获取作者名和社区详情
+		authorName, ok := userMap[post.AuthorID]
+		if !ok {
+			zap.L().Error("user not found for post", zap.Int64("author_id", post.AuthorID))
+			authorName = "" // 设置默认值
 		}
 
-		// 从 Redis 获取投票数 (赞成票 - 反对票 = 净投票数)
-		postIDStr := strconv.FormatInt(post.ID, 10)
-		upVotes, downVotes, err := redis.GetPostVoteData(postIDStr)
-		voteNum := upVotes - downVotes
-		if err != nil {
-			zap.L().Warn("redis.GetPostVoteData failed, using default 0",
-				zap.Int64("post_id", post.ID),
-				zap.Error(err))
-			voteNum = 0
+		community, ok := communityMap[post.CommunityID]
+		if !ok {
+			zap.L().Error("community not found for post", zap.Int64("community_id", post.CommunityID))
+			community = &models.CommunityDetail{} // 设置默认值
 		}
 
-		// 组装 API 详情数据结构
+		// 组装最终数据
 		postDetail := &models.ApiPostDetail{
-			AuthorName:      user.Username,
-			Post:            post,
+			AuthorName:      authorName,
 			CommunityDetail: community,
-			VoteNum:         voteNum,
+			Post:            post,
+			VoteNum:         voteData[idx], // 填充投票数
 		}
 		data = append(data, postDetail)
 	}

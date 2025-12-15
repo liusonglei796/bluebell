@@ -28,12 +28,13 @@ var (
 // 参数:
 //   userID: 投票用户ID (字符串格式)
 //   postID: 目标帖子ID (字符串格式)
+//   communityID: 帖子所属社区ID (字符串格式)
 //   value: 投票值 (1:赞成, -1:反对, 0:取消投票)
 //
 // 核心算法:
 //   利用新旧投票值的差值,计算帖子分数的变化量
 //   例如: 从赞成(1)改为反对(-1), 差值为2, 分数变化为 -2*432 = -864
-func VoteForPost(userID, postID string, value float64) error {
+func VoteForPost(userID, postID, communityID string, value float64) error {
 	// 1. 判断投票时间限制
 	// 从 Redis 的 ZSet 中获取帖子的发布时间戳
 	postTime := rdb.ZScore(ctx, getRedisKey(KeyPostTimeZSet), postID).Val()
@@ -66,16 +67,22 @@ func VoteForPost(userID, postID string, value float64) error {
 	// 例如: 从1变为-1, diff=2; 从0变为1, diff=1
 	diff := math.Abs(value - oldValue)
 
+	// 分数变化量
+	scoreDiff := op * diff * ScorePerVote
+
 	// 5. 使用 Redis Pipeline 保证原子性
-	// 需要同时更新两个 ZSet: 帖子分数表 和 用户投票记录表
+	// 需要同时更新多个 ZSet: 全局帖子分数表、社区帖子分数表、用户投票记录表
 	pipeline := rdb.TxPipeline()
 
-	// 5.1 更新帖子的总分数
+	// 5.1 更新全局帖子的总分数
 	// key: bluebell:post:score
-	// 分数变化 = 操作方向 * 差值 * 单票分数
-	pipeline.ZIncrBy(ctx, getRedisKey(KeyPostScoreZSet), op*diff*ScorePerVote, postID)
+	pipeline.ZIncrBy(ctx, getRedisKey(KeyPostScoreZSet), scoreDiff, postID)
 
-	// 5.2 更新用户的投票记录
+	// 5.2 更新社区维度的帖子分数
+	// key: bluebell:community:post:score:{communityID}
+	pipeline.ZIncrBy(ctx, getRedisKey(KeyCommunityPostScorePrefix+communityID), scoreDiff, postID)
+
+	// 5.3 更新用户的投票记录
 	if value == 0 {
 		// 如果是取消投票,从 ZSet 中删除该用户记录
 		pipeline.ZRem(ctx, getRedisKey(KeyPostVotedZSetPrefix+postID), userID)
@@ -97,22 +104,40 @@ func VoteForPost(userID, postID string, value float64) error {
 func CreatePost(postID, communityID int64) error {
 	pipeline := rdb.TxPipeline()
 
-	// 1. 将帖子发布时间存入 ZSet
+	timestamp := float64(time.Now().Unix())
+	postIDStr := strconv.FormatInt(postID, 10)
+	communityIDStr := strconv.FormatInt(communityID, 10)
+
+	// 1. 全局维度:将帖子发布时间存入 ZSet
 	// key: bluebell:post:time, score: 当前时间戳, member: postID
 	pipeline.ZAdd(ctx, getRedisKey(KeyPostTimeZSet), redis.Z{
-		Score:  float64(time.Now().Unix()),
-		Member: postID,
+		Score:  timestamp,
+		Member: postIDStr,
 	})
 
-	// 2. 将帖子初始分数存入 ZSet
+	// 2. 全局维度:将帖子初始分数存入 ZSet
 	// key: bluebell:post:score, score: 初始分数(发布时间戳), member: postID
 	// 初始分数设置为发布时间戳,这样新帖子会排在前面
 	pipeline.ZAdd(ctx, getRedisKey(KeyPostScoreZSet), redis.Z{
-		Score:  float64(time.Now().Unix()),
-		Member: postID,
+		Score:  timestamp,
+		Member: postIDStr,
 	})
 
-	// 3. 执行 Pipeline
+	// 3. 社区维度:将帖子发布时间存入对应社区的 ZSet
+	// key: bluebell:community:post:time:{communityID}
+	pipeline.ZAdd(ctx, getRedisKey(KeyCommunityPostTimePrefix+communityIDStr), redis.Z{
+		Score:  timestamp,
+		Member: postIDStr,
+	})
+
+	// 4. 社区维度:将帖子初始分数存入对应社区的 ZSet
+	// key: bluebell:community:post:score:{communityID}
+	pipeline.ZAdd(ctx, getRedisKey(KeyCommunityPostScorePrefix+communityIDStr), redis.Z{
+		Score:  timestamp,
+		Member: postIDStr,
+	})
+
+	// 5. 执行 Pipeline
 	_, err := pipeline.Exec(ctx)
 	return err
 }
@@ -176,10 +201,29 @@ func GetPostsVoteData(ids []string) (data []int64, err error) {
 // page: 页码(从1开始)
 // size: 每页数量
 func GetCommunityPostIDsInOrder(communityID int64, orderKey string, page, size int64) ([]string, error) {
-	// TODO: 实现根据社区ID获取帖子ID列表的逻辑
-	// 这里需要先确定如何在Redis中存储社区与帖子的关系
-	// 可能需要一个新的Key结构来存储每个社区的帖子列表
-	return nil, nil
+	// 1. 确定查询的 Redis Key
+	// 根据 orderKey 选择不同的 ZSet
+	keyPrefix := KeyCommunityPostTimePrefix
+	if orderKey == "score" {
+		keyPrefix = KeyCommunityPostScorePrefix
+	}
+
+	// 拼接完整的 Key: bluebell:community:post:time:{communityID}
+	key := getRedisKey(keyPrefix + strconv.FormatInt(communityID, 10))
+
+	// 2. 计算分页的起始和结束位置
+	// Redis ZSet 的索引从0开始
+	start := (page - 1) * size
+	end := start + size - 1
+
+	// 3. 按分数从大到小查询 (ZRangeArgs)
+	// 返回的是帖子ID列表
+	return rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
+		Key:   key,
+		Start: start,
+		Stop:  end,
+		Rev:   true, // 关键:启用降序
+	}).Result()
 }
 
 // GetPostIDsInOrder 按照指定顺序获取帖子ID列表
