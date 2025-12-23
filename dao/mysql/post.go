@@ -44,8 +44,8 @@ func GetPostByIDWithPreload(pid int64) (post *models.Post, err error) {
 	// 1. SELECT * FROM post WHERE post_id = ?
 	// 2. SELECT * FROM user WHERE user_id IN (post.author_id)
 	// 3. SELECT * FROM community WHERE community_id IN (post.community_id)
-	err = db.Preload("Author").    // 预加载作者信息
-		Preload("Community").      // 预加载社区信息
+	err = db.Preload("UserInfo").    // 预加载作者信息
+		Preload("CommunityInfo").      // 预加载社区信息
 		Where("post_id = ?", pid).
 		First(post).Error
 
@@ -58,53 +58,23 @@ func GetPostByIDWithPreload(pid int64) (post *models.Post, err error) {
 	return
 }
 
-// GetPostListByCommunityID 根据社区ID查询帖子列表
+// GetPostListByCommunityID 根据社区ID查询帖子列表（带预加载优化）
 func GetPostListByCommunityID(communityID int64, page, size int64) (posts []*models.Post, err error) {
 	posts = make([]*models.Post, 0, size)
 
-	// GORM 使用 Where、Order、Offset、Limit 进行分页查询
-	err = db.Where("community_id = ?", communityID).
+	// 使用 Preload 预加载作者和社区信息
+	err = db.Preload("UserInfo").
+		Preload("CommunityInfo").
+		Where("community_id = ?", communityID).
 		Order("create_time DESC").
 		Offset(int((page - 1) * size)).
 		Limit(int(size)).
 		Find(&posts).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("query post list by community failed: %w", err)
+		return nil, fmt.Errorf("query post list by community with preload failed: %w", err)
 	}
 	return
-}
-
-// GetPostListByIDs 根据给定的ID列表查询帖子的详细数据
-func GetPostListByIDs(ids []string) (posts []*models.Post, err error) {
-	if len(ids) == 0 {
-		return nil, nil
-	}
-
-	// GORM 不支持直接的 FIND_IN_SET，但可以使用 WHERE IN 和 CASE WHEN 排序
-	// 为了保持顺序，我们使用 Clauses 和原生 SQL
-	// 方案1: 先查询，然后在代码中排序（推荐，更灵活）
-	posts = make([]*models.Post, 0, len(ids))
-	err = db.Where("post_id IN ?", ids).Find(&posts).Error
-	if err != nil {
-		return nil, fmt.Errorf("query post list by ids failed: %w", err)
-	}
-
-	// 按照传入的 ids 顺序排列结果
-	// 为什么：Redis 返回的顺序是按分数/时间排序的，需要保持一致
-	postMap := make(map[string]*models.Post, len(posts))
-	for _, post := range posts {
-		postMap[fmt.Sprintf("%d", post.ID)] = post
-	}
-
-	orderedPosts := make([]*models.Post, 0, len(ids))
-	for _, id := range ids {
-		if post, ok := postMap[id]; ok {
-			orderedPosts = append(orderedPosts, post)
-		}
-	}
-
-	return orderedPosts, nil
 }
 
 // GetPostListByIDsWithPreload 根据给定的ID列表查询帖子详情（带预加载）
@@ -122,8 +92,8 @@ func GetPostListByIDsWithPreload(ids []string) (posts []*models.Post, err error)
 	// 1. SELECT * FROM post WHERE post_id IN (ids)
 	// 2. SELECT * FROM user WHERE user_id IN (所有帖子的 author_id)
 	// 3. SELECT * FROM community WHERE community_id IN (所有帖子的 community_id)
-	err = db.Preload("Author").      // 批量预加载所有作者
-		Preload("Community").         // 批量预加载所有社区
+	err = db.Preload("UserInfo").      // 批量预加载所有作者
+		Preload("CommunityInfo").         // 批量预加载所有社区
 		Where("post_id IN ?", ids).
 		Find(&posts).Error
 

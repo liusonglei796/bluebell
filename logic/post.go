@@ -15,10 +15,10 @@ func CreatePost(p *models.ParamPost) (postID int64, err error) {
 	// 1. 生成帖子ID
 	postID = snowflake.GenID()
 
-	// 2. 构造Post结构体
+		// 2. 构造Post结构体
 	post := &models.Post{
 		ID:          postID,
-		AuthorID:    p.AuthorID,
+		UserID:      p.UserID,
 		CommunityID: p.CommunityID,
 		Title:       p.Title,
 		Content:     p.Content,
@@ -71,15 +71,15 @@ func GetPostByID(pid int64) (data *models.ApiPostDetail, err error) {
 		return nil, errorx.ErrNotFound
 	}
 
-	// 3. 检查关联数据是否加载成功
-	if post.Author == nil || post.Author.UserID == 0 {
+			// 3. 检查关联数据是否加载成功
+	if post.UserInfo == nil || post.UserInfo.UserID == 0 {
 		zap.L().Warn("author not found for post",
 			zap.Int64("post_id", pid),
-			zap.Int64("author_id", post.AuthorID))
+			zap.Int64("author_id", post.UserID))
 		return nil, errorx.ErrNotFound
 	}
 
-	if post.Community == nil || post.Community.CommunityID == 0 {
+	if post.CommunityInfo == nil || post.CommunityInfo.CommunityID == 0 {
 		zap.L().Warn("community not found for post",
 			zap.Int64("post_id", pid),
 			zap.Int64("community_id", post.CommunityID))
@@ -89,8 +89,8 @@ func GetPostByID(pid int64) (data *models.ApiPostDetail, err error) {
 	// 4. 组装返回数据（数据已经通过 Preload 加载）
 	data = &models.ApiPostDetail{
 		Post:            post,
-		AuthorName:      post.Author.Username,    // 直接从预加载的 Author 获取
-		CommunityDetail: post.Community,          // 直接使用预加载的 Community
+		AuthorName:      post.UserInfo.Username,    // 直接从预加载的 Author 获取
+		CommunityDetail: post.CommunityInfo,          // 直接使用预加载的 Community
 	}
 
 	return data, nil
@@ -136,25 +136,22 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 		return nil, errorx.ErrServerBusy
 	}
 
-	// 5. 组装数据：填充作者、社区、投票数据
-	// 注意：Author 和 Community 已通过 Preload 自动加载
-	data = make([]*models.ApiPostDetail, 0, len(posts))
 	for idx, post := range posts {
 		// 安全检查：确保 Preload 成功加载了关联数据
 		var authorName string
 		var community *models.CommunityDetail
 
-		if post.Author != nil {
-			authorName = post.Author.Username
+		if post.UserInfo != nil {
+			authorName = post.UserInfo.Username
 		} else {
 			zap.L().Error("author not preloaded for post",
 				zap.Int64("post_id", post.ID),
-				zap.Int64("author_id", post.AuthorID))
+				zap.Int64("author_id", post.UserID))
 			authorName = ""
 		}
 
-		if post.Community != nil {
-			community = post.Community
+		if post.CommunityInfo != nil {
+			community = post.CommunityInfo
 		} else {
 			zap.L().Error("community not preloaded for post",
 				zap.Int64("post_id", post.ID),
@@ -213,24 +210,24 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 		return nil, errorx.ErrServerBusy
 	}
 
-	// 5. 组装数据: 填充作者、社区、投票数据
+		// 5. 组装数据: 填充作者、社区、投票数据
 	data = make([]*models.ApiPostDetail, 0, len(posts))
-	for idx, post := range posts {
+		for idx, post := range posts {
 		// 安全检查：确保 Preload 成功加载了关联数据
 		var authorName string
 		var community *models.CommunityDetail
 
-		if post.Author != nil {
-			authorName = post.Author.Username
+		if post.UserInfo != nil {
+			authorName = post.UserInfo.Username
 		} else {
 			zap.L().Error("author not preloaded for post",
 				zap.Int64("post_id", post.ID),
-				zap.Int64("author_id", post.AuthorID))
+				zap.Int64("author_id", post.UserID))
 			authorName = ""
 		}
 
-		if post.Community != nil {
-			community = post.Community
+		if post.CommunityInfo != nil {
+			community = post.CommunityInfo
 		} else {
 			zap.L().Error("community not preloaded for post",
 				zap.Int64("post_id", post.ID),

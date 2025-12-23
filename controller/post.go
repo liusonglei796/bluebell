@@ -33,7 +33,10 @@ func CreatePostHandler(c *gin.Context) {
 		ResponseError(c, errorx.ErrInvalidParam)
 		return
 	}
-	p.AuthorID = userID.(int64)
+	// 3. 将UserID填充到参数中
+	p.UserID = userID.(int64)
+
+	// 4. 调用逻辑层创建帖子
 
 	// 3. 调用业务逻辑
 	if _, err := logic.CreatePost(p); err != nil {

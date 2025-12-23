@@ -10,7 +10,7 @@ import (
 type Post struct {
 	// 8 字节字段 (int64)
 	ID          int64 `json:"id" gorm:"column:post_id;primaryKey"`
-	AuthorID    int64 `json:"author_id" gorm:"column:author_id;index;not null"`
+	UserID      int64 `json:"author_id" gorm:"column:author_id;index;not null"`
 	CommunityID int64 `json:"community_id" gorm:"column:community_id;index;not null"`
 
 	// 4 字节字段 (int32)
@@ -23,13 +23,12 @@ type Post struct {
 	// Time 类型
 	CreateTime time.Time `json:"create_time" gorm:"column:create_time;autoCreateTime"`
 
-		// GORM 关联字段 (用于 Preload 预加载，解决 N+1 问题)
+	// GORM 关联字段 (用于 Preload 预加载，解决 N+1 问题)
 	// 为什么添加：使用 GORM 的 Preload 功能可以自动批量查询关联数据
 	// gorm:"-" 表示不映射到数据库字段，只用于内存中的关联
-	Author    *User             `json:"author,omitempty" gorm:"foreignKey:AuthorID;references:UserID"`
-	Community *CommunityDetail  `json:"community,omitempty" gorm:"foreignKey:CommunityID;references:CommunityID"`
+	UserInfo      *User             `json:"author,omitempty" gorm:"foreignKey:UserID;references:UserID"`
+	CommunityInfo *CommunityDetail  `json:"community,omitempty" gorm:"foreignKey:CommunityID;references:CommunityID"`
 }
-
 // TableName 自定义表名
 // 为什么：GORM 默认使用复数形式表名(posts)，需要显式指定为 post
 func (Post) TableName() string {
@@ -47,13 +46,13 @@ func (p *Post) BeforeCreate(tx *gorm.DB) error {
 
 //用于创建新帖子时接收前端传递的数据
 //包含帖子的基本信息：标题(Title)、内容(Content)、所属社区ID(CommunityID)
-//AuthorID 字段是从 JWT token 中提取的，不需要前端传递
+//UserID 字段是从 JWT token 中提取的，不需要前端传递
 
 type ParamPost struct {
 	Title       string `json:"title" binding:"required"`
 	Content     string `json:"content" binding:"required"`
 	CommunityID int64  `json:"community_id" binding:"required"`
-	AuthorID    int64  `json:"author_id"` // 从 Token 获取，不需要前端传
+	UserID      int64  `json:"author_id"` // 从 Token 获取，不需要前端传
 }
 // ApiPostDetail 返回给客户端的帖子详情结构
 type ApiPostDetail struct {
