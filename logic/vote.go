@@ -4,6 +4,8 @@ import (
 	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
 	"bluebell/models"
+	"bluebell/pkg/errorx"
+	"errors"
 	"strconv"
 
 	"go.uber.org/zap"
@@ -32,20 +34,42 @@ func VoteForPost(userID int64, p *models.ParamVoteData) error {
 		zap.L().Error("mysql.GetPostByID failed",
 			zap.Int64("post_id", p.PostID),
 			zap.Error(err))
-		return err
+		return errorx.ErrServerBusy
 	}
 	if post == nil {
-		zap.L().Error("post not found", zap.Int64("post_id", p.PostID))
-		return mysql.ErrorInvalidID
+		// 业务错误：帖子不存在
+		return errorx.ErrNotFound
 	}
 
 	// 2. 调用 Redis 层执行投票逻辑
 	// 将 int64 类型的 ID 转换为 string (Redis 中统一使用 string)
 	// 将 int8 类型的 direction 转换为 float64 (Redis ZSet 的 score 是 float64)
-	return redis.VoteForPost(
+	err = redis.VoteForPost(
 		strconv.FormatInt(userID, 10),
 		strconv.FormatInt(p.PostID, 10),
 		strconv.FormatInt(post.CommunityID, 10), // 传递社区ID
 		float64(p.Direction),
 	)
+
+	// 3. 区分业务错误和系统错误
+	if err != nil {
+		// 3.1 业务错误: 投票时间已过
+		if errors.Is(err, redis.ErrVoteTimeExpire) {
+			return errorx.ErrVoteTimeExpire
+		}
+
+		// 3.2 业务错误: 重复投票
+		if errors.Is(err, redis.ErrVoteRepeated) {
+			return errorx.ErrVoteRepeated
+		}
+
+		// 3.3 系统错误: Redis 操作失败
+		zap.L().Error("redis.VoteForPost failed",
+			zap.Int64("user_id", userID),
+			zap.Int64("post_id", p.PostID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+
+	return nil
 }

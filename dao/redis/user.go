@@ -17,7 +17,10 @@ func SetUserToken(userID int64, aToken, rToken string, aExp, rExp time.Duration)
 	pipe.Set(ctx, getRedisKey(KeyUserRefreshToken+fmt.Sprint(userID)), rToken, rExp)
 
 	_, err := pipe.Exec(ctx)
-	return err
+	if err != nil {
+		return fmt.Errorf("set user token pipeline exec failed (user_id: %d): %w", userID, err)
+	}
+	return nil
 }
 
 // GetUserAccessToken 获取用户的 Access Token
@@ -36,5 +39,8 @@ func DeleteUserToken(userID int64) error {
 	pipe.Del(ctx, getRedisKey(KeyUserAccessToken+fmt.Sprint(userID)))
 	pipe.Del(ctx, getRedisKey(KeyUserRefreshToken+fmt.Sprint(userID)))
 	_, err := pipe.Exec(ctx)
-	return err
+	if err != nil {
+		return fmt.Errorf("delete user token pipeline exec failed (user_id: %d): %w", userID, err)
+	}
+	return nil
 }

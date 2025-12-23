@@ -4,6 +4,7 @@ import (
 	"bluebell/controller"
 	"bluebell/logger"
 	"bluebell/middlewares"
+	"bluebell/pkg/errorx"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -71,7 +72,7 @@ func SetupRouter(mode string) *gin.Engine {
 			userID, exists := c.Get(controller.CtxUserIDKey)
 			if !exists {
 				// 理论上经过中间件不应该出现这种情况，但为了严谨处理异常
-				controller.ResponseError(c, controller.CodeServerBusy)
+				controller.ResponseError(c, errorx.ErrServerBusy)
 				return 
 			}
 			

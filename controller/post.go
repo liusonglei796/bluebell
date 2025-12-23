@@ -3,8 +3,7 @@ package controller
 import (
 	"bluebell/logic"
 	"bluebell/models"
-
-	"go.uber.org/zap"
+	"bluebell/pkg/errorx"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,25 +23,21 @@ func CreatePostHandler(c *gin.Context) {
 	// c.Get(key) 从上下文中取值，其中用到的key应该是常量，不应该是字符串，避免出错
 	userID, exist := c.Get(CtxUserIDKey)
 	if !exist {
-		zap.L().Error("user not login")
-		CodeNotLogin := 0
-		ResponseError(c, CodeNotLogin)
+		ResponseError(c, errorx.ErrNeedLogin)
 		return
 	}
 
 	// 2. bind数据
 	p := new(models.ParamPost)
 	if err := c.ShouldBindJSON(p); err != nil {
-		zap.L().Error("create post with invalid param", zap.Error(err))
-		ResponseError(c, CodeInvalidParam)
+		ResponseError(c, errorx.ErrInvalidParam)
 		return
 	}
 	p.AuthorID = userID.(int64)
 
-	
+	// 3. 调用业务逻辑
 	if _, err := logic.CreatePost(p); err != nil {
-		zap.L().Error("logic.CreatePost failed", zap.Error(err))
-		ResponseError(c, CodeServerBusy)
+		HandleError(c, err)
 		return
 	}
 
@@ -67,16 +62,14 @@ func GetPostDetailHandler(c *gin.Context) {
 	// 2. 字符串转int64
 	postID, err := stringToInt64(postIDStr)
 	if err != nil {
-		zap.L().Error("invalid post id", zap.String("post_id", postIDStr), zap.Error(err))
-		ResponseError(c, CodeInvalidParam)
+		ResponseError(c, errorx.ErrInvalidParam)
 		return
 	}
 
 	// 3. 根据id取出帖子详情
 	data, err := logic.GetPostByID(postID)
 	if err != nil {
-		zap.L().Error("logic.GetPostByID failed", zap.Error(err))
-		ResponseError(c, CodeServerBusy)
+		HandleError(c, err)
 		return
 	}
 
@@ -106,15 +99,13 @@ func GetPostListHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindQuery(p); err != nil {
-		zap.L().Error("GetPostListHandler2 with invalid param", zap.Error(err))
-		ResponseError(c, CodeInvalidParam)
+		ResponseError(c, errorx.ErrInvalidParam)
 		return
 	}
 
 	data, err := logic.GetPostListNew(p) // 更新这里的逻辑
 	if err != nil {
-		zap.L().Error("logic.GetPostListNew failed", zap.Error(err))
-		ResponseError(c, CodeServerBusy)
+		HandleError(c, err)
 		return
 	}
 	ResponseSuccess(c, data)

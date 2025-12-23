@@ -4,8 +4,8 @@ import (
 	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
 	"bluebell/models"
+	"bluebell/pkg/errorx"
 	"bluebell/pkg/snowflake"
-	"errors"
 
 	"go.uber.org/zap"
 )
@@ -28,11 +28,11 @@ func CreatePost(p *models.ParamPost) (postID int64, err error) {
 	// 3. 保存到数据库
 	err = mysql.CreatePost(post)
 	if err != nil {
-		// Logic层处理错误:记录日志并返回错误
+		// 系统错误：记录日志并返回通用错误
 		zap.L().Error("mysql.CreatePost failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
-		return 0, err
+		return 0, errorx.ErrServerBusy
 	}
 
 	// 4. 同步到 Redis (用于排序和投票功能)
@@ -48,53 +48,65 @@ func CreatePost(p *models.ParamPost) (postID int64, err error) {
 
 	return postID, nil
 }
-func GetPostByID(pid int64)(data *models.ApiPostDetail,err error){
+func GetPostByID(pid int64) (data *models.ApiPostDetail, err error) {
+	// 1. 查询帖子信息
 	post, err := mysql.GetPostByID(pid)
 	if err != nil {
-		zap.L().Error("mysql.GetPostByID failed", zap.Int64("post_id", pid), zap.Error(err))
-		return
+		// 系统错误
+		zap.L().Error("mysql.GetPostByID failed",
+			zap.Int64("post_id", pid),
+			zap.Error(err))
+		return nil, errorx.ErrServerBusy
 	}
-	
-	// 检查是否找到了帖子
+
+	// 2. 检查是否找到了帖子
 	if post == nil || post.ID == 0 {
-		zap.L().Warn("post not found", zap.Int64("post_id", pid))
-		err = errors.New("帖子不存在")
-		return
+		// 业务错误：帖子不存在
+		return nil, errorx.ErrNotFound
 	}
-	
+
+	// 3. 查询作者信息
 	user, err := mysql.GetUserByID(post.AuthorID)
 	if err != nil {
-		zap.L().Error("mysql.GetUserByID failed", zap.Int64("author_id", post.AuthorID), zap.Error(err))
-		return
+		// 系统错误
+		zap.L().Error("mysql.GetUserByID failed",
+			zap.Int64("author_id", post.AuthorID),
+			zap.Error(err))
+		return nil, errorx.ErrServerBusy
 	}
-	
+
 	// 检查是否找到了用户
 	if user == nil || user.UserID == 0 {
 		zap.L().Warn("user not found", zap.Int64("author_id", post.AuthorID))
-		err = errors.New("作者不存在")
-		return
+		// 业务错误：作者不存在
+		return nil, errorx.ErrNotFound
 	}
-	
+
+	// 4. 查询社区信息
 	community, err := mysql.GetCommunityDetailByID(post.CommunityID)
 	if err != nil {
-		zap.L().Error("mysql.GetCommunityDetailByID failed", zap.Int64("community_id", post.CommunityID), zap.Error(err))
-		return
+		// 系统错误
+		zap.L().Error("mysql.GetCommunityDetailByID failed",
+			zap.Int64("community_id", post.CommunityID),
+			zap.Error(err))
+		return nil, errorx.ErrServerBusy
 	}
-	
+
 	// 检查是否找到了社区
 	if community == nil || community.ID == 0 {
 		zap.L().Warn("community not found", zap.Int64("community_id", post.CommunityID))
-		err = errors.New("社区不存在")
-		return
+		// 业务错误：社区不存在
+		return nil, errorx.ErrNotFound
 	}
-	
+
+	// 5. 组装数据
 	data = &models.ApiPostDetail{
-		Post: post,
-		AuthorName: user.Username,
+		Post:            post,
+		AuthorName:      user.Username,
 		CommunityDetail: community,
 	}
-	
-	return
+
+	return data, nil
 }
 
 // 从 Redis 获取排序后的 ID，再从 MySQL 查询详情，最后组装投票数据
@@ -102,7 +114,10 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	// 1. 从 Redis 查询帖子 ID 列表（已按时间或分数排序）
 	ids, err := redis.GetPostIDsInOrder(p.Order, p.Page, p.Size)
 	if err != nil {
-		return
+		zap.L().Error("redis.GetPostIDsInOrder failed",
+			zap.String("order", p.Order),
+			zap.Error(err))
+		return nil, errorx.ErrServerBusy
 	}
 
 	// 2. 处理空数据
@@ -119,7 +134,8 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	// 3. 根据 ID 列表从 MySQL 查询帖子详细信息（保持顺序）
 	posts, err := mysql.GetPostListByIDs(ids)
 	if err != nil {
-		return
+		zap.L().Error("mysql.GetPostListByIDs failed", zap.Error(err))
+		return nil, errorx.ErrServerBusy
 	}
 
 	zap.L().Debug("GetPostListByIDs", zap.Any("posts", posts))
@@ -127,7 +143,8 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	// 4. 使用 Pipeline 批量查询每个帖子的投票数据
 	voteData, err := redis.GetPostsVoteData(ids)
 	if err != nil {
-		return
+		zap.L().Error("redis.GetPostsVoteData failed", zap.Error(err))
+		return nil, errorx.ErrServerBusy
 	}
 
 	// 5. 收集所有用户ID和社区ID
@@ -143,7 +160,7 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	users, err := mysql.GetUsersByIDs(userIDs)
 	if err != nil {
 		zap.L().Error("mysql.GetUsersByIDs failed", zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 	
 	// 构建用户ID到用户名的映射
@@ -156,7 +173,7 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	communities, err := mysql.GetCommunitiesByIDs(communityIDs)
 	if err != nil {
 		zap.L().Error("mysql.GetCommunitiesByIDs failed", zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 	
 	// 构建社区ID到社区详情的映射
@@ -203,7 +220,7 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 			zap.Int64("community_id", p.CommunityID),
 			zap.String("order", p.Order),
 			zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 
 	// 2. 处理空数据情况
@@ -221,14 +238,14 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 	posts, err := mysql.GetPostListByIDs(ids)
 	if err != nil {
 		zap.L().Error("mysql.GetPostListByIDs failed", zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 
 	// 4. 使用 Pipeline 批量查询每个帖子的投票数据
 	voteData, err := redis.GetPostsVoteData(ids)
 	if err != nil {
 		zap.L().Error("redis.GetPostsVoteData failed", zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 
 	// 5. 收集所有唯一的用户ID和社区ID
@@ -256,7 +273,7 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 	users, err := mysql.GetUsersByIDs(userIDs)
 	if err != nil {
 		zap.L().Error("mysql.GetUsersByIDs failed", zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 
 	// 构建用户ID到用户名的映射
@@ -269,7 +286,7 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 	communities, err := mysql.GetCommunitiesByIDs(communityIDs)
 	if err != nil {
 		zap.L().Error("mysql.GetCommunitiesByIDs failed", zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 
 	// 构建社区ID到社区详情的映射
@@ -328,7 +345,7 @@ func GetPostListNew(p *models.ParamPostList) (data []*models.ApiPostDetail, err 
 	if err != nil {
 		// 记录日志，方便排查问题
 		zap.L().Error("logic.GetPostListNew failed", zap.Error(err))
-		return nil, err
+		return nil, errorx.ErrServerBusy
 	}
 	
 	// 成功则返回数据和 nil 错误

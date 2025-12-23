@@ -2,6 +2,7 @@ package redis
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"time"
@@ -96,7 +97,10 @@ func VoteForPost(userID, postID, communityID string, value float64) error {
 
 	// 6. 执行 Pipeline 中的所有命令
 	_, err := pipeline.Exec(ctx)
-	return err
+	if err != nil {
+		return fmt.Errorf("vote pipeline exec failed (post_id: %s, user_id: %s): %w", postID, userID, err)
+	}
+	return nil
 }
 
 // CreatePost 创建帖子时初始化 Redis 数据
@@ -139,7 +143,10 @@ func CreatePost(postID, communityID int64) error {
 
 	// 5. 执行 Pipeline
 	_, err := pipeline.Exec(ctx)
-	return err
+	if err != nil {
+		return fmt.Errorf("create post pipeline exec failed (post_id: %d): %w", postID, err)
+	}
+	return nil
 }
 
 // GetPostVoteData 获取帖子的投票数据
@@ -149,7 +156,7 @@ func GetPostVoteData(postID string) (upVotes, downVotes int64, err error) {
 	// ZRANGE key 0 -1 WITHSCORES
 	data, err := rdb.ZRangeWithScores(ctx, getRedisKey(KeyPostVotedZSetPrefix+postID), 0, -1).Result()
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("get post vote data failed (post_id: %s): %w", postID, err)
 	}
 
 	// 统计赞成票和反对票
@@ -182,7 +189,7 @@ func GetPostsVoteData(ids []string) (data []int64, err error) {
 	// 2. 执行 Pipeline
 	cmders, err := pipeline.Exec(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get posts vote data pipeline exec failed (count: %d): %w", len(ids), err)
 	}
 
 	// 3. 获取结果
@@ -218,12 +225,16 @@ func GetCommunityPostIDsInOrder(communityID int64, orderKey string, page, size i
 
 	// 3. 按分数从大到小查询 (ZRangeArgs)
 	// 返回的是帖子ID列表
-	return rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
+	ids, err := rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
 		Key:   key,
 		Start: start,
 		Stop:  end,
 		Rev:   true, // 关键:启用降序
 	}).Result()
+	if err != nil {
+		return nil, fmt.Errorf("get community post ids failed (community_id: %d, order: %s): %w", communityID, orderKey, err)
+	}
+	return ids, nil
 }
 
 // GetPostIDsInOrder 按照指定顺序获取帖子ID列表
@@ -242,19 +253,25 @@ func GetPostIDsInOrder(orderKey string, page, size int64) ([]string, error) {
 	end := start + size - 1
 	// 3. 按分数从大到小查询 (ZRangeArgs)
 	// 返回的是帖子ID列表
-	return rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
-    Key:   key,
-    Start: start,
-    Stop:  end,
-    Rev:   true, // 关键：启用降序
-}).Result()
-
-
+	ids, err := rdb.ZRangeArgs(ctx, redis.ZRangeArgs{
+		Key:   key,
+		Start: start,
+		Stop:  end,
+		Rev:   true, // 关键：启用降序
+	}).Result()
+	if err != nil {
+		return nil, fmt.Errorf("get post ids failed (order: %s): %w", orderKey, err)
+	}
+	return ids, nil
 }
 
 // GetPostScore 获取帖子的当前分数
 func GetPostScore(postID string) (float64, error) {
-	return rdb.ZScore(ctx, getRedisKey(KeyPostScoreZSet), postID).Result()
+	score, err := rdb.ZScore(ctx, getRedisKey(KeyPostScoreZSet), postID).Result()
+	if err != nil {
+		return 0, fmt.Errorf("get post score failed (post_id: %s): %w", postID, err)
+	}
+	return score, nil
 }
 
 // GetPostVoteStatus 获取用户对某个帖子的投票状态
@@ -287,7 +304,7 @@ func BatchGetPostVoteStatus(userID string, postIDs []string) (map[string]int8, e
 	// 执行 Pipeline
 	_, err := pipeline.Exec(ctx)
 	if err != nil && !errors.Is(err, redis.Nil) {
-		return nil, err
+		return nil, fmt.Errorf("batch get post vote status pipeline exec failed (user_id: %s, count: %d): %w", userID, len(postIDs), err)
 	}
 
 	// 构建结果 map

@@ -4,8 +4,12 @@ import (
 	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
 	"bluebell/models"
+	"bluebell/pkg/errorx"
 	"bluebell/pkg/jwt"
 	"bluebell/pkg/snowflake"
+	"errors"
+
+	"go.uber.org/zap"
 )
 
 // SignUp 处理用户注册业务逻辑
@@ -13,7 +17,15 @@ func SignUp(p *models.ParamSignUp) (err error) {
 	// 1. 判断用户存不存在
 	// 为什么：用户名必须唯一，防止重复注册
 	if err = mysql.CheckUserExist(p.Username); err != nil {
-		return err
+		// 区分业务错误和系统错误
+		if errors.Is(err, mysql.ErrorUserExist) {
+			return errorx.ErrUserExist
+		}
+		// 系统错误: 数据库查询失败
+		zap.L().Error("mysql.CheckUserExist failed",
+			zap.String("username", p.Username),
+			zap.Error(err))
+		return errorx.ErrServerBusy
 	}
 
 	// 2. 生成UID
@@ -31,29 +43,70 @@ func SignUp(p *models.ParamSignUp) (err error) {
 	// 4. 保存进数据库
 	// 为什么：持久化用户数据
 	err = mysql.InsertUser(u)
-	return err
+	if err != nil {
+		// 系统错误: 数据库插入失败
+		zap.L().Error("mysql.InsertUser failed",
+			zap.Int64("user_id", userID),
+			zap.String("username", p.Username),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+
+	return nil
 }
 
 // Login 处理用户登录业务逻辑
+// 返回值：aToken, rToken, error
+// error 类型说明：
+//   - *errorx.CodeError: 业务错误（密码错误、用户不存在）
+//   - 系统错误: DB/Redis 错误，Controller 会自动转换为 CodeServerBusy
 func Login(p *models.ParamLogin) (string, string, error) {
 	user := &models.User{
 		Username: p.Username,
 		Password: p.Password,
 	}
-	// 传递的是指针，Login 内部会修改 user 对象（例如填充 UserID 和加密后的密码），虽然这里没用到 UserID
-	if err := mysql.CheckLogin(user); err != nil {
-		return "", "", err
-	}
-	//登录成功，为该用户生成JWT
-	aToken, rToken, err := jwt.GenToken(user.UserID, user.Username)
+
+	// 1. 调用 DAO 层验证用户登录
+	err := mysql.CheckLogin(user)
 	if err != nil {
-		return "", "", err
+		// 判断是否是业务错误（用户不存在或密码错误）
+		if errors.Is(err, mysql.ErrorUserNotExist) {
+			// 业务错误：返回带错误码的 CodeError
+			return "", "", errorx.ErrUserNotExist
+		}
+		if errors.Is(err, mysql.ErrorInvalidPassword) {
+			// 业务错误：返回带错误码的 CodeError
+			return "", "", errorx.ErrInvalidPassword
+		}
+
+		// 系统错误：记录详细日志并返回通用的服务繁忙错误
+		zap.L().Error("mysql.CheckLogin failed",
+			zap.String("username", p.Username),
+			zap.Error(err),
+		)
+		return "", "", errorx.ErrServerBusy
 	}
 
-	// 将 Token 存入 Redis，实现单点登录
+	// 2. 登录成功，为该用户生成 JWT Token
+	aToken, rToken, err := jwt.GenToken(user.UserID, user.Username)
+	if err != nil {
+		// JWT 生成失败属于系统错误
+		zap.L().Error("jwt.GenToken failed",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err),
+		)
+		return "", "", errorx.ErrServerBusy
+	}
+
+	// 3. 将 Token 存入 Redis，实现单点登录
 	err = redis.SetUserToken(user.UserID, aToken, rToken, jwt.AccessTokenExpireDuration, jwt.RefreshTokenExpireDuration)
 	if err != nil {
-		return "", "", err
+		// Redis 存储失败属于系统错误
+		zap.L().Error("redis.SetUserToken failed",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err),
+		)
+		return "", "", errorx.ErrServerBusy
 	}
 
 	return aToken, rToken, nil
@@ -61,31 +114,50 @@ func Login(p *models.ParamLogin) (string, string, error) {
 
 // RefreshToken 刷新 Token
 func RefreshToken(aToken, rToken string) (newAToken, newRToken string, err error) {
-    // 1. 验证 RefreshToken 并获取 UserID
-    claims, err := jwt.ValidateRefreshToken(rToken)
-    if err != nil {
-        return "", "", err
-    }
-    userID := claims.UserID
+	// 1. 验证 RefreshToken 并获取 UserID
+	claims, err := jwt.ValidateRefreshToken(rToken)
+	if err != nil {
+		// Token 验证失败属于业务错误 (Token 无效或过期)
+		return "", "", errorx.ErrInvalidToken
+	}
+	userID := claims.UserID
 
-    // 2. 【关键修复】从数据库重新查询用户最新信息
-    // 确保使用的是最新的用户名、权限等状态
-    user, err := mysql.GetUserByID(userID)
-    if err != nil {
-        return "", "", err
-    }
+	// 2. 从数据库重新查询用户最新信息
+	// 确保使用的是最新的用户名、权限等状态
+	user, err := mysql.GetUserByID(userID)
+	if err != nil {
+		// 系统错误: 数据库查询失败
+		zap.L().Error("mysql.GetUserByID failed",
+			zap.Int64("user_id", userID),
+			zap.Error(err))
+		return "", "", errorx.ErrServerBusy
+	}
 
-    // 3. 使用最新用户信息生成新 Token
-    newAToken, newRToken, err = jwt.GenToken(user.UserID, user.Username)
-    if err != nil {
-        return "", "", err
-    }
+	// 检查用户是否存在
+	if user == nil {
+		// 业务错误: 用户不存在 (可能已被删除)
+		return "", "", errorx.ErrUserNotExist
+	}
 
-    // 4. 更新 Redis 中的 Token
-    err = redis.SetUserToken(user.UserID, newAToken, newRToken, jwt.AccessTokenExpireDuration, jwt.RefreshTokenExpireDuration)
-    if err != nil {
-        return "", "", err
-    }
+	// 3. 使用最新用户信息生成新 Token
+	newAToken, newRToken, err = jwt.GenToken(user.UserID, user.Username)
+	if err != nil {
+		// 系统错误: Token 生成失败
+		zap.L().Error("jwt.GenToken failed",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err))
+		return "", "", errorx.ErrServerBusy
+	}
 
-    return newAToken, newRToken, nil
+	// 4. 更新 Redis 中的 Token
+	err = redis.SetUserToken(user.UserID, newAToken, newRToken, jwt.AccessTokenExpireDuration, jwt.RefreshTokenExpireDuration)
+	if err != nil {
+		// 系统错误: Redis 操作失败
+		zap.L().Error("redis.SetUserToken failed",
+			zap.Int64("user_id", user.UserID),
+			zap.Error(err))
+		return "", "", errorx.ErrServerBusy
+	}
+
+	return newAToken, newRToken, nil
 }

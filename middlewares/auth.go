@@ -3,6 +3,7 @@ package middlewares
 import (
 	"bluebell/controller"
 	"bluebell/dao/redis"
+	"bluebell/pkg/errorx"
 	"bluebell/pkg/jwt"
 	"strings"
 
@@ -18,7 +19,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		// Authorization: Bearer xxxxxxx.xxx.xxx
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			controller.ResponseError(c, controller.CodeNeedLogin)
+			controller.ResponseError(c, errorx.ErrNeedLogin)
 			c.Abort()
 			return
 		}
@@ -26,7 +27,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		// 2. 按空格分割
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			controller.ResponseError(c, controller.CodeInvalidToken)
+			controller.ResponseError(c, errorx.ErrInvalidToken)
 			c.Abort()
 			return
 		}
@@ -34,7 +35,7 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		// 3. 解析 Token
 		mc, err := jwt.ParseToken(parts[1])
 		if err != nil {
-			controller.ResponseError(c, controller.CodeInvalidToken)
+			controller.ResponseError(c, errorx.ErrInvalidToken)
 			c.Abort()
 			return
 		}
@@ -44,14 +45,14 @@ func JWTAuthMiddleware() func(c *gin.Context) {
 		if err != nil {
 			// Redis 查询失败（可能是 Redis 挂了，或者 Key 不存在/过期）
 			// 如果 Key 不存在，说明用户未登录或 Token 已过期
-			controller.ResponseError(c, controller.CodeNeedLogin)
+			controller.ResponseError(c, errorx.ErrNeedLogin)
 			c.Abort()
 			return
 		}
 
 		// 如果 Redis 中的 Token 与请求的 Token 不一致，说明账号已在其他设备登录
 		if parts[1] != redisToken {
-			controller.ResponseErrorWithMsg(c, controller.CodeInvalidToken, "账号已在其他设备登录")
+			controller.ResponseErrorWithMsg(c, errorx.CodeInvalidToken, "账号已在其他设备登录")
 			c.Abort()
 			return
 		}
