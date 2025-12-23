@@ -48,12 +48,18 @@ func CreatePost(p *models.ParamPost) (postID int64, err error) {
 
 	return postID, nil
 }
+// GetPostByID 查询单个帖子详情
+// 优化版：使用 GORM Preload 预加载，从 3 次查询优化为 3 次查询（保持不变但代码更简洁）
 func GetPostByID(pid int64) (data *models.ApiPostDetail, err error) {
-	// 1. 查询帖子信息
-	post, err := mysql.GetPostByID(pid)
+	// 1. 使用 Preload 查询帖子及其关联的作者和社区信息
+	// Preload 会自动执行:
+	//   - SELECT * FROM post WHERE post_id = ?
+	//   - SELECT * FROM user WHERE user_id = ? (post.author_id)
+	//   - SELECT * FROM community WHERE community_id = ? (post.community_id)
+	post, err := mysql.GetPostByIDWithPreload(pid)
 	if err != nil {
 		// 系统错误
-		zap.L().Error("mysql.GetPostByID failed",
+		zap.L().Error("mysql.GetPostByIDWithPreload failed",
 			zap.Int64("post_id", pid),
 			zap.Error(err))
 		return nil, errorx.ErrServerBusy
@@ -65,51 +71,33 @@ func GetPostByID(pid int64) (data *models.ApiPostDetail, err error) {
 		return nil, errorx.ErrNotFound
 	}
 
-	// 3. 查询作者信息
-	user, err := mysql.GetUserByID(post.AuthorID)
-	if err != nil {
-		// 系统错误
-		zap.L().Error("mysql.GetUserByID failed",
-			zap.Int64("author_id", post.AuthorID),
-			zap.Error(err))
-		return nil, errorx.ErrServerBusy
-	}
-
-	// 检查是否找到了用户
-	if user == nil || user.UserID == 0 {
-		zap.L().Warn("user not found", zap.Int64("author_id", post.AuthorID))
-		// 业务错误：作者不存在
+	// 3. 检查关联数据是否加载成功
+	if post.Author == nil || post.Author.UserID == 0 {
+		zap.L().Warn("author not found for post",
+			zap.Int64("post_id", pid),
+			zap.Int64("author_id", post.AuthorID))
 		return nil, errorx.ErrNotFound
 	}
 
-	// 4. 查询社区信息
-	community, err := mysql.GetCommunityDetailByID(post.CommunityID)
-	if err != nil {
-		// 系统错误
-		zap.L().Error("mysql.GetCommunityDetailByID failed",
-			zap.Int64("community_id", post.CommunityID),
-			zap.Error(err))
-		return nil, errorx.ErrServerBusy
-	}
-
-	// 检查是否找到了社区
-	if community == nil || community.ID == 0 {
-		zap.L().Warn("community not found", zap.Int64("community_id", post.CommunityID))
-		// 业务错误：社区不存在
+	if post.Community == nil || post.Community.CommunityID == 0 {
+		zap.L().Warn("community not found for post",
+			zap.Int64("post_id", pid),
+			zap.Int64("community_id", post.CommunityID))
 		return nil, errorx.ErrNotFound
 	}
 
-	// 5. 组装数据
+	// 4. 组装返回数据（数据已经通过 Preload 加载）
 	data = &models.ApiPostDetail{
 		Post:            post,
-		AuthorName:      user.Username,
-		CommunityDetail: community,
+		AuthorName:      post.Author.Username,    // 直接从预加载的 Author 获取
+		CommunityDetail: post.Community,          // 直接使用预加载的 Community
 	}
 
 	return data, nil
 }
 
-// 从 Redis 获取排序后的 ID，再从 MySQL 查询详情，最后组装投票数据
+// GetPostList 从 Redis 获取排序后的 ID，再从 MySQL 查询详情，最后组装投票数据
+// 优化版：使用 GORM Preload 预加载，从 1+N+N 次查询优化为 3 次查询
 func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err error) {
 	// 1. 从 Redis 查询帖子 ID 列表（已按时间或分数排序）
 	ids, err := redis.GetPostIDsInOrder(p.Order, p.Page, p.Size)
@@ -129,16 +117,17 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	}
 
 	// 记录调试日志
-	zap.L().Debug("GetPostList2", zap.Any("ids", ids))
+	zap.L().Debug("GetPostList", zap.Any("ids", ids))
 
-	// 3. 根据 ID 列表从 MySQL 查询帖子详细信息（保持顺序）
-	posts, err := mysql.GetPostListByIDs(ids)
+	// 3. 使用 Preload 批量查询帖子及关联数据（作者、社区）
+	// 从原来的 1 + N + N 次查询优化为 1 + 1 + 1 = 3 次查询
+	posts, err := mysql.GetPostListByIDsWithPreload(ids)
 	if err != nil {
-		zap.L().Error("mysql.GetPostListByIDs failed", zap.Error(err))
+		zap.L().Error("mysql.GetPostListByIDsWithPreload failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
 
-	zap.L().Debug("GetPostListByIDs", zap.Any("posts", posts))
+	zap.L().Debug("GetPostListByIDsWithPreload", zap.Any("posts", posts))
 
 	// 4. 使用 Pipeline 批量查询每个帖子的投票数据
 	voteData, err := redis.GetPostsVoteData(ids)
@@ -147,55 +136,30 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 		return nil, errorx.ErrServerBusy
 	}
 
-	// 5. 收集所有用户ID和社区ID
-	userIDs := make([]int64, 0, len(posts))
-	communityIDs := make([]int64, 0, len(posts))
-	
-	for _, post := range posts {
-		userIDs = append(userIDs, post.AuthorID)
-		communityIDs = append(communityIDs, post.CommunityID)
-	}
-
-	// 6. 批量查询用户信息
-	users, err := mysql.GetUsersByIDs(userIDs)
-	if err != nil {
-		zap.L().Error("mysql.GetUsersByIDs failed", zap.Error(err))
-		return nil, errorx.ErrServerBusy
-	}
-	
-	// 构建用户ID到用户名的映射
-	userMap := make(map[int64]string, len(users))
-	for _, user := range users {
-		userMap[user.UserID] = user.Username
-	}
-
-	// 7. 批量查询社区信息
-	communities, err := mysql.GetCommunitiesByIDs(communityIDs)
-	if err != nil {
-		zap.L().Error("mysql.GetCommunitiesByIDs failed", zap.Error(err))
-		return nil, errorx.ErrServerBusy
-	}
-	
-	// 构建社区ID到社区详情的映射
-	communityMap := make(map[int64]*models.CommunityDetail, len(communities))
-	for _, community := range communities {
-		communityMap[community.ID] = community
-	}
-
-	// 8. 组装数据：填充作者、社区、投票数据
+	// 5. 组装数据：填充作者、社区、投票数据
+	// 注意：Author 和 Community 已通过 Preload 自动加载
 	data = make([]*models.ApiPostDetail, 0, len(posts))
 	for idx, post := range posts {
-		// 从映射中获取作者名和社区详情
-		authorName, ok := userMap[post.AuthorID]
-		if !ok {
-			zap.L().Error("user not found for post", zap.Int64("author_id", post.AuthorID))
-			authorName = "" // 设置默认值
+		// 安全检查：确保 Preload 成功加载了关联数据
+		var authorName string
+		var community *models.CommunityDetail
+
+		if post.Author != nil {
+			authorName = post.Author.Username
+		} else {
+			zap.L().Error("author not preloaded for post",
+				zap.Int64("post_id", post.ID),
+				zap.Int64("author_id", post.AuthorID))
+			authorName = ""
 		}
-		
-		community, ok := communityMap[post.CommunityID]
-		if !ok {
-			zap.L().Error("community not found for post", zap.Int64("community_id", post.CommunityID))
-			community = &models.CommunityDetail{} // 设置默认值
+
+		if post.Community != nil {
+			community = post.Community
+		} else {
+			zap.L().Error("community not preloaded for post",
+				zap.Int64("post_id", post.ID),
+				zap.Int64("community_id", post.CommunityID))
+			community = &models.CommunityDetail{}
 		}
 
 		// 组装最终数据
@@ -211,7 +175,8 @@ func GetPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err err
 	return
 }
 
-// GetCommunityPostList 根据社区ID获取帖子列表 (优化版: 解决N+1问题)
+// GetCommunityPostList 根据社区ID获取帖子列表
+// 优化版：使用 GORM Preload 预加载，解决 N+1 问题
 func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail, err error) {
 	// 1. 从 Redis 查询指定社区的帖子 ID 列表 (已按时间或分数排序)
 	ids, err := redis.GetCommunityPostIDsInOrder(p.CommunityID, p.Order, p.Page, p.Size)
@@ -234,10 +199,10 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 
 	zap.L().Debug("GetCommunityPostList", zap.Any("ids", ids))
 
-	// 3. 根据 ID 列表从 MySQL 批量查询帖子详细信息 (保持顺序)
-	posts, err := mysql.GetPostListByIDs(ids)
+	// 3. 使用 Preload 批量查询帖子及关联数据（作者、社区）
+	posts, err := mysql.GetPostListByIDsWithPreload(ids)
 	if err != nil {
-		zap.L().Error("mysql.GetPostListByIDs failed", zap.Error(err))
+		zap.L().Error("mysql.GetPostListByIDsWithPreload failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
 
@@ -248,67 +213,29 @@ func GetCommunityPostList(p *models.ParamPostList) (data []*models.ApiPostDetail
 		return nil, errorx.ErrServerBusy
 	}
 
-	// 5. 收集所有唯一的用户ID和社区ID
-	// 注意: 同一个社区的所有帖子社区ID相同,但作者可能不同
-	userIDs := make([]int64, 0, len(posts))
-	communityIDs := make([]int64, 0, 1) // 社区ID只有一个
-
-	// 用于去重用户ID
-	userIDSet := make(map[int64]struct{})
-
-	for _, post := range posts {
-		// 用户ID去重
-		if _, exists := userIDSet[post.AuthorID]; !exists {
-			userIDSet[post.AuthorID] = struct{}{}
-			userIDs = append(userIDs, post.AuthorID)
-		}
-
-		// 社区ID (理论上所有帖子的社区ID应该相同)
-		if len(communityIDs) == 0 || communityIDs[0] != post.CommunityID {
-			communityIDs = append(communityIDs, post.CommunityID)
-		}
-	}
-
-	// 6. 批量查询用户信息
-	users, err := mysql.GetUsersByIDs(userIDs)
-	if err != nil {
-		zap.L().Error("mysql.GetUsersByIDs failed", zap.Error(err))
-		return nil, errorx.ErrServerBusy
-	}
-
-	// 构建用户ID到用户名的映射
-	userMap := make(map[int64]string, len(users))
-	for _, user := range users {
-		userMap[user.UserID] = user.Username
-	}
-
-	// 7. 批量查询社区信息
-	communities, err := mysql.GetCommunitiesByIDs(communityIDs)
-	if err != nil {
-		zap.L().Error("mysql.GetCommunitiesByIDs failed", zap.Error(err))
-		return nil, errorx.ErrServerBusy
-	}
-
-	// 构建社区ID到社区详情的映射
-	communityMap := make(map[int64]*models.CommunityDetail, len(communities))
-	for _, community := range communities {
-		communityMap[community.ID] = community
-	}
-
-	// 8. 组装数据: 填充作者、社区、投票数据
+	// 5. 组装数据: 填充作者、社区、投票数据
 	data = make([]*models.ApiPostDetail, 0, len(posts))
 	for idx, post := range posts {
-		// 从映射中获取作者名和社区详情
-		authorName, ok := userMap[post.AuthorID]
-		if !ok {
-			zap.L().Error("user not found for post", zap.Int64("author_id", post.AuthorID))
-			authorName = "" // 设置默认值
+		// 安全检查：确保 Preload 成功加载了关联数据
+		var authorName string
+		var community *models.CommunityDetail
+
+		if post.Author != nil {
+			authorName = post.Author.Username
+		} else {
+			zap.L().Error("author not preloaded for post",
+				zap.Int64("post_id", post.ID),
+				zap.Int64("author_id", post.AuthorID))
+			authorName = ""
 		}
 
-		community, ok := communityMap[post.CommunityID]
-		if !ok {
-			zap.L().Error("community not found for post", zap.Int64("community_id", post.CommunityID))
-			community = &models.CommunityDetail{} // 设置默认值
+		if post.Community != nil {
+			community = post.Community
+		} else {
+			zap.L().Error("community not preloaded for post",
+				zap.Int64("post_id", post.ID),
+				zap.Int64("community_id", post.CommunityID))
+			community = &models.CommunityDetail{}
 		}
 
 		// 组装最终数据

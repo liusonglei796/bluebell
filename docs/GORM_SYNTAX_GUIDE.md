@@ -260,7 +260,7 @@ db.Where("status = ? AND age > ?", 1, 18).Find(&users)
 ```go
 // 1. 字符串条件 (推荐,防 SQL 注入)
 db.Where("username = ?", "admin").First(&user)
-
+//默认优先用 Struct（为了安全和代码提示），但在查询 0、false、""（空字符串）时，必须用 Map。
 // 2. Struct 条件 (只匹配非零值)
 db.Where(&User{Username: "admin", Status: 1}).First(&user)
 // SQL: SELECT * FROM user WHERE username = 'admin' AND status = 1
@@ -448,7 +448,7 @@ db.Omit("password").Create(&user)
 ## 6. 更新操作
 
 ### 6.1 更新单个字段 - Update
-
+ 只要你的链式调用最后用了 Find(&xxx)、First(&xxx)、Take(&xxx)，且 xxx 是你定义好的对应数据库表的结构体，你就可以偷懒不写 Model。
 ```go
 // 更新单个字段
 db.Model(&User{}).Where("user_id = ?", 123).Update("status", 1)
