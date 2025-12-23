@@ -1,24 +1,38 @@
 package models
 
-import "time"
+import (
+	"time"
+	"gorm.io/gorm"
+)
 
 // Post 内存对齐优化建议：把相同类型的字段放在一起，宽字段（如 int64, string）放在前面
-// 这个结构体是对数据库表结构的直接映射。
+// 这个结构体是对数据库表结构的直接映射，使用 GORM ORM
 type Post struct {
 	// 8 字节字段 (int64)
-	ID          int64 `json:"id" db:"post_id"`
-	AuthorID    int64 `json:"author_id" db:"author_id"`
-	CommunityID int64 `json:"community_id" db:"community_id"`
+	ID          int64 `json:"id" gorm:"column:post_id;primaryKey"`
+	AuthorID    int64 `json:"author_id" gorm:"column:author_id;index;not null"`
+	CommunityID int64 `json:"community_id" gorm:"column:community_id;index;not null"`
 
 	// 4 字节字段 (int32)
-	Status int32 `json:"status" db:"status"`
+	Status int32 `json:"status" gorm:"column:status;default:1"`
 
-	// 16 字节字段 (string) - 虽然string是指针+长度，但在结构体布局中通常按指针对齐
-	Title   string `json:"title" db:"title"`
-	Content string `json:"content" db:"content"`
+	// 16 字节字段 (string)
+	Title   string `json:"title" gorm:"column:title;size:128;not null"`
+	Content string `json:"content" gorm:"column:content;type:text;not null"`
 
 	// Time 类型
-	CreateTime time.Time `json:"create_time" db:"create_time"`
+	CreateTime time.Time `json:"create_time" gorm:"column:create_time;autoCreateTime"`
+}
+
+// TableName 自定义表名
+// 为什么：GORM 默认使用复数形式表名(posts)，需要显式指定为 post
+func (Post) TableName() string {
+	return "post"
+}
+
+// BeforeCreate GORM 钩子
+func (p *Post) BeforeCreate(tx *gorm.DB) error {
+	return nil
 }
 
 // ParamPost 用于接收前端请求的参数

@@ -6,7 +6,7 @@
 
 **Bluebell** 是一个基于 Go 的社区论坛后端服务(类似 Reddit),采用 Gin Web 框架和三层架构(Controller-Logic-DAO)设计。核心功能包括用户认证(JWT)、社区管理、帖子发布、Reddit 算法投票系统。
 
-**技术栈**: Gin + MySQL(sqlx) + Redis(go-redis) + Zap 日志 + Viper 配置 + Snowflake ID + JWT 认证
+**技术栈**: Gin + MySQL(GORM) + Redis(go-redis) + Zap 日志 + Viper 配置 + Snowflake ID + JWT 认证
 
 ## 常用开发命令
 
@@ -93,7 +93,7 @@ Redis 数据结构:
 
 **3. N+1 问题优化**
 - 问题: 查询帖子列表时,for 循环中查询作者和社区信息导致 N+1 次查询
-- 解决: 使用 `sqlx.In()` 批量查询,将查询次数从 1+N+N 降低到 3 次
+- 解决: 使用 GORM 的 `Where IN` 批量查询,将查询次数从 1+N+N 降低到 3 次
 - 位置: logic/post.go 中的帖子列表查询逻辑
 
 **4. Redis Pipeline 原子性**
@@ -110,9 +110,9 @@ Redis 数据结构:
 ├── routers/routers.go       # 路由注册(公共路由 + JWT 认证路由组)
 ├── controller/              # HTTP 处理函数 + 参数校验 + Swagger 注释
 ├── logic/                   # 业务逻辑实现
-├── dao/mysql/               # MySQL 操作(sqlx)
+├── dao/mysql/               # MySQL 操作(GORM)
 ├── dao/redis/               # Redis 操作(go-redis)
-├── models/                  # 数据模型和请求/响应参数
+├── models/                  # GORM 数据模型和请求/响应参数
 ├── middlewares/             # Gin 中间件(JWT 认证)
 ├── pkg/                     # 公共工具(jwt, snowflake, errno)
 ├── logger/                  # Zap 日志初始化
@@ -149,8 +149,8 @@ if err != nil {
     return err
 }
 
-// 3. DAO 层直接返回原始错误
-return db.Exec(sqlStr, args...)
+// 3. DAO 层直接返回 GORM 错误
+return db.Create(user).Error
 ```
 
 ### 统一响应格式
@@ -170,7 +170,7 @@ ResponseErrorWithMsg(c, code, "自定义错误信息")
 ### 1. 添加新接口流程
 ```
 Step 1: models/params.go 定义请求参数结构体(带 validator 标签)
-Step 2: dao/mysql/*.go 实现数据库操作(使用 sqlx)
+Step 2: dao/mysql/*.go 实现数据库操作(使用 GORM ORM)
 Step 3: logic/*.go 实现业务逻辑(调用 DAO,处理缓存)
 Step 4: controller/*.go 添加 Handler(绑定参数,调用 Logic,返回响应)
 Step 5: routers/routers.go 注册路由(区分公共/认证路由组)
@@ -201,9 +201,9 @@ DAO: redis.VoteForPost
 ```
 Logic: GetPostList(order="time"|"score")
   1. 从 Redis ZSet 获取帖子 ID 列表(按时间/分数排序)
-  2. 批量查询帖子详情(MySQL, 使用 sqlx.In 避免 N+1)
-  3. 批量查询作者信息(MySQL)
-  4. 批量查询社区信息(MySQL)
+  2. 批量查询帖子详情(MySQL, 使用 GORM Where IN 避免 N+1)
+  3. 批量查询作者信息(MySQL, 使用 GORM Where IN)
+  4. 批量查询社区信息(MySQL, 使用 GORM Where IN)
   5. 拼接完整数据返回
 ```
 
@@ -225,13 +225,52 @@ Logic: GetPostList(order="time"|"score")
 ## 依赖包使用说明
 
 - `github.com/gin-gonic/gin`: Web 框架,使用 `c.ShouldBindJSON` 绑定参数
-- `github.com/jmoiron/sqlx`: MySQL 操作,使用 `db.Get/Select/Exec`,支持 `sqlx.In` 批量查询
+- `gorm.io/gorm`: ORM 框架,使用 `db.Create/First/Where/Find` 等方法操作数据库
+- `gorm.io/driver/mysql`: GORM MySQL 驱动
 - `github.com/redis/go-redis/v9`: Redis 客户端,使用 `ZAdd/ZScore/ZRange` 操作有序集合
 - `go.uber.org/zap`: 结构化日志,使用 `zap.L().Info/Error` 记录日志
 - `github.com/spf13/viper`: 配置管理,自动读取 config.yaml
 - `github.com/bwmarrin/snowflake`: 分布式 ID 生成器,`snowflake.GenID()`
 - `github.com/golang-jwt/jwt/v5`: JWT Token 生成和解析
 - `github.com/go-playground/validator/v10`: 请求参数校验(struct tag)
+
+## GORM 常用操作示例
+
+### 查询操作
+```go
+// 单条查询
+var user models.User
+db.Where("user_id = ?", uid).First(&user)
+
+// 批量查询
+var users []*models.User
+db.Where("user_id IN ?", ids).Find(&users)
+
+// 条件查询 + 分页
+db.Where("community_id = ?", cid).
+   Order("create_time DESC").
+   Offset(int((page - 1) * size)).
+   Limit(int(size)).
+   Find(&posts)
+```
+
+### 插入操作
+```go
+user := &models.User{
+    UserID:   id,
+    Username: "test",
+    Password: "hashed_password",
+}
+db.Create(user)
+```
+
+### 错误处理
+```go
+// 判断是否找不到记录
+if errors.Is(err, gorm.ErrRecordNotFound) {
+    // 处理记录不存在的情况
+}
+```
 
 ## 开发注意事项
 
@@ -242,7 +281,9 @@ Logic: GetPostList(order="time"|"score")
 5. **Redis 缓存降级**: 帖子创建时 Redis 失败不影响主流程(见 logic/post.go:38-44)
 6. **投票时限**: 超过 7 天的帖子不允许投票,返回 `ErrVoteTimeExpire`
 7. **Pipeline 原子性**: 涉及多个 Redis 操作的场景(如投票)必须使用 Pipeline
-8. **N+1 优化**: 批量查询时使用 `sqlx.In()` 而非循环查询
+8. **N+1 优化**: 批量查询时使用 GORM `Where IN` 而非循环查询
+9. **GORM 模型定义**: 所有 Model 必须实现 `TableName()` 方法指定表名，避免 GORM 自动复数化
+10. **GORM 字段映射**: 使用 `gorm:"column:xxx"` 标签显式指定列名，确保与数据库表字段一致
 
 ## 测试和调试
 
