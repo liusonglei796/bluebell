@@ -25,7 +25,7 @@ type ResponseData struct {
 const CodeSuccess = 1000
 
 // ResponseError 返回错误响应 (接受 CodeError 实例)
-// 推荐直接使用: HandleErrorWithCode(c, errorx.ErrXXX)
+// 推荐直接使用: HandleError(c, err)
 func ResponseError(c *gin.Context, err *errorx.CodeError) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": err.Code,

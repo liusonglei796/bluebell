@@ -53,7 +53,7 @@ func CommunityDetailHandler(c *gin.Context) {
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		// 如果转换失败，说明前端传来的不是数字，返回参数错误
-		ResponseError(c, errorx.ErrInvalidParam)
+		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 

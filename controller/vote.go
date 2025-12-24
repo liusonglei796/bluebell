@@ -22,14 +22,14 @@ func PostVoteHandler(c *gin.Context) {
 	// 1. 参数校验
 	p := new(models.ParamVoteData)
 	if err := c.ShouldBindJSON(p); err != nil {
-		ResponseError(c, errorx.ErrInvalidParam)
+		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
 	// 2. 获取当前请求的用户ID
 	userID, exist := c.Get(CtxUserIDKey)
 	if !exist {
-		ResponseError(c, errorx.ErrNeedLogin)
+		HandleError(c, errorx.ErrNeedLogin)
 		return
 	}
 

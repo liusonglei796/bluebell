@@ -23,14 +23,14 @@ func CreatePostHandler(c *gin.Context) {
 	// c.Get(key) 从上下文中取值，其中用到的key应该是常量，不应该是字符串，避免出错
 	userID, exist := c.Get(CtxUserIDKey)
 	if !exist {
-		ResponseError(c, errorx.ErrNeedLogin)
+		HandleError(c, errorx.ErrNeedLogin)
 		return
 	}
 
 	// 2. bind数据
 	p := new(models.ParamPost)
 	if err := c.ShouldBindJSON(p); err != nil {
-		ResponseError(c, errorx.ErrInvalidParam)
+		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 	// 3. 将UserID填充到参数中
@@ -65,7 +65,7 @@ func GetPostDetailHandler(c *gin.Context) {
 	// 2. 字符串转int64
 	postID, err := stringToInt64(postIDStr)
 	if err != nil {
-		ResponseError(c, errorx.ErrInvalidParam)
+		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
@@ -102,7 +102,7 @@ func GetPostListHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindQuery(p); err != nil {
-		ResponseError(c, errorx.ErrInvalidParam)
+		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 

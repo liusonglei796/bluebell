@@ -29,7 +29,7 @@ func SignUpHandler(c *gin.Context) {
 		if !ok {
 			// 非validator.ValidationErrors类型错误直接返回
 			// 可能是 JSON 格式错误等
-			ResponseError(c, errorx.ErrInvalidParam)
+			HandleError(c, errorx.ErrInvalidParam)
 			return
 		}
 		// validator.ValidationErrors类型错误则进行翻译
@@ -64,7 +64,7 @@ func LoginHandler(c *gin.Context) {
 		errs, ok := err.(validator.ValidationErrors)
 		if !ok {
 			// 非validator.ValidationErrors类型错误直接返回
-			ResponseError(c, errorx.ErrInvalidParam)
+			HandleError(c, errorx.ErrInvalidParam)
 			return
 		}
 		// validator.ValidationErrors类型错误则进行翻译
