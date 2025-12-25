@@ -1,7 +1,7 @@
 app:
   name: "bluebell"
   port: 8080
-  mode: "dev"
+  mode: "release"
   version: "1.0.0"
 
 snowflake:
@@ -9,7 +9,7 @@ snowflake:
   machine_id: 1
 
 log:
-  level: "debug"
+  level: "error"
   file_name: "bluebell.log"
   max_size: 100
   max_backups: 7
@@ -21,8 +21,8 @@ mysql:
   password: "15939087780Ll@"
   db_name: sql_demo
   user: "root"
-  max_open_conns: 100
-  max_idle_conns: 10
+  max_open_conns: 200      # 优化：从100提升到200，提高并发能力
+  max_idle_conns: 30       # 优化：从10提升到30，减少连接建立开销
 
 redis:
   host: "127.0.0.1"
@@ -30,3 +30,8 @@ redis:
   password: ""
   db_name: 0
   pool_size: 100
+
+# 限流配置 (Token Bucket Algorithm)
+ratelimit:
+  fill_interval: 10ms  # 令牌填充间隔 (10ms = 每秒100个令牌 = 100 QPS)
+  capacity: 200        # 令牌桶容量 (允许突发200个请求)

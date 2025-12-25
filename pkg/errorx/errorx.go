@@ -32,28 +32,30 @@ func Newf(code int, format string, args ...any) *CodeError {
 
 // 业务错误码常量定义
 const (
-	CodeInvalidParam    = 1001
-	CodeUserExist       = 1002
-	CodeUserNotExist    = 1003
-	CodeInvalidPassword = 1004
-	CodeServerBusy      = 1005
-	CodeNeedLogin       = 1006
-	CodeInvalidToken    = 1007
-	CodeNotFound        = 1008
-	CodeVoteTimeExpire  = 1009 // 投票时间已过
-	CodeVoteRepeated    = 1010 // 重复投票
+	CodeInvalidParam      = 1001
+	CodeUserExist         = 1002
+	CodeUserNotExist      = 1003
+	CodeInvalidPassword   = 1004
+	CodeServerBusy        = 1005
+	CodeNeedLogin         = 1006
+	CodeInvalidToken      = 1007
+	CodeNotFound          = 1008
+	CodeVoteTimeExpire    = 1009 // 投票时间已过
+	CodeVoteRepeated      = 1010 // 重复投票
+	CodeRateLimitExceeded = 1011 // 请求过于频繁，触发限流
 )
 
 // 预定义常用错误实例（Logic 层可直接返回）
 var (
-	ErrInvalidParam    = New(CodeInvalidParam, "请求参数错误")
-	ErrUserExist       = New(CodeUserExist, "用户名已存在")
-	ErrUserNotExist    = New(CodeUserNotExist, "用户名不存在")
-	ErrInvalidPassword = New(CodeInvalidPassword, "用户名或密码错误")
-	ErrServerBusy      = New(CodeServerBusy, "服务繁忙")
-	ErrNeedLogin       = New(CodeNeedLogin, "需要登录")
-	ErrInvalidToken    = New(CodeInvalidToken, "无效的Token")
-	ErrNotFound        = New(CodeNotFound, "资源不存在")
-	ErrVoteTimeExpire  = New(CodeVoteTimeExpire, "投票时间已过")
-	ErrVoteRepeated    = New(CodeVoteRepeated, "不允许重复投票")
+	ErrInvalidParam      = New(CodeInvalidParam, "请求参数错误")
+	ErrUserExist         = New(CodeUserExist, "用户名已存在")
+	ErrUserNotExist      = New(CodeUserNotExist, "用户名不存在")
+	ErrInvalidPassword   = New(CodeInvalidPassword, "用户名或密码错误")
+	ErrServerBusy        = New(CodeServerBusy, "服务繁忙")
+	ErrNeedLogin         = New(CodeNeedLogin, "需要登录")
+	ErrInvalidToken      = New(CodeInvalidToken, "无效的Token")
+	ErrNotFound          = New(CodeNotFound, "资源不存在")
+	ErrVoteTimeExpire    = New(CodeVoteTimeExpire, "投票时间已过")
+	ErrVoteRepeated      = New(CodeVoteRepeated, "不允许重复投票")
+	ErrRateLimitExceeded = New(CodeRateLimitExceeded, "请求过于频繁，请稍后再试")
 )

@@ -31,10 +31,15 @@ func CheckUserExist(username string) (err error) {
 	return nil
 }
 
+// BcryptCost bcrypt 加密成本参数
+// DefaultCost = 10，每增加1，计算时间翻倍
+// 性能考虑：生产环境使用 10 可以平衡安全性和性能
+const BcryptCost = 10
+
 // encryptPassword 对密码进行加密 (使用 bcrypt)
 // 为什么：数据库不能明文存储密码，bcrypt 是一种安全的哈希算法，自带盐值
 func encryptPassword(oPassword string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(oPassword), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(oPassword), BcryptCost)
 	return string(hash), err
 }
 

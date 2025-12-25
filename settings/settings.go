@@ -42,6 +42,11 @@ type RedisConfig struct {
 	PoolSize int    `mapstructure:"pool_size"` // 新增: YAML 中有 pool_size
 }
 
+type RateLimitConfig struct {
+	FillInterval string `mapstructure:"fill_interval"` // 令牌填充间隔（如 "10ms"）
+	Capacity     int64  `mapstructure:"capacity"`      // 令牌桶容量
+}
+
 // 为什么用指针
 // 1.为了区分配置缺失和零值
 // 如果是值类型 (MysqlConfig)： 如果配置文件中完全没有写 mysql 相关的配置，Go 会给它赋零值（Zero Value）。
@@ -55,6 +60,7 @@ type Config struct {
 	Redis     *RedisConfig     `mapstructure:"redis"`
 	Log       *LogConfig       `mapstructure:"log"`
 	Snowflake *SnowflakeConfig `mapstructure:"snowflake"`
+	RateLimit *RateLimitConfig `mapstructure:"ratelimit"` // 新增: 限流配置
 }
 
 type SnowflakeConfig struct {
