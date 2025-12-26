@@ -1,6 +1,14 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
+)
+
+// BcryptCost bcrypt 加密成本参数
+// DefaultCost = 10，每增加1，计算时间翻倍
+// 性能考虑：生产环境使用 10 可以平衡安全性和性能
+const BcryptCost = 10
 
 // User 用户模型
 // 为什么：对应数据库中的 user 表结构，使用 GORM ORM 映射
@@ -18,7 +26,15 @@ func (User) TableName() string {
 }
 
 // BeforeCreate GORM 钩子，创建前自动处理
+// 为什么：将密码加密逻辑放在 Model 层，DAO 层保持纯粹的数据库操作
 func (u *User) BeforeCreate(tx *gorm.DB) error {
-	// 可以在这里添加创建前的逻辑（如时间戳等）
+	// 如果密码不为空，则进行加密
+	if u.Password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), BcryptCost)
+		if err != nil {
+			return err
+		}
+		u.Password = string(hash)
+	}
 	return nil
 }

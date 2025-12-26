@@ -31,34 +31,14 @@ func CheckUserExist(username string) (err error) {
 	return nil
 }
 
-// BcryptCost bcrypt 加密成本参数
-// DefaultCost = 10，每增加1，计算时间翻倍
-// 性能考虑：生产环境使用 10 可以平衡安全性和性能
-const BcryptCost = 10
-
-// encryptPassword 对密码进行加密 (使用 bcrypt)
-// 为什么：数据库不能明文存储密码，bcrypt 是一种安全的哈希算法，自带盐值
-func encryptPassword(oPassword string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(oPassword), BcryptCost)
-	return string(hash), err
-}
-
 // InsertUser 插入新用户
+// 密码加密已移至 Model 的 BeforeCreate 钩子中自动处理
 func InsertUser(user *models.User) (err error) {
-	// 1. 密码加密
-	// 为什么：安全第一，存储加密后的密码
-	user.Password, err = encryptPassword(user.Password)
-	if err != nil {
-		return fmt.Errorf("密码加密失败: %w", err)
-	}
-
-	// 2. 使用 GORM 创建记录
-	// Create 方法会自动插入数据
+	// 直接创建，GORM 会自动触发 BeforeCreate 进行加密
 	err = db.Create(user).Error
 	if err != nil {
 		return fmt.Errorf("插入用户失败: %w", err)
 	}
-
 	return nil
 }
 
