@@ -114,29 +114,12 @@ func Login(p *models.ParamLogin) (string, string, error) {
 
 // RefreshToken 刷新 Token
 func RefreshToken(aToken, rToken string) (newAToken, newRToken string, err error) {
-	// 1. 验证 RefreshToken 并获取 UserID
-	claims, err := jwt.ValidateRefreshToken(rToken)
+	// 1. 验证 RefreshToken 并获取最新的用户信息
+	// ValidateRefreshToken 内部已经查询了数据库，确保用户存在且未被封禁
+	user, err := jwt.ValidateRefreshToken(rToken)
 	if err != nil {
 		// Token 验证失败属于业务错误 (Token 无效或过期)
 		return "", "", errorx.ErrInvalidToken
-	}
-	userID := claims.UserID
-
-	// 2. 从数据库重新查询用户最新信息
-	// 确保使用的是最新的用户名、权限等状态
-	user, err := mysql.GetUserByID(userID)
-	if err != nil {
-		// 系统错误: 数据库查询失败
-		zap.L().Error("mysql.GetUserByID failed",
-			zap.Int64("user_id", userID),
-			zap.Error(err))
-		return "", "", errorx.ErrServerBusy
-	}
-
-	// 检查用户是否存在
-	if user == nil {
-		// 业务错误: 用户不存在 (可能已被删除)
-		return "", "", errorx.ErrUserNotExist
 	}
 
 	// 3. 使用最新用户信息生成新 Token
