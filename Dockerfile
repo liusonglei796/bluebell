@@ -1,14 +1,24 @@
+FROM golang:alpine AS builder
+
+# 设置 Go 代理，加快下载速度 (针对中国用户优化)
+ENV GOPROXY=https://goproxy.cn,direct
+
+WORKDIR /build
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# 编译应用
+RUN CGO_ENABLED=0 GOOS=linux go build -o bluebell .
+
 FROM alpine:latest
 
-# 设置工作目录
 WORKDIR /app
 
-# 复制本地编译好的二进制文件 (注意：需要在本地先执行交叉编译)
-# $env:CGO_ENABLED=0; $env:GOOS="linux"; $env:GOARCH="amd64"; go build -o bluebell-linux .
-COPY bluebell-linux ./bluebell
-
-# 赋予执行权限
-RUN chmod +x ./bluebell
+# 从构建阶段复制二进制文件
+COPY --from=builder /build/bluebell .
 
 # 暴露端口
 EXPOSE 8080

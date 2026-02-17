@@ -1,0 +1,9 @@
+.git
+.idea
+.vscode
+node_modules
+bluebell
+bluebell-linux
+data
+logs
+.DS_Store
