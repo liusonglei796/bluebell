@@ -3,7 +3,7 @@ package logic
 import (
 	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
-	"bluebell/models"
+	"bluebell/dto/request"
 	"bluebell/pkg/errorx"
 	"errors"
 	"strconv"
@@ -13,14 +13,15 @@ import (
 
 // VoteForPost 投票业务逻辑
 // 参数:
-//   userID: 投票用户ID
-//   p: 投票参数(包含帖子ID和投票方向)
+//
+//	userID: 投票用户ID
+//	p: 投票参数(包含帖子ID和投票方向)
 //
 // 业务规则:
-//   1. 检查帖子发布时间,超过一周不允许投票
-//   2. 根据用户之前的投票状态和当前操作,计算分数变化
-//   3. 更新 Redis 中的帖子分数和用户投票记录
-func VoteForPost(userID int64, p *models.ParamVoteData) error {
+//  1. 检查帖子发布时间,超过一周不允许投票
+//  2. 根据用户之前的投票状态和当前操作,计算分数变化
+//  3. 更新 Redis 中的帖子分数和用户投票记录
+func VoteForPost(userID int64, p *request.VoteRequest) error {
 	// 记录投票操作日志
 	zap.L().Debug("VoteForPost",
 		zap.Int64("userID", userID),

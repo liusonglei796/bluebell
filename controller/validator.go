@@ -1,10 +1,11 @@
 package controller
 
 import (
+	"bluebell/dto/request"
 	"fmt"
 	"reflect"
 	"strings"
-	"bluebell/models"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/locales/en"
 	"github.com/go-playground/locales/zh"
@@ -27,7 +28,7 @@ func InitTrans(locale string) (err error) {
 	if binding.Validator == nil {
 		binding.Validator = &defaultValidator{validator: validator.New()}
 	}
-	
+
 	// 修改 gin 框架中的 Validator 引擎属性，实现自定制
 	// binding.Validator.Engine() 返回的是 interface{}，需要断言为 *validator.Validate 类型
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -79,13 +80,13 @@ func InitTrans(locale string) (err error) {
 		}
 		// 注册自定义结构体校验
 		// 为什么：有些复杂的校验规则（如两次密码是否一致）无法通过简单的 tag 实现，需要自定义校验函数
-		v.RegisterStructValidation(SignUpParamStructLevelValidation, models.ParamSignUp{})
+		v.RegisterStructValidation(SignUpParamStructLevelValidation, request.SignUpRequest{})
 	}
 	return
 }
 
 // removeTopStruct 去除提示信息中的结构体名称
-// 为什么：validator 返回的错误信息默认带有结构体名称（如 "ParamSignUp.Username"），前端不需要这个前缀
+// 为什么：validator 返回的错误信息默认带有结构体名称（如 "SignUpRequest.Username"），前端不需要这个前缀
 func removeTopStruct(fields map[string]string) map[string]string {
 	res := make(map[string]string)
 	for field, err := range fields {
@@ -101,7 +102,7 @@ func SignUpParamStructLevelValidation(sl validator.StructLevel) {
 	// sl.Current() 获取当前正在校验的结构体
 	// .Interface() 获取其原始值 (interface{})
 	// .(models.ParamSignUp) 类型断言为我们的目标结构体
-	su := sl.Current().Interface().(models.ParamSignUp)
+	su := sl.Current().Interface().(request.SignUpRequest)
 	if su.Password != su.RePassword {
 		// 报告一个错误
 		// 参数: (违规的字段值, 违规字段的json名, 违规字段的struct名, 规则名, 规则参数)

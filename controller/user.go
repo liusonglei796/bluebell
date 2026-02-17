@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"bluebell/dto/request"
 	"bluebell/logic"
-	"bluebell/models"
 	"bluebell/pkg/errorx"
 	"strings"
 
@@ -16,12 +16,12 @@ import (
 // @Tags 用户相关
 // @Accept application/json
 // @Produce application/json
-// @Param object body models.ParamSignUp true "注册参数"
+// @Param object body request.SignUpRequest true "注册参数"
 // @Success 200 {object} ResponseData
 // @Router /signup [post]
 func SignUpHandler(c *gin.Context) {
 	// 1. 参数校验
-	p := new(models.ParamSignUp)
+	p := new(request.SignUpRequest)
 	if err := c.ShouldBindJSON(p); err != nil {
 		// 获取validator.ValidationErrors类型的errors
 		// 为什么：validator 库返回的错误类型是 ValidationErrors，包含了具体的字段错误信息
@@ -53,10 +53,10 @@ func SignUpHandler(c *gin.Context) {
 
 // LoginHandler 处理用户登录请求
 // 使用新的 errorx 错误处理机制：
-//   1. Logic 层负责决定错误码（业务错误返回 CodeError，系统错误返回 ErrServerBusy）
-//   2. Controller 层只需要调用 HandleError 透传响应
+//  1. Logic 层负责决定错误码（业务错误返回 CodeError，系统错误返回 ErrServerBusy）
+//  2. Controller 层只需要调用 HandleError 透传响应
 func LoginHandler(c *gin.Context) {
-	var p models.ParamLogin
+	var p request.LoginRequest
 
 	// 1. 参数校验
 	if err := c.ShouldBindJSON(&p); err != nil {

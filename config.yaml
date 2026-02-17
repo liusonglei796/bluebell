@@ -19,7 +19,7 @@ mysql:
   host: "127.0.0.1"
   port: 3306
   password: "15939087780Ll@"
-  db_name: sql_demo
+  db_name: bluebell
   user: "root"
   max_open_conns: 200      # 优化：从100提升到200，提高并发能力
   max_idle_conns: 30       # 优化：从10提升到30，减少连接建立开销
@@ -28,7 +28,7 @@ redis:
   host: "127.0.0.1"
   port: 6379
   password: ""
-  db_name: 0
+  db_name: 1
   pool_size: 100
 
 # 限流配置 (Token Bucket Algorithm)

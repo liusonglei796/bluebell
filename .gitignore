@@ -21,3 +21,8 @@ bluebell.log
 .vscode/
 *.swp
 *.bak
+
+# Docker
+bluebell-linux
+data/
+

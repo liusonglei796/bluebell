@@ -1,8 +1,9 @@
 package controller
 
 import (
+	"bluebell/dto/request"
+	_ "bluebell/dto/response"
 	"bluebell/logic"
-	"bluebell/models"
 	"bluebell/pkg/errorx"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +16,7 @@ import (
 // @Accept application/json
 // @Produce application/json
 // @Param Authorization header string true "Bearer 用户令牌"
-// @Param object body models.Post true "创建帖子参数"
+// @Param object body request.CreatePostRequest true "创建帖子参数"
 // @Success 200 {object} ResponseData
 // @Router /post [post]
 func CreatePostHandler(c *gin.Context) {
@@ -28,7 +29,7 @@ func CreatePostHandler(c *gin.Context) {
 	}
 
 	// 2. bind数据
-	p := new(models.ParamPost)
+	p := new(request.CreatePostRequest)
 	if err := c.ShouldBindJSON(p); err != nil {
 		HandleError(c, errorx.ErrInvalidParam)
 		return
@@ -56,7 +57,7 @@ func CreatePostHandler(c *gin.Context) {
 // @Produce application/json
 // @Param Authorization header string true "Bearer 用户令牌"
 // @Param id path string true "帖子ID"
-// @Success 200 {object} ResponseData{data=models.ApiPostDetail}
+// @Success 200 {object} ResponseData{data=response.PostDetailResponse}
 // @Router /post/{id} [get]
 func GetPostDetailHandler(c *gin.Context) {
 	// 1. 获取参数 (从URL中获取帖子id)
@@ -80,8 +81,6 @@ func GetPostDetailHandler(c *gin.Context) {
 	ResponseSuccess(c, data)
 }
 
-
-
 // GetPostListHandler2 升级版帖子列表接口
 // @Summary 获取帖子列表(新版)
 // @Description 升级版分页获取帖子列表接口，支持按社区和排序规则查询
@@ -89,16 +88,16 @@ func GetPostDetailHandler(c *gin.Context) {
 // @Accept application/json
 // @Produce application/json
 // @Param Authorization header string true "Bearer 用户令牌"
-// @Param object body models.ParamPostList true "获取帖子列表参数"
-// @Success 200 {object} ResponseData{data=[]models.ApiPostDetail}
+// @Param object body request.PostListRequest true "获取帖子列表参数"
+// @Success 200 {object} ResponseData{data=[]response.PostDetailResponse}
 // @Router /posts2 [get]
 func GetPostListHandler(c *gin.Context) {
 	// 根据前端传来的参数动态的获取帖子列表
 	// 按创建时间或按照分数排序
-	p := &models.ParamPostList{
+	p := &request.PostListRequest{
 		Page:  1,
 		Size:  10,
-		Order: models.OrderTime, // 默认按时间排序
+		Order: request.OrderTime, // 默认按时间排序
 	}
 
 	if err := c.ShouldBindQuery(p); err != nil {

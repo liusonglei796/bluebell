@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bluebell_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 15939087780Ll@ # 与 config.yaml 保持一致
+      MYSQL_DATABASE: bluebell
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d # 初始化 SQL 脚本
+    restart: always
+    networks:
+      - bluebell_net
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: bluebell_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./data/redis:/data
+    restart: always
+    networks:
+      - bluebell_net
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 10s
+      retries: 5
+
+  bluebell:
+    build: .
+    container_name: bluebell_app
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml # 使用专门的 Docker 配置文件
+      - ./bluebell.log:/app/bluebell.log
+    networks:
+      - bluebell_net
+    restart: always
+
+networks:
+  bluebell_net:
+    driver: bridge

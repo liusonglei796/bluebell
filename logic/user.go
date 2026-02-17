@@ -3,6 +3,7 @@ package logic
 import (
 	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
+	"bluebell/dto/request"
 	"bluebell/models"
 	"bluebell/pkg/errorx"
 	"bluebell/pkg/jwt"
@@ -13,7 +14,7 @@ import (
 )
 
 // SignUp 处理用户注册业务逻辑
-func SignUp(p *models.ParamSignUp) (err error) {
+func SignUp(p *request.SignUpRequest) (err error) {
 	// 1. 判断用户存不存在
 	// 为什么：用户名必须唯一，防止重复注册
 	if err = mysql.CheckUserExist(p.Username); err != nil {
@@ -60,7 +61,7 @@ func SignUp(p *models.ParamSignUp) (err error) {
 // error 类型说明：
 //   - *errorx.CodeError: 业务错误（密码错误、用户不存在）
 //   - 系统错误: DB/Redis 错误，Controller 会自动转换为 CodeServerBusy
-func Login(p *models.ParamLogin) (string, string, error) {
+func Login(p *request.LoginRequest) (string, string, error) {
 	user := &models.User{
 		Username: p.Username,
 		Password: p.Password,

@@ -167,7 +167,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Post"
+                            "$ref": "#/definitions/request.CreatePostRequest"
                         }
                     }
                 ],
@@ -222,66 +222,7 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.ApiPostDetail"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
-        "/posts": {
-            "get": {
-                "description": "分页获取帖子列表接口(旧版)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "帖子相关"
-                ],
-                "summary": "获取帖子列表(旧版)",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Bearer 用户令牌",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "页码",
-                        "name": "page",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "每页数量",
-                        "name": "size",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/controller.ResponseData"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "type": "array",
-                                            "items": {
-                                                "$ref": "#/definitions/models.ApiPostDetail"
-                                            }
+                                            "$ref": "#/definitions/response.PostDetailResponse"
                                         }
                                     }
                                 }
@@ -318,7 +259,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ParamPostList"
+                            "$ref": "#/definitions/request.PostListRequest"
                         }
                     }
                 ],
@@ -336,7 +277,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.ApiPostDetail"
+                                                "$ref": "#/definitions/response.PostDetailResponse"
                                             }
                                         }
                                     }
@@ -367,7 +308,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ParamSignUp"
+                            "$ref": "#/definitions/request.SignUpRequest"
                         }
                     }
                 ],
@@ -408,7 +349,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.ParamVoteData"
+                            "$ref": "#/definitions/request.VoteRequest"
                         }
                     }
                 ],
@@ -439,55 +380,6 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ApiPostDetail": {
-            "type": "object",
-            "properties": {
-                "author_id": {
-                    "type": "string",
-                    "example": "0"
-                },
-                "author_name": {
-                    "description": "作者名称",
-                    "type": "string"
-                },
-                "community_id": {
-                    "type": "string",
-                    "example": "0"
-                },
-                "communitydetail": {
-                    "description": "内嵌社区详情",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.CommunityDetail"
-                        }
-                    ]
-                },
-                "content": {
-                    "type": "string"
-                },
-                "create_time": {
-                    "description": "Time 类型",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "8 字节字段 (int64)",
-                    "type": "string",
-                    "example": "0"
-                },
-                "status": {
-                    "description": "4 字节字段 (int32)",
-                    "type": "integer"
-                },
-                "title": {
-                    "description": "16 字节字段 (string) - 虽然string是指针+长度，但在结构体布局中通常按指针对齐",
-                    "type": "string"
-                },
-                "vote_num": {
-                    "description": "投票数（赞成票数）",
-                    "type": "integer"
-                }
-            }
-        },
         "models.CommunityDetail": {
             "type": "object",
             "properties": {
@@ -495,6 +387,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "description": "gorm:\"column:community_id;primaryKey\" 指定数据库列名为 community_id 并作为主键",
                     "type": "string",
                     "example": "0"
                 },
@@ -506,7 +399,43 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ParamPostList": {
+        "models.User": {
+            "type": "object",
+            "properties": {
+                "user_id": {
+                    "description": "gorm:\"column:user_id;primaryKey\" 指定列名和主键",
+                    "type": "string",
+                    "example": "0"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.CreatePostRequest": {
+            "type": "object",
+            "required": [
+                "community_id",
+                "content",
+                "title"
+            ],
+            "properties": {
+                "author_id": {
+                    "description": "从 Token 获取，不需要前端传",
+                    "type": "integer"
+                },
+                "community_id": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "request.PostListRequest": {
             "type": "object",
             "properties": {
                 "community_id": {
@@ -524,7 +453,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ParamSignUp": {
+        "request.SignUpRequest": {
             "type": "object",
             "required": [
                 "password",
@@ -545,7 +474,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.ParamVoteData": {
+        "request.VoteRequest": {
             "type": "object",
             "required": [
                 "direction",
@@ -553,30 +482,49 @@ const docTemplate = `{
             ],
             "properties": {
                 "direction": {
-                    "type": "string",
+                    "type": "integer",
                     "enum": [
                         1,
                         0,
                         -1
-                    ],
-                    "example": "0"
+                    ]
                 },
                 "post_id": {
-                    "type": "string",
-                    "example": "0"
+                    "type": "integer"
                 }
             }
         },
-        "models.Post": {
+        "response.PostDetailResponse": {
             "type": "object",
             "properties": {
+                "author": {
+                    "description": "GORM 关联字段 (用于 Preload 预加载，解决 N+1 问题)\n为什么添加：使用 GORM 的 Preload 功能可以自动批量查询关联数据\ngorm:\"-\" 表示不映射到数据库字段，只用于内存中的关联",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    ]
+                },
                 "author_id": {
-                    "type": "string",
-                    "example": "0"
+                    "type": "integer"
+                },
+                "author_name": {
+                    "description": "作者名称",
+                    "type": "string"
+                },
+                "community": {
+                    "$ref": "#/definitions/models.CommunityDetail"
                 },
                 "community_id": {
-                    "type": "string",
-                    "example": "0"
+                    "type": "integer"
+                },
+                "communitydetail": {
+                    "description": "内嵌社区详情",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.CommunityDetail"
+                        }
+                    ]
                 },
                 "content": {
                     "type": "string"
@@ -587,16 +535,19 @@ const docTemplate = `{
                 },
                 "id": {
                     "description": "8 字节字段 (int64)",
-                    "type": "string",
-                    "example": "0"
+                    "type": "integer"
                 },
                 "status": {
                     "description": "4 字节字段 (int32)",
                     "type": "integer"
                 },
                 "title": {
-                    "description": "16 字节字段 (string) - 虽然string是指针+长度，但在结构体布局中通常按指针对齐",
+                    "description": "16 字节字段 (string)",
                     "type": "string"
+                },
+                "vote_num": {
+                    "description": "投票数（赞成票数）",
+                    "type": "integer"
                 }
             }
         }

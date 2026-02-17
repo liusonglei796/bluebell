@@ -1,8 +1,8 @@
 package controller
 
 import (
+	"bluebell/dto/request"
 	"bluebell/logic"
-	"bluebell/models"
 	"bluebell/pkg/errorx"
 
 	"github.com/gin-gonic/gin"
@@ -15,12 +15,12 @@ import (
 // @Accept application/json
 // @Produce application/json
 // @Param Authorization header string true "Bearer 用户令牌"
-// @Param object body models.ParamVoteData true "投票参数"
+// @Param object body request.VoteRequest true "投票参数"
 // @Success 200 {object} ResponseData
 // @Router /vote [post]
 func PostVoteHandler(c *gin.Context) {
 	// 1. 参数校验
-	p := new(models.ParamVoteData)
+	p := new(request.VoteRequest)
 	if err := c.ShouldBindJSON(p); err != nil {
 		HandleError(c, errorx.ErrInvalidParam)
 		return
