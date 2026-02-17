@@ -27,14 +27,16 @@ var (
 
 // VoteForPost 为帖子投票
 // 参数:
-//   userID: 投票用户ID (字符串格式)
-//   postID: 目标帖子ID (字符串格式)
-//   communityID: 帖子所属社区ID (字符串格式)
-//   value: 投票值 (1:赞成, -1:反对, 0:取消投票)
+//
+//	userID: 投票用户ID (字符串格式)
+//	postID: 目标帖子ID (字符串格式)
+//	communityID: 帖子所属社区ID (字符串格式)
+//	value: 投票值 (1:赞成, -1:反对, 0:取消投票)
 //
 // 核心算法:
-//   利用新旧投票值的差值,计算帖子分数的变化量
-//   例如: 从赞成(1)改为反对(-1), 差值为2, 分数变化为 -2*432 = -864
+//
+//	利用新旧投票值的差值,计算帖子分数的变化量
+//	例如: 从赞成(1)改为反对(-1), 差值为2, 分数变化为 -2*432 = -864
 func VoteForPost(userID, postID, communityID string, value float64) error {
 	// 1. 判断投票时间限制
 	// 从 Redis 的 ZSet 中获取帖子的发布时间戳
@@ -153,8 +155,12 @@ func CreatePost(postID, communityID int64) error {
 // 返回: 赞成票数, 反对票数, error
 func GetPostVoteData(postID string) (upVotes, downVotes int64, err error) {
 	// 获取所有对该帖子投过票的用户及其投票值
-	// ZRANGE key 0 -1 WITHSCORES
-	data, err := rdb.ZRangeWithScores(ctx, getRedisKey(KeyPostVotedZSetPrefix+postID), 0, -1).Result()
+	// 使用 ZRangeArgsWithScores 统一查询风格
+	data, err := rdb.ZRangeArgsWithScores(ctx, redis.ZRangeArgs{
+		Key:   getRedisKey(KeyPostVotedZSetPrefix + postID),
+		Start: 0,
+		Stop:  -1,
+	}).Result()
 	if err != nil {
 		return 0, 0, fmt.Errorf("get post vote data failed (post_id: %s): %w", postID, err)
 	}
