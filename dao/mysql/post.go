@@ -21,16 +21,18 @@ func CreatePost(post *models.Post) (err error) {
 
 // GetPostByID 根据帖子ID查询帖子详情（带预加载）
 // 使用 Preload 自动加载关联的作者和社区信息，避免 N+1 查询问题
+// 自动过滤已删除帖子（status = 0）
 func GetPostByID(pid int64) (post *models.Post, err error) {
 	post = new(models.Post)
 
 	// Preload 会自动执行以下 SQL:
-	// 1. SELECT * FROM post WHERE post_id = ?
+	// 1. SELECT * FROM post WHERE post_id = ? AND status = 1
 	// 2. SELECT * FROM user WHERE user_id IN (post.author_id)
 	// 3. SELECT * FROM community WHERE community_id IN (post.community_id)
 	err = db.Preload("Author"). // 预加载作者信息
 					Preload("Community"). // 预加载社区信息
 					Where("post_id = ?", pid).
+					Where("status = ?", 1). // 过滤已删除帖子
 					First(post).Error
 
 	if err != nil {
@@ -47,6 +49,8 @@ func GetPostByID(pid int64) (post *models.Post, err error) {
 // 解决 N+1 问题：如果查询 100 个帖子，传统方式需要 1 + 100 + 100 = 201 次查询
 //
 //	使用 Preload 只需要 1 + 1 + 1 = 3 次查询
+//
+// 自动过滤已删除帖子（status = 0）
 func GetPostListByIDsWithPreload(ids []string) (posts []*models.Post, err error) {
 	if len(ids) == 0 {
 		return make([]*models.Post, 0), nil
@@ -55,12 +59,13 @@ func GetPostListByIDsWithPreload(ids []string) (posts []*models.Post, err error)
 	posts = make([]*models.Post, 0, len(ids))
 
 	// Preload 会自动批量查询:
-	// 1. SELECT * FROM post WHERE post_id IN (ids)
+	// 1. SELECT * FROM post WHERE post_id IN (ids) AND status = 1
 	// 2. SELECT * FROM user WHERE user_id IN (所有帖子的 author_id)
 	// 3. SELECT * FROM community WHERE community_id IN (所有帖子的 community_id)
 	err = db.Preload("Author"). // 批量预加载所有作者
 					Preload("Community"). // 批量预加载所有社区
 					Where("post_id IN ?", ids).
+					Where("status = ?", 1). // 过滤已删除帖子
 					Find(&posts).Error
 
 	if err != nil {
@@ -81,4 +86,37 @@ func GetPostListByIDsWithPreload(ids []string) (posts []*models.Post, err error)
 	}
 
 	return orderedPosts, nil
+}
+
+// DeletePost 软删除帖子（更新 status 为 0）
+func DeletePost(postID int64) error {
+	result := db.Model(&models.Post{}).
+		Where("post_id = ?", postID).
+		Where("status = ?", 1). // 确保只删除正常的帖子
+		Update("status", 0)
+
+	if result.Error != nil {
+		return fmt.Errorf("delete post failed: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}
+
+// DeletePostByAuthor 软删除帖子（带作者验证）
+func DeletePostByAuthor(postID, authorID int64) error {
+	result := db.Model(&models.Post{}).
+		Where("post_id = ?", postID).
+		Where("author_id = ?", authorID).
+		Where("status = ?", 1).
+		Update("status", 0)
+
+	if result.Error != nil {
+		return fmt.Errorf("delete post failed: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }

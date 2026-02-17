@@ -278,3 +278,42 @@ func GetPostListNew(p *request.PostListRequest) (data []*response.PostDetailResp
 	// 成功则返回数据和 nil 错误
 	return data, nil
 }
+
+// DeletePost 删除帖子（软删除）
+// 只有作者本人可以删除自己的帖子
+func DeletePost(postID, userID int64) error {
+	// 1. 查询帖子（已排除已删除的）
+	post, err := mysql.GetPostByID(postID)
+	if err != nil {
+		zap.L().Error("mysql.GetPostByID failed",
+			zap.Int64("post_id", postID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+	if post == nil {
+		return errorx.ErrNotFound
+	}
+
+	// 2. 验证权限（只有作者能删除）
+	if post.AuthorID != userID {
+		return errorx.ErrForbidden
+	}
+
+	// 3. 软删除（更新 status 为 0）
+	err = mysql.DeletePostByAuthor(postID, userID)
+	if err != nil {
+		zap.L().Error("mysql.DeletePostByAuthor failed",
+			zap.Int64("post_id", postID),
+			zap.Int64("user_id", userID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+
+	// 4. 删除 Redis 数据（可选，保留投票数据供分析）
+	// err = redis.DeletePost(postID, post.CommunityID)
+	// if err != nil {
+	//     zap.L().Warn("redis.DeletePost failed", ...)
+	// }
+
+	return nil
+}

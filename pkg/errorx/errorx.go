@@ -43,6 +43,7 @@ const (
 	CodeVoteTimeExpire    = 1009 // 投票时间已过
 	CodeVoteRepeated      = 1010 // 重复投票
 	CodeRateLimitExceeded = 1011 // 请求过于频繁，触发限流
+	CodeForbidden         = 1012 // 无权限操作
 )
 
 // 预定义常用错误实例（Logic 层可直接返回）
@@ -58,4 +59,5 @@ var (
 	ErrVoteTimeExpire    = New(CodeVoteTimeExpire, "投票时间已过")
 	ErrVoteRepeated      = New(CodeVoteRepeated, "不允许重复投票")
 	ErrRateLimitExceeded = New(CodeRateLimitExceeded, "请求过于频繁，请稍后再试")
+	ErrForbidden         = New(CodeForbidden, "无权限操作")
 )

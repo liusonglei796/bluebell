@@ -112,3 +112,39 @@ func GetPostListHandler(c *gin.Context) {
 	}
 	ResponseSuccess(c, data)
 }
+
+// DeletePostHandler 删除帖子
+// @Summary 删除帖子
+// @Description 删除帖子接口（只有作者本人可以删除）
+// @Tags 帖子相关
+// @Accept application/json
+// @Produce application/json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param id path string true "帖子ID"
+// @Success 200 {object} ResponseData
+// @Router /post/{id} [delete]
+func DeletePostHandler(c *gin.Context) {
+	// 1. 获取当前用户ID
+	userID, exist := c.Get(CtxUserIDKey)
+	if !exist {
+		HandleError(c, errorx.ErrNeedLogin)
+		return
+	}
+
+	// 2. 获取帖子ID
+	postIDStr := c.Param("id")
+	postID, err := stringToInt64(postIDStr)
+	if err != nil {
+		HandleError(c, errorx.ErrInvalidParam)
+		return
+	}
+
+	// 3. 调用逻辑层删除帖子
+	if err := logic.DeletePost(postID, userID.(int64)); err != nil {
+		HandleError(c, err)
+		return
+	}
+
+	// 4. 返回响应
+	ResponseSuccess(c, nil)
+}
