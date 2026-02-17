@@ -8,9 +8,9 @@ import (
 )
 
 // GetCommunityList 查询社区列表数据
-func GetCommunityList() (data []*models.CommunityDetail, err error) {
+func GetCommunityList() (data []*models.Community, err error) {
 	// 初始化切片，防止查询为空时返回 nil
-	data = make([]*models.CommunityDetail, 0)
+	data = make([]*models.Community, 0)
 
 	// GORM 使用 Find 方法查询所有记录
 	err = db.Select("community_id", "community_name").Find(&data).Error
@@ -21,8 +21,8 @@ func GetCommunityList() (data []*models.CommunityDetail, err error) {
 }
 
 // GetCommunityDetailByID 根据ID查询社区详情
-func GetCommunityDetailByID(id int64) (community *models.CommunityDetail, err error) {
-	community = new(models.CommunityDetail)
+func GetCommunityDetailByID(id int64) (community *models.Community, err error) {
+	community = new(models.Community)
 
 	// GORM 使用 First 查询单条记录
 	err = db.Where("community_id = ?", id).First(community).Error
@@ -38,13 +38,13 @@ func GetCommunityDetailByID(id int64) (community *models.CommunityDetail, err er
 }
 
 // GetCommunitiesByIDs 根据社区ID列表批量获取社区信息
-func GetCommunitiesByIDs(ids []int64) (communities []*models.CommunityDetail, err error) {
+func GetCommunitiesByIDs(ids []int64) (communities []*models.Community, err error) {
 	if len(ids) == 0 {
-		return make([]*models.CommunityDetail, 0), nil
+		return make([]*models.Community, 0), nil
 	}
 
 	// GORM 使用 Where IN 查询
-	communities = make([]*models.CommunityDetail, 0, len(ids))
+	communities = make([]*models.Community, 0, len(ids))
 	err = db.Where("community_id IN ?", ids).Find(&communities).Error
 	if err != nil {
 		return nil, fmt.Errorf("query communities by ids failed: %w", err)

@@ -85,8 +85,8 @@ func SetupRouter(mode string) *gin.Engine {
 	authGroup.Use(middlewares.JWTAuthMiddleware())
 	{
 		// 1. 社区相关
-		authGroup.GET("/community", controller.CommunityHandler)           // 获取社区列表
-		authGroup.GET("/community/:id", controller.CommunityDetailHandler) // 获取社区详情
+		authGroup.GET("/community", controller.CommunityHandler)         // 获取社区列表
+		authGroup.GET("/community/:id", controller.CommunityHandlerByID) // 获取社区详情
 
 		// 2. 帖子相关
 		authGroup.POST("/post", controller.CreatePostHandler)       // 创建帖子

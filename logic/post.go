@@ -91,9 +91,9 @@ func GetPostByID(pid int64) (data *response.PostDetailResponse, err error) {
 
 	// 4. 组装返回数据（数据已经通过 Preload 加载）
 	data = &response.PostDetailResponse{
-		Post:            post,
-		AuthorName:      post.Author.Username, // 直接从预加载的 Author 获取
-		CommunityDetail: post.Community,       // 直接使用预加载的 Community
+		Post:       post,
+		AuthorName: post.Author.Username, // 直接从预加载的 Author 获取
+		Community:  post.Community,       // 直接使用预加载的 Community
 	}
 
 	return data, nil
@@ -142,7 +142,7 @@ func GetPostList(p *request.PostListRequest) (data []*response.PostDetailRespons
 	for idx, post := range posts {
 		// 安全检查：确保 Preload 成功加载了关联数据
 		var authorName string
-		var community *models.CommunityDetail
+		var community *models.Community
 
 		if post.Author != nil {
 			authorName = post.Author.Username
@@ -159,15 +159,15 @@ func GetPostList(p *request.PostListRequest) (data []*response.PostDetailRespons
 			zap.L().Error("community not preloaded for post",
 				zap.Int64("post_id", post.ID),
 				zap.Int64("community_id", post.CommunityID))
-			community = &models.CommunityDetail{}
+			community = &models.Community{}
 		}
 
 		// 组装最终数据
 		postDetail := &response.PostDetailResponse{
-			AuthorName:      authorName,
-			CommunityDetail: community,
-			Post:            post,
-			VoteNum:         voteData[idx], // 填充投票数
+			AuthorName: authorName,
+			Community:  community,
+			Post:       post,
+			VoteNum:    voteData[idx], // 填充投票数
 		}
 		data = append(data, postDetail)
 	}
@@ -218,7 +218,7 @@ func GetCommunityPostList(p *request.PostListRequest) (data []*response.PostDeta
 	for idx, post := range posts {
 		// 安全检查：确保 Preload 成功加载了关联数据
 		var authorName string
-		var community *models.CommunityDetail
+		var community *models.Community
 
 		if post.Author != nil {
 			authorName = post.Author.Username
@@ -235,47 +235,19 @@ func GetCommunityPostList(p *request.PostListRequest) (data []*response.PostDeta
 			zap.L().Error("community not preloaded for post",
 				zap.Int64("post_id", post.ID),
 				zap.Int64("community_id", post.CommunityID))
-			community = &models.CommunityDetail{}
+			community = &models.Community{}
 		}
 
 		// 组装最终数据
 		postDetail := &response.PostDetailResponse{
-			AuthorName:      authorName,
-			CommunityDetail: community,
-			Post:            post,
-			VoteNum:         voteData[idx], // 填充投票数
+			AuthorName: authorName,
+			Community:  community,
+			Post:       post,
+			VoteNum:    voteData[idx], // 填充投票数
 		}
 		data = append(data, postDetail)
 	}
 
-	return data, nil
-}
-
-// GetPostListNew 是一个新的、统一的帖子列表获取函数
-// 它充当一个"调度器"或"分发器"
-func GetPostListNew(p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
-
-	// 关键判断：根据 CommunityID 是否为 0，来决定执行哪种查询逻辑
-	if p.CommunityID == 0 {
-		// 1. CommunityID 为 0 (或未提供)
-		// 执行"查询所有帖子"的逻辑
-		// GetPostList2 是原有的、用于获取所有帖子的逻辑函数 (视频中已存在)
-		data, err = GetPostList(p)
-	} else {
-		// 2. CommunityID 不为 0 (已提供)
-		// 执行"根据社区ID查询帖子"的逻辑
-		// GetCommunityPostList 是原有的、用于按社区ID获取帖子的逻辑函数 (视频中已存在)
-		data, err = GetCommunityPostList(p)
-	}
-
-	// 统一的错误处理
-	if err != nil {
-		// 记录日志，方便排查问题
-		zap.L().Error("logic.GetPostListNew failed", zap.Error(err))
-		return nil, errorx.ErrServerBusy
-	}
-
-	// 成功则返回数据和 nil 错误
 	return data, nil
 }
 

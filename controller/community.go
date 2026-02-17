@@ -16,7 +16,7 @@ import (
 // @Accept application/json
 // @Produce application/json
 // @Param Authorization header string true "Bearer 用户令牌"
-// @Success 200 {object} ResponseData{data=[]models.CommunityDetail}
+// @Success 200 {object} ResponseData{data=[]models.Community}
 // @Router /community [get]
 // @Security ApiKeyAuth
 func CommunityHandler(c *gin.Context) {
@@ -32,7 +32,7 @@ func CommunityHandler(c *gin.Context) {
 	ResponseSuccess(c, data)
 }
 
-// CommunityDetailHandler 获取社区详情
+// CommunityHandler 获取社区详情
 // @Summary 获取社区详情
 // @Description 根据社区ID获取社区的详细信息
 // @Tags 社区相关
@@ -40,12 +40,12 @@ func CommunityHandler(c *gin.Context) {
 // @Produce application/json
 // @Param id path int true "社区ID"
 // @Param Authorization header string true "Bearer 用户令牌"
-// @Success 200 {object} ResponseData{data=models.CommunityDetail}
+// @Success 200 {object} ResponseData{data=models.Community}
 // @Failure 400 {object} ResponseData
 // @Failure 500 {object} ResponseData
 // @Router /community/{id} [get]
 // @Security ApiKeyAuth
-func CommunityDetailHandler(c *gin.Context) {
+func CommunityHandlerByID(c *gin.Context) {
 	// 1. 获取路径参数 (community_id)
 	idStr := c.Param("id")
 

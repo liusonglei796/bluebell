@@ -9,7 +9,7 @@ import (
 )
 
 // GetCommunityList 获取社区列表
-func GetCommunityList() ([]*models.CommunityDetail, error) {
+func GetCommunityList() ([]*models.Community, error) {
 	// 调用 DAO 层的方法
 	data, err := mysql.GetCommunityList()
 	if err != nil {
@@ -21,7 +21,7 @@ func GetCommunityList() ([]*models.CommunityDetail, error) {
 }
 
 // GetCommunityDetail 根据ID获取社区详情
-func GetCommunityDetail(id int64) (*models.CommunityDetail, error) {
+func GetCommunityDetail(id int64) (*models.Community, error) {
 	// 调用 DAO 层查询数据库
 	data, err := mysql.GetCommunityDetailByID(id)
 	if err != nil {

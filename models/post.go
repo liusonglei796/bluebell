@@ -27,8 +27,8 @@ type Post struct {
 	// GORM 关联字段 (用于 Preload 预加载，解决 N+1 问题)
 	// 为什么添加：使用 GORM 的 Preload 功能可以自动批量查询关联数据
 	// gorm:"-" 表示不映射到数据库字段，只用于内存中的关联
-	Author    *User            `json:"author,omitempty" gorm:"foreignKey:AuthorID;references:UserID"`
-	Community *CommunityDetail `json:"community,omitempty" gorm:"foreignKey:CommunityID;references:CommunityID"`
+	Author    *User      `json:"author,omitempty" gorm:"foreignKey:AuthorID;references:UserID"`
+	Community *Community `json:"community,omitempty" gorm:"foreignKey:CommunityID;references:CommunityID"`
 }
 
 // TableName 自定义表名
