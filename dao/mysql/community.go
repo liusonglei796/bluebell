@@ -40,7 +40,7 @@ func GetCommunityDetailByID(id int64) (community *models.CommunityDetail, err er
 // GetCommunitiesByIDs 根据社区ID列表批量获取社区信息
 func GetCommunitiesByIDs(ids []int64) (communities []*models.CommunityDetail, err error) {
 	if len(ids) == 0 {
-		return nil, nil
+		return make([]*models.CommunityDetail, 0), nil
 	}
 
 	// GORM 使用 Where IN 查询

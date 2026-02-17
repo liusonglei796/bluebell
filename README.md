@@ -235,6 +235,8 @@ bluebell/
 ├── config.yaml              # 配置文件
 ├── main.go                  # 程序入口
 ├── Makefile                 # 自动化构建脚本
+├── Dockerfile               # Docker 构建文件
+├── docker-compose.yml       # Docker Compose 配置
 ├── .air.conf                # Air 热重载配置
 ├── go.mod / go.sum          # Go 模块依赖
 │
@@ -271,16 +273,18 @@ bluebell/
 │   ├── post.go              # 帖子模型
 │   └── params.go            # 请求/响应参数
 │
+├── dto/                     # 数据传输对象 (DTO)
+│
 ├── middlewares/             # 中间件
 │   └── auth.go              # JWT 认证中间件
 │
 ├── routers/                 # 路由配置
 │   └── routers.go           # 路由注册
 │
-├── pkg/                     # 公共工具包
+├── pkg/                     # 公共工具包(jwt, snowflake, errorx)
 │   ├── jwt/                 # JWT Token 工具
 │   ├── snowflake/           # Snowflake ID 生成
-│   └── errno/               # 自定义错误类型
+│   └── errorx/              # 自定义错误类型 (ErrorX)
 │
 ├── logger/                  # 日志初始化
 │   └── logger.go
@@ -288,10 +292,16 @@ bluebell/
 ├── settings/                # 配置加载
 │   └── settings.go
 │
-├── docs/                    # Swagger 生成的文档
+├── docs/                    # 项目文档
 │   ├── docs.go
-│   ├── swagger.json
-│   └── swagger.yaml
+│   ├── swagger.json         # Swagger API 定义
+│   ├── swagger.yaml
+│   ├── errorx_usage_guide.md # ErrorX 使用指南
+│   └── ...                  # 其他技术文档 (GORM, Redis 等)
+│
+├── scripts/                 # 辅助脚本
+│
+├── data/                    # 数据存储 (MySQL/Redis)
 │
 └── 教学文档/                 # 完整的教学文档 (18章)
     ├── README.md

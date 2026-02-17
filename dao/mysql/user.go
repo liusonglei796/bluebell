@@ -92,7 +92,7 @@ func GetUserByID(uid int64) (*models.User, error) {
 // GetUsersByIDs 根据用户ID列表批量获取用户信息
 func GetUsersByIDs(ids []int64) (users []*models.User, err error) {
 	if len(ids) == 0 {
-		return nil, nil
+		return make([]*models.User, 0), nil
 	}
 
 	// GORM 使用 Where IN 查询

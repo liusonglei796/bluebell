@@ -10,9 +10,9 @@ import (
 // 这个结构体是对数据库表结构的直接映射，使用 GORM ORM
 type Post struct {
 	// 8 字节字段 (int64)
-	ID          int64 `json:"id" gorm:"column:post_id;primaryKey"`
-	UserID      int64 `json:"author_id" gorm:"column:author_id;index;not null"`
-	CommunityID int64 `json:"community_id" gorm:"column:community_id;index;not null"`
+	ID          int64 `json:"id,string" gorm:"column:post_id;primaryKey"`
+	AuthorID    int64 `json:"author_id,string" gorm:"column:author_id;index;not null"`
+	CommunityID int64 `json:"community_id,string" gorm:"column:community_id;index;not null"`
 
 	// 4 字节字段 (int32)
 	Status int32 `json:"status" gorm:"column:status;default:1"`
@@ -27,8 +27,8 @@ type Post struct {
 	// GORM 关联字段 (用于 Preload 预加载，解决 N+1 问题)
 	// 为什么添加：使用 GORM 的 Preload 功能可以自动批量查询关联数据
 	// gorm:"-" 表示不映射到数据库字段，只用于内存中的关联
-	UserInfo      *User            `json:"author,omitempty" gorm:"foreignKey:UserID;references:UserID"`
-	CommunityInfo *CommunityDetail `json:"community,omitempty" gorm:"foreignKey:CommunityID;references:CommunityID"`
+	Author    *User            `json:"author,omitempty" gorm:"foreignKey:AuthorID;references:UserID"`
+	Community *CommunityDetail `json:"community,omitempty" gorm:"foreignKey:CommunityID;references:CommunityID"`
 }
 
 // TableName 自定义表名

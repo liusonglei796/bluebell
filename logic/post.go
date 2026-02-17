@@ -20,7 +20,7 @@ func CreatePost(p *request.CreatePostRequest) (postID int64, err error) {
 	// 2. 构造Post结构体
 	post := &models.Post{
 		ID:          postID,
-		UserID:      p.UserID,
+		AuthorID:    p.AuthorID,
 		CommunityID: p.CommunityID,
 		Title:       p.Title,
 		Content:     p.Content,
@@ -59,10 +59,10 @@ func GetPostByID(pid int64) (data *response.PostDetailResponse, err error) {
 	//   - SELECT * FROM post WHERE post_id = ?
 	//   - SELECT * FROM user WHERE user_id = ? (post.author_id)
 	//   - SELECT * FROM community WHERE community_id = ? (post.community_id)
-	post, err := mysql.GetPostByIDWithPreload(pid)
+	post, err := mysql.GetPostByID(pid)
 	if err != nil {
 		// 系统错误
-		zap.L().Error("mysql.GetPostByIDWithPreload failed",
+		zap.L().Error("mysql.GetPostByID failed",
 			zap.Int64("post_id", pid),
 			zap.Error(err))
 		return nil, errorx.ErrServerBusy
@@ -75,14 +75,14 @@ func GetPostByID(pid int64) (data *response.PostDetailResponse, err error) {
 	}
 
 	// 3. 检查关联数据是否加载成功
-	if post.UserInfo == nil || post.UserInfo.UserID == 0 {
+	if post.Author == nil || post.Author.UserID == 0 {
 		zap.L().Warn("author not found for post",
 			zap.Int64("post_id", pid),
-			zap.Int64("author_id", post.UserID))
+			zap.Int64("author_id", post.AuthorID))
 		return nil, errorx.ErrNotFound
 	}
 
-	if post.CommunityInfo == nil || post.CommunityInfo.CommunityID == 0 {
+	if post.Community == nil || post.Community.CommunityID == 0 {
 		zap.L().Warn("community not found for post",
 			zap.Int64("post_id", pid),
 			zap.Int64("community_id", post.CommunityID))
@@ -92,8 +92,8 @@ func GetPostByID(pid int64) (data *response.PostDetailResponse, err error) {
 	// 4. 组装返回数据（数据已经通过 Preload 加载）
 	data = &response.PostDetailResponse{
 		Post:            post,
-		AuthorName:      post.UserInfo.Username, // 直接从预加载的 Author 获取
-		CommunityDetail: post.CommunityInfo,     // 直接使用预加载的 Community
+		AuthorName:      post.Author.Username, // 直接从预加载的 Author 获取
+		CommunityDetail: post.Community,       // 直接使用预加载的 Community
 	}
 
 	return data, nil
@@ -144,17 +144,17 @@ func GetPostList(p *request.PostListRequest) (data []*response.PostDetailRespons
 		var authorName string
 		var community *models.CommunityDetail
 
-		if post.UserInfo != nil {
-			authorName = post.UserInfo.Username
+		if post.Author != nil {
+			authorName = post.Author.Username
 		} else {
 			zap.L().Error("author not preloaded for post",
 				zap.Int64("post_id", post.ID),
-				zap.Int64("author_id", post.UserID))
+				zap.Int64("author_id", post.AuthorID))
 			authorName = ""
 		}
 
-		if post.CommunityInfo != nil {
-			community = post.CommunityInfo
+		if post.Community != nil {
+			community = post.Community
 		} else {
 			zap.L().Error("community not preloaded for post",
 				zap.Int64("post_id", post.ID),
@@ -220,17 +220,17 @@ func GetCommunityPostList(p *request.PostListRequest) (data []*response.PostDeta
 		var authorName string
 		var community *models.CommunityDetail
 
-		if post.UserInfo != nil {
-			authorName = post.UserInfo.Username
+		if post.Author != nil {
+			authorName = post.Author.Username
 		} else {
 			zap.L().Error("author not preloaded for post",
 				zap.Int64("post_id", post.ID),
-				zap.Int64("author_id", post.UserID))
+				zap.Int64("author_id", post.AuthorID))
 			authorName = ""
 		}
 
-		if post.CommunityInfo != nil {
-			community = post.CommunityInfo
+		if post.Community != nil {
+			community = post.Community
 		} else {
 			zap.L().Error("community not preloaded for post",
 				zap.Int64("post_id", post.ID),
