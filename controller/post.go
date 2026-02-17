@@ -2,11 +2,12 @@ package controller
 
 import (
 	"bluebell/dto/request"
-	_ "bluebell/dto/response"
+	"bluebell/dto/response"
 	"bluebell/logic"
 	"bluebell/pkg/errorx"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // CreatePostHandler 创建帖子
@@ -37,9 +38,7 @@ func CreatePostHandler(c *gin.Context) {
 	// 3. 将AuthorID填充到参数中
 	p.AuthorID = userID.(int64)
 
-	// 4. 调用逻辑层创建帖子
-
-	// 3. 调用业务逻辑
+	// 3. 调用业务逻辑创建帖子
 	if _, err := logic.CreatePost(p); err != nil {
 		HandleError(c, err)
 		return
@@ -81,19 +80,21 @@ func GetPostDetailHandler(c *gin.Context) {
 	ResponseSuccess(c, data)
 }
 
-// GetPostListHandler2 升级版帖子列表接口
-// @Summary 获取帖子列表(新版)
-// @Description 升级版分页获取帖子列表接口，支持按社区和排序规则查询
+// GetPostListHandler 获取帖子列表
+// @Summary 获取帖子列表
+// @Description 分页获取帖子列表接口，支持按社区和排序规则查询
 // @Tags 帖子相关
 // @Accept application/json
 // @Produce application/json
 // @Param Authorization header string true "Bearer 用户令牌"
-// @Param object body request.PostListRequest true "获取帖子列表参数"
+// @Param page query int false "页码，默认1"
+// @Param size query int false "每页数量，默认10"
+// @Param order query string false "排序方式：time(时间)或score(分数)，默认time"
+// @Param community_id query int false "社区ID，0表示所有社区"
 // @Success 200 {object} ResponseData{data=[]response.PostDetailResponse}
-// @Router /posts2 [get]
+// @Router /posts [get]
 func GetPostListHandler(c *gin.Context) {
-	// 根据前端传来的参数动态的获取帖子列表
-	// 按创建时间或按照分数排序
+	// 1. 获取并校验参数
 	p := &request.PostListRequest{
 		Page:  1,
 		Size:  10,
@@ -101,15 +102,29 @@ func GetPostListHandler(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindQuery(p); err != nil {
+		zap.L().Error("GetPostListHandler ShouldBindQuery failed", zap.Error(err))
 		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
-	data, err := logic.GetPostListNew(p) // 更新这里的逻辑
+	// 2. 调度逻辑：根据 CommunityID 是否为 0，决定业务逻辑
+	var data []*response.PostDetailResponse
+	var err error
+
+	if p.CommunityID == 0 {
+		// 查询所有帖子
+		data, err = logic.GetPostList(p)
+	} else {
+		// 按社区查询帖子
+		data, err = logic.GetCommunityPostList(p)
+	}
+
 	if err != nil {
 		HandleError(c, err)
 		return
 	}
+
+	// 3. 返回响应
 	ResponseSuccess(c, data)
 }
 
