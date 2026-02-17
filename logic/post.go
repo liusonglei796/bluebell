@@ -93,7 +93,6 @@ func GetPostByID(pid int64) (data *response.PostDetailResponse, err error) {
 	data = &response.PostDetailResponse{
 		Post:       post,
 		AuthorName: post.Author.Username, // 直接从预加载的 Author 获取
-		Community:  post.Community,       // 直接使用预加载的 Community
 	}
 
 	return data, nil
@@ -142,8 +141,6 @@ func GetPostList(p *request.PostListRequest) (data []*response.PostDetailRespons
 	for idx, post := range posts {
 		// 安全检查：确保 Preload 成功加载了关联数据
 		var authorName string
-		var community *models.Community
-
 		if post.Author != nil {
 			authorName = post.Author.Username
 		} else {
@@ -153,19 +150,9 @@ func GetPostList(p *request.PostListRequest) (data []*response.PostDetailRespons
 			authorName = ""
 		}
 
-		if post.Community != nil {
-			community = post.Community
-		} else {
-			zap.L().Error("community not preloaded for post",
-				zap.Int64("post_id", post.ID),
-				zap.Int64("community_id", post.CommunityID))
-			community = &models.Community{}
-		}
-
 		// 组装最终数据
 		postDetail := &response.PostDetailResponse{
 			AuthorName: authorName,
-			Community:  community,
 			Post:       post,
 			VoteNum:    voteData[idx], // 填充投票数
 		}
@@ -218,8 +205,6 @@ func GetCommunityPostList(p *request.PostListRequest) (data []*response.PostDeta
 	for idx, post := range posts {
 		// 安全检查：确保 Preload 成功加载了关联数据
 		var authorName string
-		var community *models.Community
-
 		if post.Author != nil {
 			authorName = post.Author.Username
 		} else {
@@ -229,19 +214,9 @@ func GetCommunityPostList(p *request.PostListRequest) (data []*response.PostDeta
 			authorName = ""
 		}
 
-		if post.Community != nil {
-			community = post.Community
-		} else {
-			zap.L().Error("community not preloaded for post",
-				zap.Int64("post_id", post.ID),
-				zap.Int64("community_id", post.CommunityID))
-			community = &models.Community{}
-		}
-
 		// 组装最终数据
 		postDetail := &response.PostDetailResponse{
 			AuthorName: authorName,
-			Community:  community,
 			Post:       post,
 			VoteNum:    voteData[idx], // 填充投票数
 		}
