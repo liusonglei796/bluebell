@@ -155,7 +155,8 @@ func CreatePost(postID, communityID int64) error {
 // 返回: 赞成票数, 反对票数, error
 func GetPostVoteData(postID string) (upVotes, downVotes int64, err error) {
 	// 获取所有对该帖子投过票的用户及其投票值
-	// 使用 ZRangeArgsWithScores 统一查询风格
+	// 注意: 这里必须使用 ZRangeArgsWithScores 而不是 ZRangeArgs
+	// 因为我们需要 Score 来判断是赞成(1)还是反对(-1)
 	data, err := rdb.ZRangeArgsWithScores(ctx, redis.ZRangeArgs{
 		Key:   getRedisKey(KeyPostVotedZSetPrefix + postID),
 		Start: 0,
