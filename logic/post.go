@@ -8,12 +8,13 @@ import (
 	"bluebell/models"
 	"bluebell/pkg/errorx"
 	"bluebell/pkg/snowflake"
+	"context"
 
 	"go.uber.org/zap"
 )
 
 // CreatePost 创建帖子,返回新创建的帖子ID
-func CreatePost(p *request.CreatePostRequest) (postID int64, err error) {
+func CreatePost(ctx context.Context, p *request.CreatePostRequest) (postID int64, err error) {
 	// 1. 生成帖子ID
 	postID = snowflake.GenID()
 
@@ -39,7 +40,7 @@ func CreatePost(p *request.CreatePostRequest) (postID int64, err error) {
 
 	// 4. 同步到 Redis (用于排序和投票功能)
 	// 初始化帖子的时间排序和分数排序
-	err = redis.CreatePost(postID, p.CommunityID)
+	err = redis.CreatePost(ctx, postID, p.CommunityID)
 	if err != nil {
 		// Redis 写入失败不影响主流程,记录日志即可
 		zap.L().Error("redis.CreatePost failed",
@@ -100,9 +101,9 @@ func GetPostByID(pid int64) (data *response.PostDetailResponse, err error) {
 
 // GetPostList 从 Redis 获取排序后的 ID，再从 MySQL 查询详情，最后组装投票数据
 // 优化版：使用 GORM Preload 预加载，从 1+N+N 次查询优化为 3 次查询
-func GetPostList(p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
+func GetPostList(ctx context.Context, p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
 	// 1. 从 Redis 查询帖子 ID 列表（已按时间或分数排序）
-	ids, err := redis.GetPostIDsInOrder(p.Order, p.Page, p.Size)
+	ids, err := redis.GetPostIDsInOrder(ctx, p.Order, p.Page, p.Size)
 	if err != nil {
 		zap.L().Error("redis.GetPostIDsInOrder failed",
 			zap.String("order", p.Order),
@@ -132,7 +133,7 @@ func GetPostList(p *request.PostListRequest) (data []*response.PostDetailRespons
 	zap.L().Debug("GetPostListByIDsWithPreload", zap.Any("posts", posts))
 
 	// 4. 使用 Pipeline 批量查询每个帖子的投票数据
-	voteData, err := redis.GetPostsVoteData(ids)
+	voteData, err := redis.GetPostsVoteData(ctx, ids)
 	if err != nil {
 		zap.L().Error("redis.GetPostsVoteData failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
@@ -164,9 +165,9 @@ func GetPostList(p *request.PostListRequest) (data []*response.PostDetailRespons
 
 // GetCommunityPostList 根据社区ID获取帖子列表
 // 优化版：使用 GORM Preload 预加载，解决 N+1 问题
-func GetCommunityPostList(p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
+func GetCommunityPostList(ctx context.Context, p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
 	// 1. 从 Redis 查询指定社区的帖子 ID 列表 (已按时间或分数排序)
-	ids, err := redis.GetCommunityPostIDsInOrder(p.CommunityID, p.Order, p.Page, p.Size)
+	ids, err := redis.GetCommunityPostIDsInOrder(ctx, p.CommunityID, p.Order, p.Page, p.Size)
 	if err != nil {
 		zap.L().Error("redis.GetCommunityPostIDsInOrder failed",
 			zap.Int64("community_id", p.CommunityID),
@@ -194,7 +195,7 @@ func GetCommunityPostList(p *request.PostListRequest) (data []*response.PostDeta
 	}
 
 	// 4. 使用 Pipeline 批量查询每个帖子的投票数据
-	voteData, err := redis.GetPostsVoteData(ids)
+	voteData, err := redis.GetPostsVoteData(ctx, ids)
 	if err != nil {
 		zap.L().Error("redis.GetPostsVoteData failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy

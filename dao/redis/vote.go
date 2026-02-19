@@ -1,6 +1,7 @@
 package redis
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math"
@@ -28,6 +29,7 @@ var (
 // VoteForPost 为帖子投票
 // 参数:
 //
+//	ctx: 请求上下文，支持超时取消
 //	userID: 投票用户ID (字符串格式)
 //	postID: 目标帖子ID (字符串格式)
 //	communityID: 帖子所属社区ID (字符串格式)
@@ -37,7 +39,7 @@ var (
 //
 //	利用新旧投票值的差值,计算帖子分数的变化量
 //	例如: 从赞成(1)改为反对(-1), 差值为2, 分数变化为 -2*432 = -864
-func VoteForPost(userID, postID, communityID string, value float64) error {
+func VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error {
 	// 1. 判断投票时间限制
 	// 从 Redis 的 ZSet 中获取帖子的发布时间戳
 	postTime := rdb.ZScore(ctx, getRedisKey(KeyPostTimeZSet), postID).Val()
@@ -107,7 +109,7 @@ func VoteForPost(userID, postID, communityID string, value float64) error {
 
 // CreatePost 创建帖子时初始化 Redis 数据
 // 在发帖时调用,设置帖子的初始分数和发布时间
-func CreatePost(postID, communityID int64) error {
+func CreatePost(ctx context.Context, postID, communityID int64) error {
 	pipeline := rdb.TxPipeline()
 
 	timestamp := float64(time.Now().Unix())
@@ -153,7 +155,7 @@ func CreatePost(postID, communityID int64) error {
 
 // GetPostVoteData 获取帖子的投票数据
 // 返回: 赞成票数, 反对票数, error
-func GetPostVoteData(postID string) (upVotes, downVotes int64, err error) {
+func GetPostVoteData(ctx context.Context, postID string) (upVotes, downVotes int64, err error) {
 	// 获取所有对该帖子投过票的用户及其投票值
 	// 注意: 这里必须使用 ZRangeArgsWithScores 而不是 ZRangeArgs
 	// 因为我们需要 Score 来判断是赞成(1)还是反对(-1)
@@ -182,7 +184,7 @@ func GetPostVoteData(postID string) (upVotes, downVotes int64, err error) {
 // 使用 Redis Pipeline 提高性能
 // 参数: ids - 帖子ID列表（字符串格式）
 // 返回: []int64 - 每个帖子的赞成票数，顺序与 ids 一致
-func GetPostsVoteData(ids []string) (data []int64, err error) {
+func GetPostsVoteData(ctx context.Context, ids []string) (data []int64, err error) {
 	// 使用 Pipeline 减少 RTT (Round Trip Time)
 	pipeline := rdb.Pipeline()
 
@@ -214,7 +216,7 @@ func GetPostsVoteData(ids []string) (data []int64, err error) {
 // orderKey: "time" 或 "score"
 // page: 页码(从1开始)
 // size: 每页数量
-func GetCommunityPostIDsInOrder(communityID int64, orderKey string, page, size int64) ([]string, error) {
+func GetCommunityPostIDsInOrder(ctx context.Context, communityID int64, orderKey string, page, size int64) ([]string, error) {
 	// 1. 确定查询的 Redis Key
 	// 根据 orderKey 选择不同的 ZSet
 	keyPrefix := KeyCommunityPostTimePrefix
@@ -248,7 +250,7 @@ func GetCommunityPostIDsInOrder(communityID int64, orderKey string, page, size i
 // orderKey: "time" 或 "score"
 // page: 页码(从1开始)
 // size: 每页数量
-func GetPostIDsInOrder(orderKey string, page, size int64) ([]string, error) {
+func GetPostIDsInOrder(ctx context.Context, orderKey string, page, size int64) ([]string, error) {
 	// 1. 确定查询的 Redis Key
 	key := getRedisKey(KeyPostTimeZSet)
 	if orderKey == "score" {
@@ -273,7 +275,7 @@ func GetPostIDsInOrder(orderKey string, page, size int64) ([]string, error) {
 }
 
 // GetPostScore 获取帖子的当前分数
-func GetPostScore(postID string) (float64, error) {
+func GetPostScore(ctx context.Context, postID string) (float64, error) {
 	score, err := rdb.ZScore(ctx, getRedisKey(KeyPostScoreZSet), postID).Result()
 	if err != nil {
 		return 0, fmt.Errorf("get post score failed (post_id: %s): %w", postID, err)
@@ -283,7 +285,7 @@ func GetPostScore(postID string) (float64, error) {
 
 // GetPostVoteStatus 获取用户对某个帖子的投票状态
 // 返回: 1(赞成), -1(反对), 0(未投票或取消投票)
-func GetPostVoteStatus(userID, postID string) (int8, error) {
+func GetPostVoteStatus(ctx context.Context, userID, postID string) (int8, error) {
 	score, err := rdb.ZScore(ctx, getRedisKey(KeyPostVotedZSetPrefix+postID), userID).Result()
 	if err != nil {
 		// 如果 Redis 返回 Nil, 说明用户没有投票记录
@@ -298,7 +300,7 @@ func GetPostVoteStatus(userID, postID string) (int8, error) {
 }
 
 // BatchGetPostVoteStatus 批量获取用户对多个帖子的投票状态
-func BatchGetPostVoteStatus(userID string, postIDs []string) (map[string]int8, error) {
+func BatchGetPostVoteStatus(ctx context.Context, userID string, postIDs []string) (map[string]int8, error) {
 	// 使用 Pipeline 提高性能
 	pipeline := rdb.Pipeline()
 

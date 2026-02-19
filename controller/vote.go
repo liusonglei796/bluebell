@@ -34,7 +34,7 @@ func PostVoteHandler(c *gin.Context) {
 	}
 
 	// 3. 具体投票业务逻辑
-	if err := logic.VoteForPost(userID.(int64), p); err != nil {
+	if err := logic.VoteForPost(c.Request.Context(), userID.(int64), p); err != nil {
 		HandleError(c, err)
 		return
 	}

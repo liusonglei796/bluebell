@@ -13,10 +13,7 @@ import (
 
 // 定义全局的 Redis 客户端
 // 为什么：redis.Client 是线程安全的，整个应用共享一个连接池即可
-var (
-	rdb *redis.Client
-	ctx = context.Background() // 全局上下文,用于 Redis 操作
-)
+var rdb *redis.Client
 
 // Init 初始化 Redis 连接
 // 为什么:建立 Redis 连接池,确保应用启动时缓存服务可用

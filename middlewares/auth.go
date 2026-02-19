@@ -139,7 +139,7 @@ func validateTokenWithRedis(c *gin.Context, userID int64, token string) bool {
 	}
 
 	// 缓存未命中，查询 Redis
-	redisToken, err := redis.GetUserAccessToken(userID)
+	redisToken, err := redis.GetUserAccessToken(c.Request.Context(), userID)
 	if err != nil {
 		controller.ResponseError(c, errorx.ErrNeedLogin)
 		c.Abort()
@@ -167,7 +167,7 @@ func validateTokenWithFallback(c *gin.Context, userID int64, token string) {
 	}
 
 	// 缓存未命中，查询 Redis
-	redisToken, err := redis.GetUserAccessToken(userID)
+	redisToken, err := redis.GetUserAccessToken(c.Request.Context(), userID)
 	if err != nil {
 		// Redis 查询失败，降级处理：仅依赖 JWT 本身的有效性
 		zap.L().Warn("Redis Token 校验失败，启用降级模式",

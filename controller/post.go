@@ -39,7 +39,7 @@ func CreatePostHandler(c *gin.Context) {
 	p.AuthorID = userID.(int64)
 
 	// 3. 调用业务逻辑创建帖子
-	if _, err := logic.CreatePost(p); err != nil {
+	if _, err := logic.CreatePost(c.Request.Context(), p); err != nil {
 		HandleError(c, err)
 		return
 	}
@@ -113,10 +113,10 @@ func GetPostListHandler(c *gin.Context) {
 
 	if p.CommunityID == 0 {
 		// 查询所有帖子
-		data, err = logic.GetPostList(p)
+		data, err = logic.GetPostList(c.Request.Context(), p)
 	} else {
 		// 按社区查询帖子
-		data, err = logic.GetCommunityPostList(p)
+		data, err = logic.GetCommunityPostList(c.Request.Context(), p)
 	}
 
 	if err != nil {

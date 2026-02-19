@@ -8,6 +8,7 @@ import (
 	"bluebell/pkg/errorx"
 	"bluebell/pkg/jwt"
 	"bluebell/pkg/snowflake"
+	"context"
 	"errors"
 
 	"go.uber.org/zap"
@@ -61,7 +62,7 @@ func SignUp(p *request.SignUpRequest) (err error) {
 // error 类型说明：
 //   - *errorx.CodeError: 业务错误（密码错误、用户不存在）
 //   - 系统错误: DB/Redis 错误，Controller 会自动转换为 CodeServerBusy
-func Login(p *request.LoginRequest) (string, string, error) {
+func Login(ctx context.Context, p *request.LoginRequest) (string, string, error) {
 	user := &models.User{
 		Username: p.Username,
 		Password: p.Password,
@@ -100,7 +101,7 @@ func Login(p *request.LoginRequest) (string, string, error) {
 	}
 
 	// 3. 将 Token 存入 Redis，实现单点登录
-	err = redis.SetUserToken(user.UserID, aToken, rToken, jwt.AccessTokenExpireDuration, jwt.RefreshTokenExpireDuration)
+	err = redis.SetUserToken(ctx, user.UserID, aToken, rToken, jwt.AccessTokenExpireDuration, jwt.RefreshTokenExpireDuration)
 	if err != nil {
 		// Redis 存储失败属于系统错误
 		zap.L().Error("redis.SetUserToken failed",
@@ -114,7 +115,7 @@ func Login(p *request.LoginRequest) (string, string, error) {
 }
 
 // RefreshToken 刷新 Token
-func RefreshToken(aToken, rToken string) (newAToken, newRToken string, err error) {
+func RefreshToken(ctx context.Context, aToken, rToken string) (newAToken, newRToken string, err error) {
 	// 1. 验证 RefreshToken 并获取最新的用户信息
 	// ValidateRefreshToken 内部已经查询了数据库，确保用户存在且未被封禁
 	user, err := jwt.ValidateRefreshToken(rToken)
@@ -134,7 +135,7 @@ func RefreshToken(aToken, rToken string) (newAToken, newRToken string, err error
 	}
 
 	// 4. 更新 Redis 中的 Token
-	err = redis.SetUserToken(user.UserID, newAToken, newRToken, jwt.AccessTokenExpireDuration, jwt.RefreshTokenExpireDuration)
+	err = redis.SetUserToken(ctx, user.UserID, newAToken, newRToken, jwt.AccessTokenExpireDuration, jwt.RefreshTokenExpireDuration)
 	if err != nil {
 		// 系统错误: Redis 操作失败
 		zap.L().Error("redis.SetUserToken failed",

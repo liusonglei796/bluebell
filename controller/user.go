@@ -73,7 +73,7 @@ func LoginHandler(c *gin.Context) {
 	}
 
 	// 2. 业务处理
-	aToken, rToken, err := logic.Login(&p)
+	aToken, rToken, err := logic.Login(c.Request.Context(), &p)
 	if err != nil {
 		// 3. 错误处理：统一使用 HandleError 处理
 		// HandleError 内部会自动识别 errorx.CodeError 并返回对应的错误码
@@ -108,7 +108,7 @@ func RefreshTokenHandler(c *gin.Context) {
 	}
 	aToken := parts[1]
 
-	newAToken, newRToken, err := logic.RefreshToken(aToken, rt)
+	newAToken, newRToken, err := logic.RefreshToken(c.Request.Context(), aToken, rt)
 	if err != nil {
 		// 使用 HandleError 处理错误（会自动记录日志）
 		HandleError(c, err)
