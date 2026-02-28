@@ -8,12 +8,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// CommunityService 社区业务逻辑服务
+type CommunityService struct {
+	communityRepo CommunityRepository
+}
+
+// NewCommunityService 创建社区服务实例
+func NewCommunityService(communityRepo CommunityRepository) *CommunityService {
+	return &CommunityService{communityRepo: communityRepo}
+}
+
 // GetCommunityList 获取社区列表
-func GetCommunityList(ctx context.Context) ([]*models.Community, error) {
-	// 调用 DAO 层的方法
-	data, err := communityRepo.GetCommunityList(ctx)
+func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*models.Community, error) {
+	data, err := s.communityRepo.GetCommunityList(ctx)
 	if err != nil {
-		// 数据库错误：记录日志并返回系统错误
 		zap.L().Error("communityRepo.GetCommunityList failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
@@ -21,21 +29,16 @@ func GetCommunityList(ctx context.Context) ([]*models.Community, error) {
 }
 
 // GetCommunityDetail 根据ID获取社区详情
-func GetCommunityDetail(ctx context.Context, id int64) (*models.Community, error) {
-	// 调用 DAO 层查询数据库
-	data, err := communityRepo.GetCommunityDetailByID(ctx, id)
+func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*models.Community, error) {
+	data, err := s.communityRepo.GetCommunityDetailByID(ctx, id)
 	if err != nil {
-		// 数据库错误：记录日志并返回系统错误
 		zap.L().Error("communityRepo.GetCommunityDetailByID failed",
 			zap.Int64("community_id", id),
-			zap.Error(err),
-		)
+			zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
 
-	// DAO 层返回 nil 表示未找到数据（参见 community.go:48）
 	if data == nil {
-		// 业务错误：社区不存在
 		return nil, errorx.ErrNotFound
 	}
 

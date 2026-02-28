@@ -1,13 +1,22 @@
 package controller
 
 import (
-	"strconv"
-
 	"bluebell/logic"
 	"bluebell/pkg/errorx"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
+
+// CommunityController 社区控制器
+type CommunityController struct {
+	communityService *logic.CommunityService
+}
+
+// NewCommunityController 创建社区控制器实例
+func NewCommunityController(communityService *logic.CommunityService) *CommunityController {
+	return &CommunityController{communityService: communityService}
+}
 
 // CommunityHandler 获取社区列表
 // @Summary 获取社区列表
@@ -19,20 +28,17 @@ import (
 // @Success 200 {object} ResponseData{data=[]models.Community}
 // @Router /community [get]
 // @Security ApiKeyAuth
-func CommunityHandler(c *gin.Context) {
-	// 1. 查询所有的社区 (community_id, community_name) 以列表的形式返回
-	data, err := logic.GetCommunityList(c.Request.Context())
+func (cc *CommunityController) CommunityHandler(c *gin.Context) {
+	data, err := cc.communityService.GetCommunityList(c.Request.Context())
 	if err != nil {
-		// 使用新的 HandleError 统一处理错误
 		HandleError(c, err)
 		return
 	}
 
-	// 2. 返回成功响应
 	ResponseSuccess(c, data)
 }
 
-// CommunityHandler 获取社区详情
+// CommunityHandlerByID 获取社区详情
 // @Summary 获取社区详情
 // @Description 根据社区ID获取社区的详细信息
 // @Tags 社区相关
@@ -45,27 +51,19 @@ func CommunityHandler(c *gin.Context) {
 // @Failure 500 {object} ResponseData
 // @Router /community/{id} [get]
 // @Security ApiKeyAuth
-func CommunityHandlerByID(c *gin.Context) {
-	// 1. 获取路径参数 (community_id)
+func (cc *CommunityController) CommunityHandlerByID(c *gin.Context) {
 	idStr := c.Param("id")
-
-	// 2. 参数类型转换 (String -> Int64)
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		// 如果转换失败，说明前端传来的不是数字，返回参数错误
 		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
-	// 3. 调用 Logic 层获取详情
-	data, err := logic.GetCommunityDetail(c.Request.Context(), id)
+	data, err := cc.communityService.GetCommunityDetail(c.Request.Context(), id)
 	if err != nil {
-		// 使用新的 HandleError 统一处理错误
-		// Logic 层已经区分了业务错误(ErrNotFound)和系统错误(ErrServerBusy)
 		HandleError(c, err)
 		return
 	}
 
-	// 4. 返回成功响应
 	ResponseSuccess(c, data)
 }

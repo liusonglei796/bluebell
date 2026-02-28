@@ -10,6 +10,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// PostController 帖子控制器
+type PostController struct {
+	postService *logic.PostService
+}
+
+// NewPostController 创建帖子控制器实例
+func NewPostController(postService *logic.PostService) *PostController {
+	return &PostController{postService: postService}
+}
+
 // CreatePostHandler 创建帖子
 // @Summary 创建帖子
 // @Description 创建帖子接口
@@ -20,31 +30,25 @@ import (
 // @Param object body request.CreatePostRequest true "创建帖子参数"
 // @Success 200 {object} ResponseData
 // @Router /post [post]
-func CreatePostHandler(c *gin.Context) {
-	// 1. 获取参数 (从gin.Context中取到当前发请求的userID)
-	// c.Get(key) 从上下文中取值，其中用到的key应该是常量，不应该是字符串，避免出错
+func (pc *PostController) CreatePostHandler(c *gin.Context) {
 	userID, exist := c.Get(CtxUserIDKey)
 	if !exist {
 		HandleError(c, errorx.ErrNeedLogin)
 		return
 	}
 
-	// 2. bind数据
 	p := new(request.CreatePostRequest)
 	if err := c.ShouldBindJSON(p); err != nil {
 		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
-	// 3. 将AuthorID填充到参数中
 	p.AuthorID = userID.(int64)
 
-	// 3. 调用业务逻辑创建帖子
-	if _, err := logic.CreatePost(c.Request.Context(), p); err != nil {
+	if _, err := pc.postService.CreatePost(c.Request.Context(), p); err != nil {
 		HandleError(c, err)
 		return
 	}
 
-	// 4. 返回响应
 	ResponseSuccess(c, nil)
 }
 
@@ -58,25 +62,20 @@ func CreatePostHandler(c *gin.Context) {
 // @Param id path string true "帖子ID"
 // @Success 200 {object} ResponseData{data=response.PostDetailResponse}
 // @Router /post/{id} [get]
-func GetPostDetailHandler(c *gin.Context) {
-	// 1. 获取参数 (从URL中获取帖子id)
+func (pc *PostController) GetPostDetailHandler(c *gin.Context) {
 	postIDStr := c.Param("id")
-
-	// 2. 字符串转int64
 	postID, err := stringToInt64(postIDStr)
 	if err != nil {
 		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
-	// 3. 根据id取出帖子详情
-	data, err := logic.GetPostByID(c.Request.Context(), postID)
+	data, err := pc.postService.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		HandleError(c, err)
 		return
 	}
 
-	// 4. 返回响应
 	ResponseSuccess(c, data)
 }
 
@@ -93,12 +92,11 @@ func GetPostDetailHandler(c *gin.Context) {
 // @Param community_id query int false "社区ID，0表示所有社区"
 // @Success 200 {object} ResponseData{data=[]response.PostDetailResponse}
 // @Router /posts [get]
-func GetPostListHandler(c *gin.Context) {
-	// 1. 获取并校验参数
+func (pc *PostController) GetPostListHandler(c *gin.Context) {
 	p := &request.PostListRequest{
 		Page:  1,
 		Size:  10,
-		Order: request.OrderTime, // 默认按时间排序
+		Order: request.OrderTime,
 	}
 
 	if err := c.ShouldBindQuery(p); err != nil {
@@ -107,16 +105,13 @@ func GetPostListHandler(c *gin.Context) {
 		return
 	}
 
-	// 2. 调度逻辑：根据 CommunityID 是否为 0，决定业务逻辑
 	var data []*response.PostDetailResponse
 	var err error
 
 	if p.CommunityID == 0 {
-		// 查询所有帖子
-		data, err = logic.GetPostList(c.Request.Context(), p)
+		data, err = pc.postService.GetPostList(c.Request.Context(), p)
 	} else {
-		// 按社区查询帖子
-		data, err = logic.GetCommunityPostList(c.Request.Context(), p)
+		data, err = pc.postService.GetCommunityPostList(c.Request.Context(), p)
 	}
 
 	if err != nil {
@@ -124,7 +119,6 @@ func GetPostListHandler(c *gin.Context) {
 		return
 	}
 
-	// 3. 返回响应
 	ResponseSuccess(c, data)
 }
 
@@ -138,15 +132,13 @@ func GetPostListHandler(c *gin.Context) {
 // @Param id path string true "帖子ID"
 // @Success 200 {object} ResponseData
 // @Router /post/{id} [delete]
-func DeletePostHandler(c *gin.Context) {
-	// 1. 获取当前用户ID
+func (pc *PostController) DeletePostHandler(c *gin.Context) {
 	userID, exist := c.Get(CtxUserIDKey)
 	if !exist {
 		HandleError(c, errorx.ErrNeedLogin)
 		return
 	}
 
-	// 2. 获取帖子ID
 	postIDStr := c.Param("id")
 	postID, err := stringToInt64(postIDStr)
 	if err != nil {
@@ -154,12 +146,10 @@ func DeletePostHandler(c *gin.Context) {
 		return
 	}
 
-	// 3. 调用逻辑层删除帖子
-	if err := logic.DeletePost(c.Request.Context(), postID, userID.(int64)); err != nil {
+	if err := pc.postService.DeletePost(c.Request.Context(), postID, userID.(int64)); err != nil {
 		HandleError(c, err)
 		return
 	}
 
-	// 4. 返回响应
 	ResponseSuccess(c, nil)
 }

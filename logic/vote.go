@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
 	"bluebell/dto/request"
 	"bluebell/pkg/errorx"
@@ -12,62 +11,50 @@ import (
 	"go.uber.org/zap"
 )
 
+// VoteService 投票业务逻辑服务
+type VoteService struct {
+	postRepo PostRepository
+}
+
+// NewVoteService 创建投票服务实例
+func NewVoteService(postRepo PostRepository) *VoteService {
+	return &VoteService{postRepo: postRepo}
+}
+
 // VoteForPost 投票业务逻辑
-// 参数:
-//
-//	ctx: 请求上下文，支持超时取消
-//	userID: 投票用户ID
-//	p: 投票参数(包含帖子ID和投票方向)
-//
-// 业务规则:
-//  1. 检查帖子发布时间,超过一周不允许投票
-//  2. 根据用户之前的投票状态和当前操作,计算分数变化
-//  3. 更新 Redis 中的帖子分数和用户投票记录
-func VoteForPost(ctx context.Context, userID int64, p *request.VoteRequest) error {
-	// 记录投票操作日志
+func (s *VoteService) VoteForPost(ctx context.Context, userID int64, p *request.VoteRequest) error {
 	zap.L().Debug("VoteForPost",
 		zap.Int64("userID", userID),
 		zap.Int64("postID", p.PostID),
 		zap.Int8("direction", p.Direction))
 
-	// 1. 先查询帖子获取社区ID
-	// 投票时需要同时更新社区维度的分数ZSet
-	post, err := mysql.GetPostByID(ctx, p.PostID)
+	post, err := s.postRepo.GetPostByID(ctx, p.PostID)
 	if err != nil {
-		zap.L().Error("mysql.GetPostByID failed",
+		zap.L().Error("postRepo.GetPostByID failed",
 			zap.Int64("post_id", p.PostID),
 			zap.Error(err))
 		return errorx.ErrServerBusy
 	}
 	if post == nil {
-		// 业务错误：帖子不存在
 		return errorx.ErrNotFound
 	}
 
-	// 2. 调用 Redis 层执行投票逻辑
-	// 将 int64 类型的 ID 转换为 string (Redis 中统一使用 string)
-	// 将 int8 类型的 direction 转换为 float64 (Redis ZSet 的 score 是 float64)
 	err = redis.VoteForPost(
 		ctx,
 		strconv.FormatInt(userID, 10),
 		strconv.FormatInt(p.PostID, 10),
-		strconv.FormatInt(post.CommunityID, 10), // 传递社区ID
+		strconv.FormatInt(post.CommunityID, 10),
 		float64(p.Direction),
 	)
 
-	// 3. 区分业务错误和系统错误
 	if err != nil {
-		// 3.1 业务错误: 投票时间已过
 		if errors.Is(err, redis.ErrVoteTimeExpire) {
 			return errorx.ErrVoteTimeExpire
 		}
-
-		// 3.2 业务错误: 重复投票
 		if errors.Is(err, redis.ErrVoteRepeated) {
 			return errorx.ErrVoteRepeated
 		}
 
-		// 3.3 系统错误: Redis 操作失败
 		zap.L().Error("redis.VoteForPost failed",
 			zap.Int64("user_id", userID),
 			zap.Int64("post_id", p.PostID),

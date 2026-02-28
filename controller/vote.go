@@ -8,6 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// VoteController 投票控制器
+type VoteController struct {
+	voteService *logic.VoteService
+}
+
+// NewVoteController 创建投票控制器实例
+func NewVoteController(voteService *logic.VoteService) *VoteController {
+	return &VoteController{voteService: voteService}
+}
+
 // PostVoteHandler 帖子投票
 // @Summary 帖子投票
 // @Description 为帖子投票，不允许重复投票
@@ -18,27 +28,23 @@ import (
 // @Param object body request.VoteRequest true "投票参数"
 // @Success 200 {object} ResponseData
 // @Router /vote [post]
-func PostVoteHandler(c *gin.Context) {
-	// 1. 参数校验
+func (vc *VoteController) PostVoteHandler(c *gin.Context) {
 	p := new(request.VoteRequest)
 	if err := c.ShouldBindJSON(p); err != nil {
 		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
-	// 2. 获取当前请求的用户ID
 	userID, exist := c.Get(CtxUserIDKey)
 	if !exist {
 		HandleError(c, errorx.ErrNeedLogin)
 		return
 	}
 
-	// 3. 具体投票业务逻辑
-	if err := logic.VoteForPost(c.Request.Context(), userID.(int64), p); err != nil {
+	if err := vc.voteService.VoteForPost(c.Request.Context(), userID.(int64), p); err != nil {
 		HandleError(c, err)
 		return
 	}
 
-	// 4. 返回响应
 	ResponseSuccess(c, nil)
 }
