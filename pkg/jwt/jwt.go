@@ -3,6 +3,7 @@ package jwt
 import (
 	"bluebell/dao/mysql"
 	"bluebell/models"
+	"context"
 	"errors"
 	"strconv"
 	"time"
@@ -68,7 +69,7 @@ func ParseToken(tokenString string) (*UserClaims, error) {
 }
 
 // ValidateRefreshToken 验证刷新令牌，并返回用户信息
-func ValidateRefreshToken(rTokenString string) (user *models.User, err error) {
+func ValidateRefreshToken(ctx context.Context, rTokenString string) (user *models.User, err error) {
 	claims := new(jwt.RegisteredClaims)
 	token, err := jwt.ParseWithClaims(rTokenString, claims, func(t *jwt.Token) (interface{}, error) {
 		return MySecret, nil
@@ -83,12 +84,12 @@ func ValidateRefreshToken(rTokenString string) (user *models.User, err error) {
 	if err != nil {
 		return user, errors.New("token数据异常")
 	}
-	
+
 	// 调用刚才写的查询函数
-	user, err = mysql.GetUserByID(bizUserID)
+	user, err = mysql.GetUserByID(ctx, bizUserID)
 	if err != nil {
 		return user, errors.New("用户不存在")
 	}
-	
+
 	return user, nil
 }

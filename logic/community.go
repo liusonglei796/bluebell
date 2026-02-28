@@ -1,32 +1,32 @@
 package logic
 
 import (
-	"bluebell/dao/mysql"
 	"bluebell/models"
 	"bluebell/pkg/errorx"
+	"context"
 
 	"go.uber.org/zap"
 )
 
 // GetCommunityList 获取社区列表
-func GetCommunityList() ([]*models.Community, error) {
+func GetCommunityList(ctx context.Context) ([]*models.Community, error) {
 	// 调用 DAO 层的方法
-	data, err := mysql.GetCommunityList()
+	data, err := communityRepo.GetCommunityList(ctx)
 	if err != nil {
 		// 数据库错误：记录日志并返回系统错误
-		zap.L().Error("mysql.GetCommunityList failed", zap.Error(err))
+		zap.L().Error("communityRepo.GetCommunityList failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
 	return data, nil
 }
 
 // GetCommunityDetail 根据ID获取社区详情
-func GetCommunityDetail(id int64) (*models.Community, error) {
+func GetCommunityDetail(ctx context.Context, id int64) (*models.Community, error) {
 	// 调用 DAO 层查询数据库
-	data, err := mysql.GetCommunityDetailByID(id)
+	data, err := communityRepo.GetCommunityDetailByID(ctx, id)
 	if err != nil {
 		// 数据库错误：记录日志并返回系统错误
-		zap.L().Error("mysql.GetCommunityDetailByID failed",
+		zap.L().Error("communityRepo.GetCommunityDetailByID failed",
 			zap.Int64("community_id", id),
 			zap.Error(err),
 		)

@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"bluebell/models"
+	"context"
 	"errors"
 	"fmt"
 
@@ -18,10 +19,10 @@ var (
 )
 
 // CheckUserExist 检查指定用户名的用户是否存在
-func CheckUserExist(username string) (err error) {
+func CheckUserExist(ctx context.Context, username string) (err error) {
 	var count int64
 	// GORM 使用 Count 方法统计记录数
-	err = db.Model(&models.User{}).Where("username = ?", username).Count(&count).Error
+	err = db.WithContext(ctx).Model(&models.User{}).Where("username = ?", username).Count(&count).Error
 	if err != nil {
 		return err
 	}
@@ -33,9 +34,9 @@ func CheckUserExist(username string) (err error) {
 
 // InsertUser 插入新用户
 // 密码加密已移至 Model 的 BeforeCreate 钩子中自动处理
-func InsertUser(user *models.User) (err error) {
+func InsertUser(ctx context.Context, user *models.User) (err error) {
 	// 直接创建，GORM 会自动触发 BeforeCreate 进行加密
-	err = db.Create(user).Error
+	err = db.WithContext(ctx).Create(user).Error
 	if err != nil {
 		return fmt.Errorf("插入用户失败: %w", err)
 	}
@@ -43,13 +44,13 @@ func InsertUser(user *models.User) (err error) {
 }
 
 // CheckLogin 登录验证
-func CheckLogin(user *models.User) (err error) {
+func CheckLogin(ctx context.Context, user *models.User) (err error) {
 	// 记录用户输入的原始密码（明文）
 	oPassword := user.Password
 
 	// 使用 GORM 查询用户
 	// Where 条件查询，First 查询单条记录
-	err = db.Where("username = ?", user.Username).First(user).Error
+	err = db.WithContext(ctx).Where("username = ?", user.Username).First(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			// 为什么：区分"查询出错"和"查不到数据"
@@ -75,11 +76,11 @@ func verifyPassword(hashedPassword, password string) error {
 
 // GetUserByID 根据用户ID查询用户信息
 // DAO层只返回错误，不打印日志，由上层统一处理
-func GetUserByID(uid int64) (*models.User, error) {
+func GetUserByID(ctx context.Context, uid int64) (*models.User, error) {
 	user := &models.User{}
 
 	// GORM 使用 First 查询单条记录
-	err := db.Where("user_id = ?", uid).First(user).Error
+	err := db.WithContext(ctx).Where("user_id = ?", uid).First(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil // 查不到数据返回nil，不是错误
@@ -90,7 +91,7 @@ func GetUserByID(uid int64) (*models.User, error) {
 }
 
 // GetUsersByIDs 根据用户ID列表批量获取用户信息
-func GetUsersByIDs(ids []int64) (users []*models.User, err error) {
+func GetUsersByIDs(ctx context.Context, ids []int64) (users []*models.User, err error) {
 	if len(ids) == 0 {
 		return make([]*models.User, 0), nil
 	}
@@ -98,7 +99,7 @@ func GetUsersByIDs(ids []int64) (users []*models.User, err error) {
 	// GORM 使用 Where IN 查询
 	// Find 方法会自动查询多条记录
 	users = make([]*models.User, 0, len(ids))
-	err = db.Where("user_id IN ?", ids).Find(&users).Error
+	err = db.WithContext(ctx).Where("user_id IN ?", ids).Find(&users).Error
 	if err != nil {
 		return nil, fmt.Errorf("query users by ids failed: %w", err)
 	}

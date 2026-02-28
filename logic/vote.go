@@ -32,7 +32,7 @@ func VoteForPost(ctx context.Context, userID int64, p *request.VoteRequest) erro
 
 	// 1. 先查询帖子获取社区ID
 	// 投票时需要同时更新社区维度的分数ZSet
-	post, err := mysql.GetPostByID(p.PostID)
+	post, err := mysql.GetPostByID(ctx, p.PostID)
 	if err != nil {
 		zap.L().Error("mysql.GetPostByID failed",
 			zap.Int64("post_id", p.PostID),

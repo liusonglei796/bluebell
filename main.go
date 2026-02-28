@@ -6,6 +6,7 @@ import (
 	"bluebell/dao/redis"
 	_ "bluebell/docs" // 导入生成的 Swagger 文档包
 	"bluebell/logger"
+	"bluebell/logic"
 	"bluebell/pkg/snowflake"
 	"bluebell/routers"
 	"bluebell/settings"
@@ -91,6 +92,14 @@ func main() {
 	if err := controller.InitTrans("zh"); err != nil {
 		zap.L().Fatal("init validator trans failed", zap.Error(err))
 	}
+
+	// 初始化 Logic 层依赖
+	// 在真实的复杂项目中，这部分可以使用 google/wire 等依赖注入框架自动生成
+	logic.SetRepositories(
+		&mysql.PostRepositoryImpl{},
+		&mysql.CommunityRepositoryImpl{},
+		&mysql.UserRepositoryImpl{},
+	)
 
 	// 5. 注册路由
 	// 为什么：将 HTTP 请求路径映射到具体的处理函数

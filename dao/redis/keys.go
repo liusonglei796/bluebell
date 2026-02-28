@@ -10,7 +10,7 @@ const (
 
 	// 社区维度的帖子排序 Key
 	// bluebell:community:post:time:{communityID} - 特定社区的帖子按时间排序
-	KeyCommunityPostTimePrefix  = "community:post:time:"
+	KeyCommunityPostTimePrefix = "community:post:time:"
 	// bluebell:community:post:score:{communityID} - 特定社区的帖子按分数排序
 	KeyCommunityPostScorePrefix = "community:post:score:"
 )

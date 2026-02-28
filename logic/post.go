@@ -1,7 +1,6 @@
 package logic
 
 import (
-	"bluebell/dao/mysql"
 	"bluebell/dao/redis"
 	"bluebell/dto/request"
 	"bluebell/dto/response"
@@ -29,10 +28,10 @@ func CreatePost(ctx context.Context, p *request.CreatePostRequest) (postID int64
 	}
 
 	// 3. 保存到数据库
-	err = mysql.CreatePost(post)
+	err = postRepo.CreatePost(ctx, post)
 	if err != nil {
 		// 系统错误：记录日志并返回通用错误
-		zap.L().Error("mysql.CreatePost failed",
+		zap.L().Error("postRepo.CreatePost failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
 		return 0, errorx.ErrServerBusy
@@ -54,16 +53,16 @@ func CreatePost(ctx context.Context, p *request.CreatePostRequest) (postID int64
 
 // GetPostByID 查询单个帖子详情
 // 优化版：使用 GORM Preload 预加载，从 3 次查询优化为 3 次查询（保持不变但代码更简洁）
-func GetPostByID(pid int64) (data *response.PostDetailResponse, err error) {
+func GetPostByID(ctx context.Context, pid int64) (data *response.PostDetailResponse, err error) {
 	// 1. 使用 Preload 查询帖子及其关联的作者和社区信息
 	// Preload 会自动执行:
 	//   - SELECT * FROM post WHERE post_id = ?
 	//   - SELECT * FROM user WHERE user_id = ? (post.author_id)
 	//   - SELECT * FROM community WHERE community_id = ? (post.community_id)
-	post, err := mysql.GetPostByID(pid)
+	post, err := postRepo.GetPostByID(ctx, pid)
 	if err != nil {
 		// 系统错误
-		zap.L().Error("mysql.GetPostByID failed",
+		zap.L().Error("postRepo.GetPostByID failed",
 			zap.Int64("post_id", pid),
 			zap.Error(err))
 		return nil, errorx.ErrServerBusy
@@ -124,9 +123,9 @@ func GetPostList(ctx context.Context, p *request.PostListRequest) (data []*respo
 
 	// 3. 使用 Preload 批量查询帖子及关联数据（作者、社区）
 	// 从原来的 1 + N + N 次查询优化为 1 + 1 + 1 = 3 次查询
-	posts, err := mysql.GetPostListByIDsWithPreload(ids)
+	posts, err := postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
-		zap.L().Error("mysql.GetPostListByIDsWithPreload failed", zap.Error(err))
+		zap.L().Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
 
@@ -188,9 +187,9 @@ func GetCommunityPostList(ctx context.Context, p *request.PostListRequest) (data
 	zap.L().Debug("GetCommunityPostList", zap.Any("ids", ids))
 
 	// 3. 使用 Preload 批量查询帖子及关联数据（作者、社区）
-	posts, err := mysql.GetPostListByIDsWithPreload(ids)
+	posts, err := postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
-		zap.L().Error("mysql.GetPostListByIDsWithPreload failed", zap.Error(err))
+		zap.L().Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
 
@@ -229,11 +228,11 @@ func GetCommunityPostList(ctx context.Context, p *request.PostListRequest) (data
 
 // DeletePost 删除帖子（软删除）
 // 只有作者本人可以删除自己的帖子
-func DeletePost(postID, userID int64) error {
+func DeletePost(ctx context.Context, postID, userID int64) error {
 	// 1. 查询帖子（已排除已删除的）
-	post, err := mysql.GetPostByID(postID)
+	post, err := postRepo.GetPostByID(ctx, postID)
 	if err != nil {
-		zap.L().Error("mysql.GetPostByID failed",
+		zap.L().Error("postRepo.GetPostByID failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
 		return errorx.ErrServerBusy
@@ -248,9 +247,9 @@ func DeletePost(postID, userID int64) error {
 	}
 
 	// 3. 软删除（更新 status 为 0）
-	err = mysql.DeletePostByAuthor(postID, userID)
+	err = postRepo.DeletePostByAuthor(ctx, postID, userID)
 	if err != nil {
-		zap.L().Error("mysql.DeletePostByAuthor failed",
+		zap.L().Error("postRepo.DeletePostByAuthor failed",
 			zap.Int64("post_id", postID),
 			zap.Int64("user_id", userID),
 			zap.Error(err))

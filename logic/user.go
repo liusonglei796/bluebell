@@ -15,16 +15,16 @@ import (
 )
 
 // SignUp 处理用户注册业务逻辑
-func SignUp(p *request.SignUpRequest) (err error) {
+func SignUp(ctx context.Context, p *request.SignUpRequest) (err error) {
 	// 1. 判断用户存不存在
 	// 为什么：用户名必须唯一，防止重复注册
-	if err = mysql.CheckUserExist(p.Username); err != nil {
+	if err = userRepo.CheckUserExist(ctx, p.Username); err != nil {
 		// 区分业务错误和系统错误
 		if errors.Is(err, mysql.ErrorUserExist) {
 			return errorx.ErrUserExist
 		}
 		// 系统错误: 数据库查询失败
-		zap.L().Error("mysql.CheckUserExist failed",
+		zap.L().Error("userRepo.CheckUserExist failed",
 			zap.String("username", p.Username),
 			zap.Error(err))
 		return errorx.ErrServerBusy
@@ -44,10 +44,10 @@ func SignUp(p *request.SignUpRequest) (err error) {
 
 	// 4. 保存进数据库
 	// 为什么：持久化用户数据
-	err = mysql.InsertUser(u)
+	err = userRepo.InsertUser(ctx, u)
 	if err != nil {
 		// 系统错误: 数据库插入失败
-		zap.L().Error("mysql.InsertUser failed",
+		zap.L().Error("userRepo.InsertUser failed",
 			zap.Int64("user_id", userID),
 			zap.String("username", p.Username),
 			zap.Error(err))
@@ -69,7 +69,7 @@ func Login(ctx context.Context, p *request.LoginRequest) (string, string, error)
 	}
 
 	// 1. 调用 DAO 层验证用户登录
-	err := mysql.CheckLogin(user)
+	err := userRepo.CheckLogin(ctx, user)
 	if err != nil {
 		// 判断是否是业务错误（用户不存在或密码错误）
 		if errors.Is(err, mysql.ErrorUserNotExist) {
@@ -82,7 +82,7 @@ func Login(ctx context.Context, p *request.LoginRequest) (string, string, error)
 		}
 
 		// 系统错误：记录详细日志并返回通用的服务繁忙错误
-		zap.L().Error("mysql.CheckLogin failed",
+		zap.L().Error("userRepo.CheckLogin failed",
 			zap.String("username", p.Username),
 			zap.Error(err),
 		)
@@ -118,7 +118,7 @@ func Login(ctx context.Context, p *request.LoginRequest) (string, string, error)
 func RefreshToken(ctx context.Context, aToken, rToken string) (newAToken, newRToken string, err error) {
 	// 1. 验证 RefreshToken 并获取最新的用户信息
 	// ValidateRefreshToken 内部已经查询了数据库，确保用户存在且未被封禁
-	user, err := jwt.ValidateRefreshToken(rToken)
+	user, err := jwt.ValidateRefreshToken(ctx, rToken)
 	if err != nil {
 		// Token 验证失败属于业务错误 (Token 无效或过期)
 		return "", "", errorx.ErrInvalidToken

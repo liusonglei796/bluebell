@@ -21,7 +21,7 @@ import (
 // @Security ApiKeyAuth
 func CommunityHandler(c *gin.Context) {
 	// 1. 查询所有的社区 (community_id, community_name) 以列表的形式返回
-	data, err := logic.GetCommunityList()
+	data, err := logic.GetCommunityList(c.Request.Context())
 	if err != nil {
 		// 使用新的 HandleError 统一处理错误
 		HandleError(c, err)
@@ -58,7 +58,7 @@ func CommunityHandlerByID(c *gin.Context) {
 	}
 
 	// 3. 调用 Logic 层获取详情
-	data, err := logic.GetCommunityDetail(id)
+	data, err := logic.GetCommunityDetail(c.Request.Context(), id)
 	if err != nil {
 		// 使用新的 HandleError 统一处理错误
 		// Logic 层已经区分了业务错误(ErrNotFound)和系统错误(ErrServerBusy)

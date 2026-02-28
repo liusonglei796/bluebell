@@ -40,7 +40,7 @@ func SignUpHandler(c *gin.Context) {
 
 	// 2. 业务处理
 	// 调用 logic 层进行具体的注册逻辑
-	if err := logic.SignUp(p); err != nil {
+	if err := logic.SignUp(c.Request.Context(), p); err != nil {
 		// 3. 错误处理: 使用 HandleError 统一处理
 		// Logic 层已经区分了业务错误和系统错误
 		HandleError(c, err)

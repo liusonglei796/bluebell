@@ -70,7 +70,7 @@ func GetPostDetailHandler(c *gin.Context) {
 	}
 
 	// 3. 根据id取出帖子详情
-	data, err := logic.GetPostByID(postID)
+	data, err := logic.GetPostByID(c.Request.Context(), postID)
 	if err != nil {
 		HandleError(c, err)
 		return
@@ -155,7 +155,7 @@ func DeletePostHandler(c *gin.Context) {
 	}
 
 	// 3. 调用逻辑层删除帖子
-	if err := logic.DeletePost(postID, userID.(int64)); err != nil {
+	if err := logic.DeletePost(c.Request.Context(), postID, userID.(int64)); err != nil {
 		HandleError(c, err)
 		return
 	}

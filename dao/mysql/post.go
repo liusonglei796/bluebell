@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"bluebell/models"
+	"context"
 	"errors"
 	"fmt"
 
@@ -10,9 +11,9 @@ import (
 
 // CreatePost 创建帖子
 // DAO层只返回错误，不打印日志，由上层统一处理
-func CreatePost(post *models.Post) (err error) {
+func CreatePost(ctx context.Context, post *models.Post) (err error) {
 	// GORM 使用 Create 方法插入记录
-	err = db.Create(post).Error
+	err = db.WithContext(ctx).Create(post).Error
 	if err != nil {
 		return fmt.Errorf("insert post failed: %w", err)
 	}
@@ -22,18 +23,18 @@ func CreatePost(post *models.Post) (err error) {
 // GetPostByID 根据帖子ID查询帖子详情（带预加载）
 // 使用 Preload 自动加载关联的作者和社区信息，避免 N+1 查询问题
 // 自动过滤已删除帖子（status = 0）
-func GetPostByID(pid int64) (post *models.Post, err error) {
+func GetPostByID(ctx context.Context, pid int64) (post *models.Post, err error) {
 	post = new(models.Post)
 
 	// Preload 会自动执行以下 SQL:
 	// 1. SELECT * FROM post WHERE post_id = ? AND status = 1
 	// 2. SELECT * FROM user WHERE user_id IN (post.author_id)
 	// 3. SELECT * FROM community WHERE community_id IN (post.community_id)
-	err = db.Preload("Author"). // 预加载作者信息
-					Preload("Community"). // 预加载社区信息
-					Where("post_id = ?", pid).
-					Where("status = ?", 1). // 过滤已删除帖子
-					First(post).Error
+	err = db.WithContext(ctx).Preload("Author"). // 预加载作者信息
+							Preload("Community"). // 预加载社区信息
+							Where("post_id = ?", pid).
+							Where("status = ?", 1). // 过滤已删除帖子
+							First(post).Error
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -51,7 +52,7 @@ func GetPostByID(pid int64) (post *models.Post, err error) {
 //	使用 Preload 只需要 1 + 1 + 1 = 3 次查询
 //
 // 自动过滤已删除帖子（status = 0）
-func GetPostListByIDsWithPreload(ids []string) (posts []*models.Post, err error) {
+func GetPostListByIDsWithPreload(ctx context.Context, ids []string) (posts []*models.Post, err error) {
 	if len(ids) == 0 {
 		return make([]*models.Post, 0), nil
 	}
@@ -62,11 +63,11 @@ func GetPostListByIDsWithPreload(ids []string) (posts []*models.Post, err error)
 	// 1. SELECT * FROM post WHERE post_id IN (ids) AND status = 1
 	// 2. SELECT * FROM user WHERE user_id IN (所有帖子的 author_id)
 	// 3. SELECT * FROM community WHERE community_id IN (所有帖子的 community_id)
-	err = db.Preload("Author"). // 批量预加载所有作者
-					Preload("Community"). // 批量预加载所有社区
-					Where("post_id IN ?", ids).
-					Where("status = ?", 1). // 过滤已删除帖子
-					Find(&posts).Error
+	err = db.WithContext(ctx).Preload("Author"). // 批量预加载所有作者
+							Preload("Community"). // 批量预加载所有社区
+							Where("post_id IN ?", ids).
+							Where("status = ?", 1). // 过滤已删除帖子
+							Find(&posts).Error
 
 	if err != nil {
 		return nil, fmt.Errorf("query post list by ids with preload failed: %w", err)
@@ -89,8 +90,8 @@ func GetPostListByIDsWithPreload(ids []string) (posts []*models.Post, err error)
 }
 
 // DeletePost 软删除帖子（更新 status 为 0）
-func DeletePost(postID int64) error {
-	result := db.Model(&models.Post{}).
+func DeletePost(ctx context.Context, postID int64) error {
+	result := db.WithContext(ctx).Model(&models.Post{}).
 		Where("post_id = ?", postID).
 		Where("status = ?", 1). // 确保只删除正常的帖子
 		Update("status", 0)
@@ -105,8 +106,8 @@ func DeletePost(postID int64) error {
 }
 
 // DeletePostByAuthor 软删除帖子（带作者验证）
-func DeletePostByAuthor(postID, authorID int64) error {
-	result := db.Model(&models.Post{}).
+func DeletePostByAuthor(ctx context.Context, postID, authorID int64) error {
+	result := db.WithContext(ctx).Model(&models.Post{}).
 		Where("post_id = ?", postID).
 		Where("author_id = ?", authorID).
 		Where("status = ?", 1).

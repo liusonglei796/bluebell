@@ -15,10 +15,10 @@ type CreatePostRequest struct {
 	AuthorID    int64  `json:"author_id"` // 从 Token 获取，不需要前端传
 }
 
-//用于获取帖子列表时的分页和排序参数
-//Page 和 Size 用于分页控制
-//Order 用于指定排序方式（按时间或按分数）
-//CommunityID 用于筛选特定社区的帖子
+// 用于获取帖子列表时的分页和排序参数
+// Page 和 Size 用于分页控制
+// Order 用于指定排序方式（按时间或按分数）
+// CommunityID 用于筛选特定社区的帖子
 type PostListRequest struct {
 	Page  int64  `json:"page" form:"page"`
 	Size  int64  `json:"size" form:"size"`
