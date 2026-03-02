@@ -1,9 +1,7 @@
+// Package jwt 提供 JWT 生成与解析工具
 package jwt
 
 import (
-	"bluebell/dao/mysql"
-	"bluebell/models"
-	"context"
 	"errors"
 	"strconv"
 	"time"
@@ -11,41 +9,63 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// JWTConfig JWT 配置
+type JWTConfig struct {
+	Secret             string        // 签名密钥
+	AccessTokenExpiry  time.Duration // Access Token 有效期
+	RefreshTokenExpiry time.Duration // Refresh Token 有效期
+}
+
+// 全局配置，由 Init 函数初始化
+var jwtConfig *JWTConfig
+
+// 导出有效期供外部使用（如设置 Redis TTL）
+var (
+	AccessTokenExpireDuration  time.Duration
+	RefreshTokenExpireDuration time.Duration
+)
+
+// Init 初始化 JWT 配置
+func Init(secret string, accessExpiryMinutes, refreshExpiryHours int) {
+	jwtConfig = &JWTConfig{
+		Secret:             secret,
+		AccessTokenExpiry:  time.Duration(accessExpiryMinutes) * time.Minute,
+		RefreshTokenExpiry: time.Duration(refreshExpiryHours) * time.Hour,
+	}
+	AccessTokenExpireDuration = jwtConfig.AccessTokenExpiry
+	RefreshTokenExpireDuration = jwtConfig.RefreshTokenExpiry
+}
+
+// UserClaims 自定义 JWT 声明
 type UserClaims struct {
 	UserID   int64  `json:"user_id"`
 	Username string `json:"username"`
 	jwt.RegisteredClaims
 }
 
-const AccessTokenExpireDuration = time.Minute * 10
-const RefreshTokenExpireDuration = time.Hour * 24 * 30
-
-var MySecret = []byte("Lay不吃压力")
-
 // GenToken 生成访问令牌和刷新令牌
 func GenToken(userID int64, username string) (aToken, rToken string, err error) {
-	// 创建 Access Token
 	c := UserClaims{
 		UserID:   userID,
 		Username: username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   strconv.FormatInt(userID, 10),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(AccessTokenExpireDuration)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtConfig.AccessTokenExpiry)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Issuer:    "bluebell",
 		},
 	}
-	// 加密 Access Token
-	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, c).SignedString(MySecret)
+	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, c).SignedString([]byte(jwtConfig.Secret))
 	if err != nil {
 		return "", "", err
 	}
 
-	// 创建 Refresh Token
 	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Subject:   strconv.FormatInt(userID, 10),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(RefreshTokenExpireDuration)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtConfig.RefreshTokenExpiry)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		Issuer:    "bluebell",
-	}).SignedString(MySecret)
+	}).SignedString([]byte(jwtConfig.Secret))
 	if err != nil {
 		return "", "", err
 	}
@@ -53,11 +73,11 @@ func GenToken(userID int64, username string) (aToken, rToken string, err error) 
 	return aToken, rToken, nil
 }
 
-// ParseToken 解析JWT令牌
+// ParseToken 解析并验证 Token
 func ParseToken(tokenString string) (*UserClaims, error) {
 	var mc = new(UserClaims)
-	token, err := jwt.ParseWithClaims(tokenString, mc, func(token *jwt.Token) (i interface{}, err error) {
-		return MySecret, nil
+	token, err := jwt.ParseWithClaims(tokenString, mc, func(token *jwt.Token) (interface{}, error) {
+		return []byte(jwtConfig.Secret), nil
 	})
 	if err != nil {
 		return nil, err
@@ -68,28 +88,21 @@ func ParseToken(tokenString string) (*UserClaims, error) {
 	return nil, errors.New("invalid token")
 }
 
-// ValidateRefreshToken 验证刷新令牌，并返回用户信息
-func ValidateRefreshToken(ctx context.Context, rTokenString string) (user *models.User, err error) {
+// ValidateRefreshToken 验证刷新令牌，返回解析出的 userID
+func ValidateRefreshToken(rTokenString string) (userID int64, err error) {
 	claims := new(jwt.RegisteredClaims)
 	token, err := jwt.ParseWithClaims(rTokenString, claims, func(t *jwt.Token) (interface{}, error) {
-		return MySecret, nil
+		return []byte(jwtConfig.Secret), nil
 	})
 
 	if err != nil || !token.Valid {
-		return user, errors.New("refresh token 无效")
+		return 0, errors.New("refresh token 无效")
 	}
 
-	userID := claims.Subject
-	bizUserID, err := strconv.ParseInt(userID, 10, 64)
+	userID, err = strconv.ParseInt(claims.Subject, 10, 64)
 	if err != nil {
-		return user, errors.New("token数据异常")
+		return 0, errors.New("token数据异常")
 	}
 
-	// 调用刚才写的查询函数
-	user, err = mysql.GetUserByID(ctx, bizUserID)
-	if err != nil {
-		return user, errors.New("用户不存在")
-	}
-
-	return user, nil
+	return userID, nil
 }

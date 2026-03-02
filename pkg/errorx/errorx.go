@@ -1,17 +1,30 @@
 package errorx
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 // CodeError 带业务错误码的自定义错误
-// 实现了 error 接口，用于在 Logic 层返回包含业务错误码的错误
+// 实现了 error 接口，支持 %w 包装底层错误，且能被 errors.Is/errors.As 识别
 type CodeError struct {
-	Code int    // 业务错误码
-	Msg  string // 错误消息
+	Code  int    // 业务错误码
+	Msg   string // 错误消息
+	cause error  // 被包装的底层错误
 }
 
-// Error 实现 error 接口
+// Error 实现 Go 标准 error 接口
+// 当存在底层错误时，返回格式为 "消息: 底层错误"；否则仅返回消息
 func (e *CodeError) Error() string {
+	if e.cause != nil {
+		return fmt.Sprintf("%s: %v", e.Msg, e.cause)
+	}
 	return e.Msg
+}
+
+// Unwrap 实现 errors.Unwrap 接口，支持 errors.Is/errors.As 向下追溯
+func (e *CodeError) Unwrap() error {
+	return e.cause
 }
 
 // New 创建一个新的 CodeError
@@ -30,23 +43,64 @@ func Newf(code int, format string, args ...any) *CodeError {
 	}
 }
 
+// Wrap 包装底层错误，添加业务错误码和消息
+// 用法: errorx.Wrap(err, CodeNotFound, "用户不存在")
+func Wrap(err error, code int, msg string) *CodeError {
+	return &CodeError{
+		Code:  code,
+		Msg:   msg,
+		cause: err,
+	}
+}
+
+// Wrapf 包装底层错误，支持格式化消息
+// 用法: errorx.Wrapf(err, CodeNotFound, "用户 %s 不存在", userId)
+func Wrapf(err error, code int, format string, args ...any) *CodeError {
+	return &CodeError{
+		Code:  code,
+		Msg:   fmt.Sprintf(format, args...),
+		cause: err,
+	}
+}
+
+// GetCode 从错误中提取业务错误码，如果不是 CodeError 则返回默认码
+func GetCode(err error) int {
+	var codeErr *CodeError
+	if errors.As(err, &codeErr) {
+		return codeErr.Code
+	}
+	return CodeServerBusy
+}
+
+// IsNotFound 检查错误是否为"未找到"类型
+func IsNotFound(err error) bool {
+	var codeErr *CodeError
+	if errors.As(err, &codeErr) && codeErr.Code == CodeNotFound {
+		return true
+	}
+	return false
+}
+
 // 业务错误码常量定义
 const (
-	CodeInvalidParam      = 1001
-	CodeUserExist         = 1002
-	CodeUserNotExist      = 1003
-	CodeInvalidPassword   = 1004
-	CodeServerBusy        = 1005
-	CodeNeedLogin         = 1006
-	CodeInvalidToken      = 1007
-	CodeNotFound          = 1008
+	CodeSuccess           = 1000 // 成功
+	CodeInvalidParam      = 1001 // 请求参数错误
+	CodeUserExist         = 1002 // 用户已存在
+	CodeUserNotExist      = 1003 // 用户不存在
+	CodeInvalidPassword   = 1004 // 密码错误
+	CodeServerBusy        = 1005 // 服务繁忙
+	CodeNeedLogin         = 1006 // 未登录
+	CodeInvalidToken      = 1007 // 无效Token
+	CodeNotFound          = 1008 // 资源不存在
 	CodeVoteTimeExpire    = 1009 // 投票时间已过
 	CodeVoteRepeated      = 1010 // 重复投票
-	CodeRateLimitExceeded = 1011 // 请求过于频繁，触发限流
+	CodeRateLimitExceeded = 1011 // 请求过于频繁
 	CodeForbidden         = 1012 // 无权限操作
+	CodeDBError           = 1013 // 数据库错误
+	CodeCacheError        = 1014 // 缓存错误
 )
 
-// 预定义常用错误实例（Logic 层可直接返回）
+// 预定义常用错误实例
 var (
 	ErrInvalidParam      = New(CodeInvalidParam, "请求参数错误")
 	ErrUserExist         = New(CodeUserExist, "用户名已存在")
