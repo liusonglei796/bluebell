@@ -19,3 +19,4 @@ const (
 	CacheKeyCommunityPostTime  = "community:post:time:"  // 社区帖子按时间排序 bluebell:community:post:time:{communityID}
 	CacheKeyCommunityPostScore = "community:post:score:" // 社区帖子按分数排序 bluebell:community:post:score:{communityID}
 )
+const ScorePerVote = 432 // 每票对应的分数权重: 86400/200

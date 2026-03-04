@@ -122,3 +122,7 @@ var (
 	ErrConfigInit        = New(CodeConfigError, "配置初始化失败")
 	ErrInfraInit         = New(CodeInfraError, "基础设施初始化失败")
 )
+
+/*User{}.TableName()（GORM 模型读取属性）： GORM 内部经常操作切片 []User 的值对象来进行反射。为了防止 GORM 反射不到表名，必须用值接收者。
+User{}.BeforeCreate()（GORM 模型修改属性）： 为了保证密码修改能真正生效并落库，必须用指针接收者。
+CodeError{}.Error()（自定义错误接口）： 错误对象在程序里跑来跑去，为了性能极致和规避复制带来的不可控行为，必须用指针传递及指针接收者*/

@@ -2,10 +2,9 @@ package router
 
 import (
 	"bluebell/internal/config"
-	"bluebell/internal/domain/repository"
 	"bluebell/internal/handler"
+	"bluebell/internal/middleware"
 	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/middleware"
 	"bluebell/pkg/errorx"
 	"net/http"
 	"time"
@@ -19,8 +18,8 @@ import (
 func SetupRouter(
 	mode string,
 	h *handler.Handlers,
-	tokenCache repository.UserTokenCacheRepository,
 	rateLimitCfg *config.RateLimitConfig,
+	jwtCfg *config.JWTConfig,
 ) *gin.Engine {
 	if mode == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
@@ -68,7 +67,7 @@ func SetupRouter(
 
 	// 认证路由
 	authGroup := v1.Group("")
-	authGroup.Use(middleware.JWTAuthMiddleware(tokenCache))
+	authGroup.Use(middleware.JWTAuthMiddleware(jwtCfg))
 	{
 		// 社区相关
 		authGroup.GET("/community", h.CommunityHandler)

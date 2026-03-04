@@ -12,11 +12,12 @@ const BcryptCost = 10
 
 // User 用户模型
 // 为什么：对应数据库中的 user 表结构，使用 GORM ORM 映射
+
 type User struct {
-	// gorm:"column:user_id;primaryKey" 指定列名和主键
-	UserID   int64  `json:"user_id,string" gorm:"column:user_id;primaryKey"`
-	Username string `json:"username" gorm:"column:username;uniqueIndex;size:64;not null"`
-	Password string `json:"-" gorm:"column:password;size:255;not null"` // json:"-" 防止密码序列化到 JSON
+	gorm.Model
+	UserID   int64  `gorm:"column:user_id"`
+	UserName string `gorm:"column:user_name;size:64;not null"`
+	Passwd   string `gorm:"column:passwd;size:255;not null"`
 }
 
 // TableName 自定义表名
@@ -29,12 +30,12 @@ func (User) TableName() string {
 // 为什么：将密码加密逻辑放在 Model 层，DAO 层保持纯粹的数据库操作
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	// 如果密码不为空，则进行加密
-	if u.Password != "" {
-		hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), BcryptCost)
+	if u.Passwd != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(u.Passwd), BcryptCost)
 		if err != nil {
 			return err
 		}
-		u.Password = string(hash)
+		u.Passwd = string(hash)
 	}
 	return nil
 }

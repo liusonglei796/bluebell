@@ -24,7 +24,7 @@ func NewUserRepo(db *gorm.DB) *UserRepo {
 // CheckUserExist 检查指定用户名的用户是否存在
 func (r *UserRepo) CheckUserExist(ctx context.Context, username string) (err error) {
 	var count int64
-	err = r.db.WithContext(ctx).Model(&model.User{}).Where("username = ?", username).Count(&count).Error
+	err = r.db.WithContext(ctx).Model(&model.User{}).Where("user_name = ?", username).Count(&count).Error
 	if err != nil {
 		return err
 	}
@@ -46,9 +46,9 @@ func (r *UserRepo) InsertUser(ctx context.Context, user *model.User) (err error)
 
 // CheckLogin 登录验证
 func (r *UserRepo) CheckLogin(ctx context.Context, user *model.User) (err error) {
-	oPassword := user.Password
+	oPassword := user.Passwd
 
-	err = r.db.WithContext(ctx).Where("username = ?", user.Username).First(user).Error
+	err = r.db.WithContext(ctx).Where("user_name = ?", user.UserName).First(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return repository.ErrUserNotExist
@@ -56,7 +56,7 @@ func (r *UserRepo) CheckLogin(ctx context.Context, user *model.User) (err error)
 		return fmt.Errorf("login failed: %w", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(oPassword))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Passwd), []byte(oPassword))
 	if err != nil {
 		return repository.ErrInvalidPassword
 	}

@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strconv"
+
 	"bluebell/internal/dto/request"
 	"bluebell/internal/dto/response"
 	"bluebell/pkg/errorx"
@@ -22,7 +24,7 @@ func (h *Handlers) CreatePostHandler(c *gin.Context) {
 		HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
-	p.AuthorID = userID.(int64)
+	p.AuthorID = strconv.FormatInt(userID.(int64), 10)
 
 	if _, err := h.Services.Post.CreatePost(c.Request.Context(), p); err != nil {
 		HandleError(c, err)

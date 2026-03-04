@@ -1,15 +1,14 @@
 package model
 
-import "time"
+import "gorm.io/gorm"
 
 // Community 社区结构体
 // 为什么：使用 GORM ORM 映射数据库 community 表
 type Community struct {
-	// gorm:"column:community_id;primaryKey" 指定数据库列名为 community_id 并作为主键
-	CommunityID  int64     `json:"id,string" gorm:"column:community_id;primaryKey"`
-	Name         string    `json:"name" gorm:"column:community_name;uniqueIndex;size:128;not null"`
-	Introduction string    `json:"introduction" gorm:"column:introduction;type:text"`
-	CreateTime   time.Time `json:"create_time" gorm:"column:create_time;autoCreateTime"`
+	gorm.Model
+	CommunityID   int64  `gorm:"column:community_id;uniqueIndex"`
+	CommunityName string `gorm:"column:community_name;not null;size:255"`
+	Introduction  string `gorm:"column:introduction;not null;type:text"`
 }
 
 // TableName 自定义表名

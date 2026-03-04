@@ -2,9 +2,11 @@ package community
 
 import (
 	"bluebell/internal/domain/repository"
+	"bluebell/internal/dto/response"
 	"bluebell/internal/model"
 	"bluebell/pkg/errorx"
 	"context"
+	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -19,18 +21,33 @@ func NewCommunityService(communityRepo repository.CommunityRepository) *Communit
 	return &CommunityService{communityRepo: communityRepo}
 }
 
+// toResponse 将 model.Community 转换为 response.CommunityResponse
+func toResponse(c *model.Community) *response.CommunityResponse {
+	return &response.CommunityResponse{
+		ID:           strconv.FormatUint(uint64(c.ID), 10),
+		Name:         c.CommunityName,
+		Introduction: c.Introduction,
+		CreateTime:   c.CreatedAt,
+	}
+}
+
 // GetCommunityList 获取社区列表
-func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*model.Community, error) {
+func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*response.CommunityResponse, error) {
 	data, err := s.communityRepo.GetCommunityList(ctx)
 	if err != nil {
 		zap.L().Error("communityRepo.GetCommunityList failed", zap.Error(err))
 		return nil, errorx.ErrServerBusy
 	}
-	return data, nil
+
+	result := make([]*response.CommunityResponse, 0, len(data))
+	for _, c := range data {
+		result = append(result, toResponse(c))
+	}
+	return result, nil
 }
 
 // GetCommunityDetail 根据ID获取社区详情
-func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*model.Community, error) {
+func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*response.CommunityResponse, error) {
 	data, err := s.communityRepo.GetCommunityDetailByID(ctx, id)
 	if err != nil {
 		zap.L().Error("communityRepo.GetCommunityDetailByID failed",
@@ -43,5 +60,5 @@ func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*m
 		return nil, errorx.ErrNotFound
 	}
 
-	return data, nil
+	return toResponse(data), nil
 }

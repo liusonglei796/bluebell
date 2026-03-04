@@ -4,7 +4,6 @@ import (
 	"bluebell/pkg/errorx"
 	"fmt"
 	"sync/atomic"
-	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -49,8 +48,8 @@ type RateLimitConfig struct {
 }
 
 type SnowflakeConfig struct {
-	StartTime time.Time `mapstructure:"start_time"`
-	MachineID int64     `mapstructure:"machine_id"`
+	StartTime string `mapstructure:"start_time"`
+	MachineID int64  `mapstructure:"machine_id"`
 }
 
 type JWTConfig struct {
@@ -71,11 +70,11 @@ type Config struct {
 	JWT       *JWTConfig       `mapstructure:"jwt"`
 }
 
-var Conf atomic.Value
+var atva atomic.Value
 
 // Get returns the current configuration
 func Get() *Config {
-	if c, ok := Conf.Load().(*Config); ok {
+	if c, ok := atva.Load().(*Config); ok {
 		return c
 	}
 	return nil
@@ -89,11 +88,12 @@ func Init(filePath string) (*Config, error) {
 		return nil, errorx.Wrap(err, errorx.CodeConfigError, "Read config failed")
 	}
 
-	conf := new(Config)
+	conf := &Config{}
 	if err := viper.Unmarshal(conf); err != nil {
 		return nil, errorx.Wrap(err, errorx.CodeConfigError, "Unmarshal config failed")
 	}
-	Conf.Store(conf)
+	//把这个对象安全地发布给其他并发读取的 goroutine。
+	atva.Store(conf)
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
 		fmt.Printf("Config file changed: %s\n", in.Name)
@@ -102,7 +102,7 @@ func Init(filePath string) (*Config, error) {
 		if err := viper.Unmarshal(newConf); err != nil {
 			fmt.Printf("Config hot reload failed: %v\n", err)
 		} else {
-			Conf.Store(newConf)
+			atva.Store(newConf)
 		}
 	})
 

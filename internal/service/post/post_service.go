@@ -4,10 +4,12 @@ import (
 	"bluebell/internal/domain/repository"
 	"bluebell/internal/dto/request"
 	"bluebell/internal/dto/response"
-	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/model"
+	"bluebell/internal/snowflake"
 	"bluebell/pkg/errorx"
 	"context"
+
+	"strconv"
 
 	"go.uber.org/zap"
 )
@@ -36,11 +38,13 @@ func NewPostService(
 func (s *PostService) CreatePost(ctx context.Context, p *request.CreatePostRequest) (postID int64, err error) {
 	postID = snowflake.GenID()
 
+	authorID, _ := strconv.ParseInt(p.AuthorID, 10, 64)
+
 	post := &model.Post{
-		ID:          postID,
-		AuthorID:    p.AuthorID,
+		PostID:      strconv.FormatInt(postID, 10),
+		AuthorID:    authorID,
 		CommunityID: p.CommunityID,
-		Title:       p.Title,
+		PostTitle:   p.Title,
 		Content:     p.Content,
 		Status:      1,
 	}
@@ -74,7 +78,7 @@ func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *respons
 		return nil, errorx.ErrServerBusy
 	}
 
-	if post == nil || post.ID == 0 {
+	if post == nil || post.PostID == "" {
 		return nil, errorx.ErrNotFound
 	}
 
@@ -85,7 +89,7 @@ func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *respons
 		return nil, errorx.ErrNotFound
 	}
 
-	if post.Community == nil || post.Community.CommunityID == 0 {
+	if post.Community == nil || post.Community.ID == 0 {
 		zap.L().Warn("community not found for post",
 			zap.Int64("post_id", pid),
 			zap.Int64("community_id", post.CommunityID))
@@ -93,8 +97,14 @@ func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *respons
 	}
 
 	data = &response.PostDetailResponse{
-		Post:       post,
-		AuthorName: post.Author.Username,
+		ID:          post.PostID,
+		AuthorID:    strconv.FormatInt(post.AuthorID, 10),
+		CommunityID: post.CommunityID,
+		Status:      post.Status,
+		Title:       post.PostTitle,
+		Content:     post.Content,
+		CreateTime:  post.CreatedAt,
+		AuthorName:  post.Author.UserName,
 	}
 
 	return data, nil
@@ -135,17 +145,23 @@ func (s *PostService) GetPostList(ctx context.Context, p *request.PostListReques
 	for idx, post := range posts {
 		var authorName string
 		if post.Author != nil {
-			authorName = post.Author.Username
+			authorName = post.Author.UserName
 		} else {
 			zap.L().Error("author not preloaded for post",
-				zap.Int64("post_id", post.ID),
+				zap.String("post_id", post.PostID),
 				zap.Int64("author_id", post.AuthorID))
 		}
 
 		postDetail := &response.PostDetailResponse{
-			AuthorName: authorName,
-			Post:       post,
-			VoteNum:    voteData[idx],
+			ID:          post.PostID,
+			AuthorID:    strconv.FormatInt(post.AuthorID, 10),
+			CommunityID: post.CommunityID,
+			Status:      post.Status,
+			Title:       post.PostTitle,
+			Content:     post.Content,
+			CreateTime:  post.CreatedAt,
+			AuthorName:  authorName,
+			VoteNum:     voteData[idx],
 		}
 		data = append(data, postDetail)
 	}
@@ -189,17 +205,23 @@ func (s *PostService) GetCommunityPostList(ctx context.Context, p *request.PostL
 	for idx, post := range posts {
 		var authorName string
 		if post.Author != nil {
-			authorName = post.Author.Username
+			authorName = post.Author.UserName
 		} else {
 			zap.L().Error("author not preloaded for post",
-				zap.Int64("post_id", post.ID),
+				zap.String("post_id", post.PostID),
 				zap.Int64("author_id", post.AuthorID))
 		}
 
 		postDetail := &response.PostDetailResponse{
-			AuthorName: authorName,
-			Post:       post,
-			VoteNum:    voteData[idx],
+			ID:          post.PostID,
+			AuthorID:    strconv.FormatInt(post.AuthorID, 10),
+			CommunityID: post.CommunityID,
+			Status:      post.Status,
+			Title:       post.PostTitle,
+			Content:     post.Content,
+			CreateTime:  post.CreatedAt,
+			AuthorName:  authorName,
+			VoteNum:     voteData[idx],
 		}
 		data = append(data, postDetail)
 	}
@@ -208,7 +230,7 @@ func (s *PostService) GetCommunityPostList(ctx context.Context, p *request.PostL
 }
 
 // DeletePost 删除帖子（软删除）
-func (s *PostService) DeletePost(ctx context.Context, postID, userID int64) error {
+func (s *PostService) DeletePost(ctx context.Context, postID int64, userID int64) error {
 	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		zap.L().Error("postRepo.GetPostByID failed",

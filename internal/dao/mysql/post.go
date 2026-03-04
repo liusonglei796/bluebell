@@ -71,7 +71,7 @@ func (r *PostRepo) GetPostListByIDsWithPreload(ctx context.Context, ids []string
 	// 按照传入的 ids 顺序排列结果
 	postMap := make(map[string]*model.Post, len(posts))
 	for _, post := range posts {
-		postMap[fmt.Sprintf("%d", post.ID)] = post
+		postMap[post.PostID] = post
 	}
 
 	orderedPosts := make([]*model.Post, 0, len(ids))
