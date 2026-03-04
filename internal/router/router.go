@@ -20,6 +20,7 @@ func SetupRouter(
 	mode string,
 	h *handler.Handlers,
 	tokenCache repository.UserTokenCacheRepository,
+	rateLimitCfg *config.RateLimitConfig,
 ) *gin.Engine {
 	if mode == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
@@ -31,13 +32,13 @@ func SetupRouter(
 	var fillInterval time.Duration
 	var capacity int64
 
-	if config.Conf.RateLimit != nil {
+	if rateLimitCfg != nil {
 		var err error
-		fillInterval, err = time.ParseDuration(config.Conf.RateLimit.FillInterval)
+		fillInterval, err = time.ParseDuration(rateLimitCfg.FillInterval)
 		if err != nil {
 			fillInterval = 10 * time.Millisecond
 		}
-		capacity = config.Conf.RateLimit.Capacity
+		capacity = rateLimitCfg.Capacity
 	} else {
 		fillInterval = 10 * time.Millisecond
 		capacity = 200

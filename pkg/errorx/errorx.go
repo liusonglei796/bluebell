@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+//内部实例化返回指针（&CodeError），但在函数签名上对外暴露 error 接口，是 Go 语言里最安全、最地道的写法！
+
 // CodeError 带业务错误码的自定义错误
 // 实现了 error 接口，支持 %w 包装底层错误，且能被 errors.Is/errors.As 识别
 type CodeError struct {
@@ -28,7 +30,7 @@ func (e *CodeError) Unwrap() error {
 }
 
 // New 创建一个新的 CodeError
-func New(code int, msg string) *CodeError {
+func New(code int, msg string) error {
 	return &CodeError{
 		Code: code,
 		Msg:  msg,
@@ -36,7 +38,7 @@ func New(code int, msg string) *CodeError {
 }
 
 // Newf 创建一个带格式化消息的 CodeError
-func Newf(code int, format string, args ...any) *CodeError {
+func Newf(code int, format string, args ...any) error {
 	return &CodeError{
 		Code: code,
 		Msg:  fmt.Sprintf(format, args...),
@@ -45,7 +47,7 @@ func Newf(code int, format string, args ...any) *CodeError {
 
 // Wrap 包装底层错误，添加业务错误码和消息
 // 用法: errorx.Wrap(err, CodeNotFound, "用户不存在")
-func Wrap(err error, code int, msg string) *CodeError {
+func Wrap(err error, code int, msg string) error {
 	return &CodeError{
 		Code:  code,
 		Msg:   msg,
@@ -55,7 +57,7 @@ func Wrap(err error, code int, msg string) *CodeError {
 
 // Wrapf 包装底层错误，支持格式化消息
 // 用法: errorx.Wrapf(err, CodeNotFound, "用户 %s 不存在", userId)
-func Wrapf(err error, code int, format string, args ...any) *CodeError {
+func Wrapf(err error, code int, format string, args ...any) error {
 	return &CodeError{
 		Code:  code,
 		Msg:   fmt.Sprintf(format, args...),
@@ -81,7 +83,8 @@ func IsNotFound(err error) bool {
 	return false
 }
 
-// 业务错误码常量定义
+// ==================== 全局业务错误码 ====================
+// 规范统一后端和前端交互的业务级错误
 const (
 	CodeSuccess           = 1000 // 成功
 	CodeInvalidParam      = 1001 // 请求参数错误
@@ -98,6 +101,8 @@ const (
 	CodeForbidden         = 1012 // 无权限操作
 	CodeDBError           = 1013 // 数据库错误
 	CodeCacheError        = 1014 // 缓存错误
+	CodeConfigError       = 1015 // 配置错误
+	CodeInfraError        = 1016 // 基础设施初始化错误
 )
 
 // 预定义常用错误实例
@@ -114,4 +119,6 @@ var (
 	ErrVoteRepeated      = New(CodeVoteRepeated, "不允许重复投票")
 	ErrRateLimitExceeded = New(CodeRateLimitExceeded, "请求过于频繁，请稍后再试")
 	ErrForbidden         = New(CodeForbidden, "无权限操作")
+	ErrConfigInit        = New(CodeConfigError, "配置初始化失败")
+	ErrInfraInit         = New(CodeInfraError, "基础设施初始化失败")
 )

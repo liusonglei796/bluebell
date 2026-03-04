@@ -4,9 +4,9 @@ import (
 	"bluebell/internal/domain/repository"
 	"bluebell/internal/dto/request"
 	"bluebell/internal/dto/response"
+	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/model"
 	"bluebell/pkg/errorx"
-	"bluebell/pkg/snowflake"
 	"context"
 
 	"go.uber.org/zap"

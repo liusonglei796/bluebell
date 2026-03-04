@@ -7,7 +7,6 @@ type UnitOfWork interface {
 	PostRepo() PostRepository
 	CommunityRepo() CommunityRepository
 	UserRepo() UserRepository
-
 	// Transaction 在数据库事务中执行函数
 	// 回调参数 uow 是绑定了事务连接的新 UnitOfWork 实例
 	Transaction(fn func(uow UnitOfWork) error) error

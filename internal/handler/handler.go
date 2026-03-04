@@ -35,11 +35,11 @@ type ResponseData struct {
 // CodeSuccess 成功状态码
 const CodeSuccess = 1000
 
-// ResponseError 返回错误响应 (接受 CodeError 实例)
-func ResponseError(c *gin.Context, err *errorx.CodeError) {
+// ResponseError 返回错误响应 (接受 error 实例)
+func ResponseError(c *gin.Context, err error) {
 	c.JSON(http.StatusOK, gin.H{
-		"code": err.Code,
-		"msg":  err.Msg,
+		"code": errorx.GetCode(err),
+		"msg":  err.Error(),
 		"data": nil,
 	})
 }
@@ -80,8 +80,8 @@ func HandleError(c *gin.Context, err error) {
 		zap.Error(err),
 	)
 	c.JSON(http.StatusOK, gin.H{
-		"code": errorx.ErrServerBusy.Code,
-		"msg":  errorx.ErrServerBusy.Msg,
+		"code": errorx.CodeServerBusy,
+		"msg":  errorx.ErrServerBusy.Error(),
 		"data": nil,
 	})
 }

@@ -1,8 +1,8 @@
 package logger
 
 import (
+	"bluebell/pkg/errorx"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -22,7 +22,7 @@ import (
 // Init 初始化 Logger
 func Init(cfg *config.LogConfig, mode string) (err error) {
 	if cfg == nil {
-		return fmt.Errorf("logger.Init received nil config")
+		return errorx.New(errorx.CodeConfigError, "logger.Init 收到空配置")
 	}
 
 	writeSyncer := getLogWriter(

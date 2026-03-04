@@ -1,0 +1,17 @@
+# bluebell/internal/infrastructure/snowflake
+internal\infrastructure\snowflake\snowflake.go:26:35: undefined: errorx.CodeInfraError
+# bluebell/internal/infrastructure/jwt
+internal\infrastructure\jwt\jwt.go:32:35: undefined: errorx.CodeInfraError
+internal\infrastructure\jwt\jwt.go:37:35: undefined: errorx.CodeInfraError
+internal\infrastructure\jwt\jwt.go:71:42: undefined: errorx.CodeInfraError
+internal\infrastructure\jwt\jwt.go:81:42: undefined: errorx.CodeInfraError
+internal\infrastructure\jwt\jwt.go:92:34: undefined: errorx.CodeInvalidToken
+internal\infrastructure\jwt\jwt.go:97:39: undefined: errorx.CodeInvalidToken
+internal\infrastructure\jwt\jwt.go:102:32: undefined: errorx.CodeInvalidToken
+internal\infrastructure\jwt\jwt.go:110:34: undefined: errorx.CodeInvalidToken
+internal\infrastructure\jwt\jwt.go:116:31: undefined: errorx.CodeInvalidToken
+internal\infrastructure\jwt\jwt.go:121:37: undefined: errorx.CodeInvalidToken
+internal\infrastructure\jwt\jwt.go:121:37: too many errors
+# bluebell/internal/config
+internal\config\config.go:89:39: undefined: errorx.CodeConfigError
+internal\config\config.go:94:39: undefined: errorx.CodeConfigError

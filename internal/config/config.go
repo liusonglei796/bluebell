@@ -1,7 +1,10 @@
 package config
 
 import (
+	"bluebell/pkg/errorx"
 	"fmt"
+	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -46,14 +49,14 @@ type RateLimitConfig struct {
 }
 
 type SnowflakeConfig struct {
-	StartTime string `mapstructure:"start_time"`
-	MachineID int64  `mapstructure:"machine_id"`
+	StartTime time.Time `mapstructure:"start_time"`
+	MachineID int64     `mapstructure:"machine_id"`
 }
 
 type JWTConfig struct {
-	Secret              string `mapstructure:"secret"`
-	AccessExpiryMinutes int    `mapstructure:"access_expiry_minutes"`
-	RefreshExpiryHours  int    `mapstructure:"refresh_expiry_hours"`
+	Secret        string `mapstructure:"secret"`
+	AccessExpiry  string `mapstructure:"access_expiry"`
+	RefreshExpiry string `mapstructure:"refresh_expiry"`
 }
 
 // Config 全局配置结构体
@@ -68,29 +71,40 @@ type Config struct {
 	JWT       *JWTConfig       `mapstructure:"jwt"`
 }
 
-// Conf 全局配置变量
-var Conf = new(Config)
+var Conf atomic.Value
 
-// Init 初始化配置
-func Init(filePath string) (err error) {
+// Get returns the current configuration
+func Get() *Config {
+	if c, ok := Conf.Load().(*Config); ok {
+		return c
+	}
+	return nil
+}
+
+// Init Initialize configuration from file using Viper
+func Init(filePath string) (*Config, error) {
 	viper.SetConfigFile(filePath)
-
-	if err = viper.ReadInConfig(); err != nil {
-		return fmt.Errorf("viper.ReadInConfig() failed: %w", err)
+	err := viper.ReadInConfig()
+	if err != nil {
+		return nil, errorx.Wrap(err, errorx.CodeConfigError, "Read config failed")
 	}
 
-	if err = viper.Unmarshal(Conf); err != nil {
-		return fmt.Errorf("viper.Unmarshal() failed: %w", err)
+	conf := new(Config)
+	if err := viper.Unmarshal(conf); err != nil {
+		return nil, errorx.Wrap(err, errorx.CodeConfigError, "Unmarshal config failed")
 	}
-
-	// 监控配置文件变化，支持热加载
+	Conf.Store(conf)
 	viper.WatchConfig()
 	viper.OnConfigChange(func(in fsnotify.Event) {
-		fmt.Println("配置文件被修改了...")
-		if err := viper.Unmarshal(Conf); err != nil {
-			fmt.Printf("配置文件热加载失败: %v\n", err)
+		fmt.Printf("Config file changed: %s\n", in.Name)
+		newConf := new(Config)
+		// On reload, unmarshal to a completely new object
+		if err := viper.Unmarshal(newConf); err != nil {
+			fmt.Printf("Config hot reload failed: %v\n", err)
+		} else {
+			Conf.Store(newConf)
 		}
 	})
 
-	return
+	return conf, nil
 }

@@ -3,8 +3,8 @@ package middleware
 import (
 	"bluebell/internal/domain/repository"
 	"bluebell/internal/handler"
+	"bluebell/internal/infrastructure/jwt"
 	"bluebell/pkg/errorx"
-	"bluebell/pkg/jwt"
 	"strings"
 	"sync"
 	"time"
