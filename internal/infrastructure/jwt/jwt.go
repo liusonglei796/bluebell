@@ -20,32 +20,6 @@ func mustParseDuration(s string) time.Duration {
 	return d
 }
 
-// GenToken 生成 Access Token 和 Refresh Token
-func GenToken(cfg *config.JWTConfig, userID int64) (aToken, rToken string, err error) {
-	claims := jwt.RegisteredClaims{
-		Subject:   fmt.Sprintf("%d", userID),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.AccessExpiry))),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		Issuer:    "bluebell",
-	}
-	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.Secret))
-	if err != nil {
-		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 AccessToken 失败")
-	}
-
-	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Subject:   fmt.Sprintf("%d", userID),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.RefreshExpiry))),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		Issuer:    "bluebell",
-	}).SignedString([]byte(cfg.Secret))
-	if err != nil {
-		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 RefreshToken 失败")
-	}
-
-	return aToken, rToken, nil
-}
-
 // ParseToken 解析并验证 Token，返回 userID (支持 Access Token 和 Refresh Token)
 func ParseToken(cfg *config.JWTConfig, tokenString string) (userID int64, err error) {
 	claims := new(jwt.RegisteredClaims)
@@ -71,4 +45,30 @@ func ParseToken(cfg *config.JWTConfig, tokenString string) (userID int64, err er
 		return 0, errorx.New(errorx.CodeInvalidToken, "无效的用户ID")
 	}
 	return userID, nil
+}
+
+// GenToken 生成 Access Token 和 Refresh Token
+func GenToken(cfg *config.JWTConfig, userID int64) (aToken, rToken string, err error) {
+	claims := jwt.RegisteredClaims{
+		Subject:   fmt.Sprintf("%d", userID),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.AccessExpiry))),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Issuer:    "bluebell",
+	}
+	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.Secret))
+	if err != nil {
+		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 AccessToken 失败")
+	}
+
+	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
+		Subject:   fmt.Sprintf("%d", userID),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.RefreshExpiry))),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Issuer:    "bluebell",
+	}).SignedString([]byte(cfg.Secret))
+	if err != nil {
+		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 RefreshToken 失败")
+	}
+
+	return aToken, rToken, nil
 }

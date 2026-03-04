@@ -3,8 +3,8 @@ package router
 import (
 	"bluebell/internal/config"
 	"bluebell/internal/handler"
-	"bluebell/internal/middleware"
 	"bluebell/internal/infrastructure/logger"
+	"bluebell/internal/middleware"
 	"bluebell/pkg/errorx"
 	"net/http"
 	"time"
@@ -14,8 +14,8 @@ import (
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// SetupRouter 初始化路由配置
-func SetupRouter(
+// NewRouter 初始化路由配置
+func NewRouter(
 	mode string,
 	h *handler.Handlers,
 	rateLimitCfg *config.RateLimitConfig,

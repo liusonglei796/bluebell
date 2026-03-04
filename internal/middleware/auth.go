@@ -37,7 +37,7 @@ func JWTAuthMiddleware(jwtCfg *config.JWTConfig) func(c *gin.Context) {
 			return
 		}
 
-		// 4. 将用户信息存入上下文
+		// 4. 将用户信息存入上下文可以自定义atoken的Claims填充这些字段，用自定义的claims生成atoken后再解析atoken（这个过程会填充一个空的自定义的claims）用这个空的自定义的claims返回字段
 		c.Set(handler.CtxUserIDKey, userID)
 		c.Next()
 	}
