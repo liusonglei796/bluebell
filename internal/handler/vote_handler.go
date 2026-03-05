@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bluebell/internal/dto/request"
+	"bluebell/internal/response"
 	"bluebell/pkg/errorx"
 
 	"github.com/gin-gonic/gin"
@@ -11,20 +12,20 @@ import (
 func (h *Handlers) PostVoteHandler(c *gin.Context) {
 	p := new(request.VoteRequest)
 	if err := c.ShouldBindJSON(p); err != nil {
-		HandleError(c, errorx.ErrInvalidParam)
+		response.HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
 	userID, exist := c.Get(CtxUserIDKey)
 	if !exist {
-		HandleError(c, errorx.ErrNeedLogin)
+		response.HandleError(c, errorx.ErrNeedLogin)
 		return
 	}
 
 	if err := h.Services.Vote.VoteForPost(c.Request.Context(), userID.(int64), p); err != nil {
-		HandleError(c, err)
+		response.HandleError(c, err)
 		return
 	}
 
-	ResponseSuccess(c, nil)
+	response.ResponseSuccess(c, nil)
 }

@@ -45,7 +45,7 @@ func main() {
 
 	// 设置 Gin 运行模式
 	switch cfg.App.Mode {
-	case "dev":
+	case "debug":
 		gin.SetMode(gin.DebugMode)
 	case "test":
 		gin.SetMode(gin.TestMode)
@@ -108,7 +108,10 @@ func main() {
 	handlers := handler.NewHandlers(services)
 
 	// 5) 注册路由，注入 Handlers
-	r := router.NewRouter(cfg.App.Mode, handlers, cfg)
+	r, err := router.NewRouter(cfg.App.Mode, handlers, cfg)
+	if err != nil {
+		zap.L().Fatal("init router failed", zap.Error(err))
+	}
 
 	// 6. 启动 HTTP 服务（含优雅关机）
 	http_server.Run(r, cfg.App.Port)

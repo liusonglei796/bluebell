@@ -13,12 +13,8 @@ import (
 func GinLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		path := c.Request.URL.Path
-		query := c.Request.URL.RawQuery
-
 		// 1. 执行后续中间件和业务逻辑
 		c.Next()
-
 		// 2. 只有在业务处理完后才计算耗时
 		cost := time.Since(start)
 
@@ -28,8 +24,8 @@ func GinLogger() gin.HandlerFunc {
 		fields = append(fields,
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
-			zap.String("path", path),
-			zap.String("query", query),
+			zap.String("path", c.Request.URL.Path),
+			zap.String("query",c.Request.URL.RawQuery),
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
 			zap.Duration("cost", cost),

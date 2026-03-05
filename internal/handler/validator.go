@@ -20,10 +20,6 @@ var trans ut.Translator
 
 // InitTrans 初始化翻译器
 func InitTrans(locale string) (err error) {
-	if binding.Validator == nil {
-		binding.Validator = &defaultValidator{validator: validator.New()}
-	}
-
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterTagNameFunc(func(fld reflect.StructField) string {
 			name := strings.SplitN(fld.Tag.Get("json"), ",", 2)[0]
@@ -73,17 +69,4 @@ func SignUpParamStructLevelValidation(sl validator.StructLevel) {
 	if su.Password != su.RePassword {
 		sl.ReportError(su.RePassword, "re_password", "RePassword", "eqfield", "password")
 	}
-}
-
-// defaultValidator 实现 StructValidator 接口
-type defaultValidator struct {
-	validator *validator.Validate
-}
-
-func (v *defaultValidator) ValidateStruct(obj interface{}) error {
-	return v.validator.Struct(obj)
-}
-
-func (v *defaultValidator) Engine() interface{} {
-	return v.validator
 }

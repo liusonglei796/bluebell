@@ -4,7 +4,9 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/handler"
 	"bluebell/internal/middleware"
+
 	"bluebell/pkg/errorx"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -18,28 +20,22 @@ func NewRouter(
 	mode string,
 	h *handler.Handlers,
 	cfg *config.Config,
-) *gin.Engine {
+) (*gin.Engine, error) {
 	if mode == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	r := gin.New()
 
-	// 全局中间件
-	var fillInterval time.Duration
-	var capacity int64
-
-	if cfg.RateLimit != nil {
-		var err error
-		fillInterval, err = time.ParseDuration(cfg.RateLimit.FillInterval)
-		if err != nil {
-			fillInterval = 10 * time.Millisecond
-		}
-		capacity = cfg.RateLimit.Capacity
-	} else {
-		fillInterval = 10 * time.Millisecond
-		capacity = 200
+	if cfg.RateLimit == nil {
+		return nil, errorx.New(errorx.CodeConfigError, "missing rate limit configuration")
 	}
+
+	fillInterval, err := time.ParseDuration(cfg.RateLimit.FillInterval)
+	if err != nil {
+		return nil, fmt.Errorf("parse rate limit fill_interval failed: %w", err)
+	}
+	capacity := cfg.RateLimit.Capacity
 
 	r.Use(
 		middleware.GinLogger(),
@@ -54,17 +50,17 @@ func NewRouter(
 	}
 
 	// 路由组
-	v1 := r.Group("/api/v1")
+	apiV1 := r.Group("/api/v1")
 
 	// 公共路由
 	{
-		v1.POST("/signup", h.SignUpHandler)
-		v1.POST("/login", h.LoginHandler)
-		v1.POST("/refresh_token", h.RefreshTokenHandler)
+		apiV1.POST("/signup", h.SignUpHandler)
+		apiV1.POST("/login", h.LoginHandler)
+		apiV1.POST("/refresh_token", h.RefreshTokenHandler)
 	}
 
 	// 认证路由
-	authGroup := v1.Group("")
+	authGroup := apiV1.Group("")
 	authGroup.Use(middleware.JWTAuthMiddleware(cfg))
 	{
 		// 社区相关
@@ -80,18 +76,6 @@ func NewRouter(
 		// 投票相关
 		authGroup.POST("/vote", h.PostVoteHandler)
 
-		// Ping
-		authGroup.GET("/ping", func(c *gin.Context) {
-			userID, exists := c.Get(handler.CtxUserIDKey)
-			if !exists {
-				handler.ResponseError(c, errorx.ErrServerBusy)
-				return
-			}
-			c.JSON(http.StatusOK, gin.H{
-				"msg":     "pong",
-				"user_id": userID,
-			})
-		})
 	}
 
 	// 404
@@ -101,5 +85,5 @@ func NewRouter(
 		})
 	})
 
-	return r
+	return r, nil
 }
