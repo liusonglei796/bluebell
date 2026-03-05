@@ -15,16 +15,17 @@ import (
 var rdb *redis.Client
 
 // Init 初始化 Redis 连接
-func Init(cfg *config.RedisConfig) error {
+func Init(cfg *config.Config) error {
 	if cfg == nil {
 		return fmt.Errorf("redis config is nil")
 	}
 
+	redisCfg := cfg.Redis
 	rdb = redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", cfg.Host, cfg.Port),
-		Password: cfg.Password,
-		DB:       cfg.DB,
-		PoolSize: cfg.PoolSize,
+		Addr:     fmt.Sprintf("%s:%d", redisCfg.Host, redisCfg.Port),
+		Password: redisCfg.Password,
+		DB:       redisCfg.DB,
+		PoolSize: redisCfg.PoolSize,
 	})
 
 	pingCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -35,8 +36,8 @@ func Init(cfg *config.RedisConfig) error {
 	}
 
 	zap.L().Info("init redis success",
-		zap.String("addr", fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)),
-		zap.Int("db", cfg.DB),
+		zap.String("addr", fmt.Sprintf("%s:%d", redisCfg.Host, redisCfg.Port)),
+		zap.Int("db", redisCfg.DB),
 	)
 
 	return nil

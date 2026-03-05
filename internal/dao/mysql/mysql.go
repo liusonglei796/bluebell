@@ -83,17 +83,18 @@ func (r *Repositories) Transaction(fn func(uow repository.UnitOfWork) error) err
 }
 
 // Init 初始化 MySQL 连接，返回数据库连接实例
-func Init(cfg *config.MysqlConfig) (*gorm.DB, error) {
+func Init(cfg *config.Config) (*gorm.DB, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("mysql.Init received nil config")
 	}
 
+	mysqlCfg := cfg.Mysql
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		cfg.User,
-		cfg.Password,
-		cfg.Host,
-		cfg.Port,
-		cfg.DbName,
+		mysqlCfg.User,
+		mysqlCfg.Password,
+		mysqlCfg.Host,
+		mysqlCfg.Port,
+		mysqlCfg.DbName,
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -119,12 +120,12 @@ func Init(cfg *config.MysqlConfig) (*gorm.DB, error) {
 		return nil, fmt.Errorf("ping mysql failed: %w", err)
 	}
 
-	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
-	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(mysqlCfg.MaxOpenConns)
+	sqlDB.SetMaxIdleConns(mysqlCfg.MaxIdleConns)
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute)
 	sqlDB.SetConnMaxLifetime(2 * time.Hour)
 
-	zap.L().Info("init mysql success", zap.String("dsn_host", cfg.Host))
+	zap.L().Info("init mysql success", zap.String("dsn_host", mysqlCfg.Host))
 
 	return db, nil
 }

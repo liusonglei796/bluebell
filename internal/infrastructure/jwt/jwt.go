@@ -21,13 +21,10 @@ func mustParseDuration(s string) time.Duration {
 }
 
 // ParseToken 解析并验证 Token，返回 userID (支持 Access Token 和 Refresh Token)
-func ParseToken(cfg *config.JWTConfig, tokenString string) (userID int64, err error) {
+func ParseToken(cfg *config.Config, tokenString string) (userID int64, err error) {
 	claims := new(jwt.RegisteredClaims)
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errorx.New(errorx.CodeInvalidToken, "无效的签名方法")
-		}
-		return []byte(cfg.Secret), nil
+		return []byte(cfg.JWT.Secret), nil
 	})
 	if err != nil {
 		return 0, errorx.Wrap(err, errorx.CodeInvalidToken, "Token 解析失败")
@@ -48,24 +45,22 @@ func ParseToken(cfg *config.JWTConfig, tokenString string) (userID int64, err er
 }
 
 // GenToken 生成 Access Token 和 Refresh Token
-func GenToken(cfg *config.JWTConfig, userID int64) (aToken, rToken string, err error) {
+func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err error) {
 	claims := jwt.RegisteredClaims{
 		Subject:   fmt.Sprintf("%d", userID),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.AccessExpiry))),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.JWT.AccessExpiry))),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		Issuer:    "bluebell",
 	}
-	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.Secret))
+	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
 		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 AccessToken 失败")
 	}
 
 	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Subject:   fmt.Sprintf("%d", userID),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.RefreshExpiry))),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.JWT.RefreshExpiry))),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		Issuer:    "bluebell",
-	}).SignedString([]byte(cfg.Secret))
+	}).SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
 		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 RefreshToken 失败")
 	}

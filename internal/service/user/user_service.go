@@ -19,11 +19,11 @@ import (
 type UserService struct {
 	userRepo   repository.UserRepository
 	tokenCache repository.UserTokenCacheRepository
-	jwtCfg     *config.JWTConfig
+	jwtCfg     *config.Config
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo repository.UserRepository, tokenCache repository.UserTokenCacheRepository, jwtCfg *config.JWTConfig) *UserService {
+func NewUserService(userRepo repository.UserRepository, tokenCache repository.UserTokenCacheRepository, jwtCfg *config.Config) *UserService {
 	return &UserService{
 		userRepo:   userRepo,
 		tokenCache: tokenCache,
@@ -95,8 +95,8 @@ func (s *UserService) Login(ctx context.Context, p *request.LoginRequest) (strin
 		return "", "", errorx.ErrServerBusy
 	}
 
-	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.AccessExpiry)
-	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.RefreshExpiry)
+	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
+	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
 
 	err = s.tokenCache.SetUserToken(ctx, user.UserID, aToken, rToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
@@ -134,8 +134,8 @@ func (s *UserService) RefreshToken(ctx context.Context, aToken, rToken string) (
 		return "", "", errorx.ErrServerBusy
 	}
 
-	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.AccessExpiry)
-	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.RefreshExpiry)
+	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
+	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
 
 	err = s.tokenCache.SetUserToken(ctx, user.UserID, newAToken, newRToken, accessTokenExp, refreshTokenExp)
 	if err != nil {

@@ -11,7 +11,7 @@ import (
 )
 
 // JWTAuthMiddleware 基于JWT的认证中间件
-func JWTAuthMiddleware(jwtCfg *config.JWTConfig) func(c *gin.Context) {
+func JWTAuthMiddleware(jwtCfg *config.Config) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		// 1. 获取 Authorization Header
 		authHeader := c.Request.Header.Get("Authorization")

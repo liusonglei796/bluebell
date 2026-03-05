@@ -30,7 +30,7 @@ func NewServices(
 	voteCache repository.VoteCacheRepository,
 	postCache repository.PostCacheRepository,
 	tokenCache repository.UserTokenCacheRepository,
-	jwtCfg *config.JWTConfig,
+	jwtCfg *config.Config,
 ) *Services {
 	postSvc := post.NewPostService(uow.PostRepo(), postCache, voteCache)
 	communitySvc := community.NewCommunityService(uow.CommunityRepo())

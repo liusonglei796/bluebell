@@ -3,7 +3,6 @@ package router
 import (
 	"bluebell/internal/config"
 	"bluebell/internal/handler"
-	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/middleware"
 	"bluebell/pkg/errorx"
 	"net/http"
@@ -18,8 +17,7 @@ import (
 func NewRouter(
 	mode string,
 	h *handler.Handlers,
-	rateLimitCfg *config.RateLimitConfig,
-	jwtCfg *config.JWTConfig,
+	cfg *config.Config,
 ) *gin.Engine {
 	if mode == gin.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
@@ -31,21 +29,21 @@ func NewRouter(
 	var fillInterval time.Duration
 	var capacity int64
 
-	if rateLimitCfg != nil {
+	if cfg.RateLimit != nil {
 		var err error
-		fillInterval, err = time.ParseDuration(rateLimitCfg.FillInterval)
+		fillInterval, err = time.ParseDuration(cfg.RateLimit.FillInterval)
 		if err != nil {
 			fillInterval = 10 * time.Millisecond
 		}
-		capacity = rateLimitCfg.Capacity
+		capacity = cfg.RateLimit.Capacity
 	} else {
 		fillInterval = 10 * time.Millisecond
 		capacity = 200
 	}
 
 	r.Use(
-		logger.GinLogger(),
-		logger.GinRecovery(true),
+		middleware.GinLogger(),
+		middleware.GinRecovery(true),
 		middleware.RateLimitMiddleware(fillInterval, capacity),
 		middleware.TimeoutMiddleware(10*time.Second),
 	)
@@ -67,7 +65,7 @@ func NewRouter(
 
 	// 认证路由
 	authGroup := v1.Group("")
-	authGroup.Use(middleware.JWTAuthMiddleware(jwtCfg))
+	authGroup.Use(middleware.JWTAuthMiddleware(cfg))
 	{
 		// 社区相关
 		authGroup.GET("/community", h.CommunityHandler)

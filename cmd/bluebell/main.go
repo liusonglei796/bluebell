@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -42,8 +43,18 @@ func main() {
 		return
 	}
 
+	// 设置 Gin 运行模式
+	switch cfg.App.Mode {
+	case "dev":
+		gin.SetMode(gin.DebugMode)
+	case "test":
+		gin.SetMode(gin.TestMode)
+	default:
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	// 2. 初始化日志
-	if err := logger.Init(cfg.Log, cfg.App.Mode); err != nil {
+	if err := logger.Init(cfg, cfg.App.Mode); err != nil {
 		fmt.Printf("init logger failed, err:%v\n", err)
 		return
 	}
@@ -62,24 +73,15 @@ func main() {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
 
-	// 初始化 JWT 配置（如果未配置则使用默认值）
-	if cfg.JWT == nil {
-		cfg.JWT = &config.JWTConfig{
-			Secret:        "bluebell-default-secret",
-			AccessExpiry:  "10m",
-			RefreshExpiry: "720h",
-		}
-	}
-
 	// 3. 初始化 MySQL
-	gormDB, err := mysql.Init(cfg.Mysql)
+	gormDB, err := mysql.Init(cfg)
 	if err != nil {
 		zap.L().Fatal("Init MySQL failed", zap.Error(err))
 	}
 	defer mysql.Close(gormDB)
 
 	// 4. 初始化 Redis
-	if err := redis.Init(cfg.Redis); err != nil {
+	if err := redis.Init(cfg); err != nil {
 		zap.L().Fatal("Init Redis failed", zap.Error(err))
 	}
 	defer redis.Close()
@@ -100,13 +102,13 @@ func main() {
 
 	// 3) 创建 Services 聚合器，注入 UnitOfWork 和 Cache
 	// VoteCache 同时实现了 VoteCacheRepository 和 PostCacheRepository
-	services := service.NewServices(uow, voteCache, voteCache, tokenCache, cfg.JWT)
+	services := service.NewServices(uow, voteCache, voteCache, tokenCache, cfg)
 
 	// 4) 创建 Handlers 聚合器，注入 Services
 	handlers := handler.NewHandlers(services)
 
 	// 5) 注册路由，注入 Handlers
-	r := router.NewRouter(cfg.App.Mode, handlers, cfg.RateLimit, cfg.JWT)
+	r := router.NewRouter(cfg.App.Mode, handlers, cfg)
 
 	// 6. 启动 HTTP 服务（含优雅关机）
 	http_server.Run(r, cfg.App.Port)

@@ -9,14 +9,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-type AppConfig struct {
+type appConfig struct {
 	Name    string `mapstructure:"name"`
 	Mode    string `mapstructure:"mode"`
 	Version string `mapstructure:"version"`
 	Port    int    `mapstructure:"port"`
 }
 
-type LogConfig struct {
+type logConfig struct {
 	Level      string `mapstructure:"level"`
 	FileName   string `mapstructure:"file_name"`
 	MaxSize    int    `mapstructure:"max_size"`
@@ -24,7 +24,7 @@ type LogConfig struct {
 	MaxAge     int    `mapstructure:"max_age"`
 }
 
-type MysqlConfig struct {
+type mysqlConfig struct {
 	Host         string `mapstructure:"host"`
 	Port         int    `mapstructure:"port"`
 	User         string `mapstructure:"user"`
@@ -34,7 +34,7 @@ type MysqlConfig struct {
 	MaxIdleConns int    `mapstructure:"max_idle_conns"`
 }
 
-type RedisConfig struct {
+type redisConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
 	Password string `mapstructure:"password"`
@@ -42,17 +42,17 @@ type RedisConfig struct {
 	PoolSize int    `mapstructure:"pool_size"`
 }
 
-type RateLimitConfig struct {
+type rateLimitConfig struct {
 	FillInterval string `mapstructure:"fill_interval"`
 	Capacity     int64  `mapstructure:"capacity"`
 }
 
-type SnowflakeConfig struct {
+type snowflakeConfig struct {
 	StartTime string `mapstructure:"start_time"`
 	MachineID int64  `mapstructure:"machine_id"`
 }
 
-type JWTConfig struct {
+type jwtConfig struct {
 	Secret        string `mapstructure:"secret"`
 	AccessExpiry  string `mapstructure:"access_expiry"`
 	RefreshExpiry string `mapstructure:"refresh_expiry"`
@@ -61,13 +61,13 @@ type JWTConfig struct {
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
 type Config struct {
-	App       *AppConfig       `mapstructure:"app"`
-	Mysql     *MysqlConfig     `mapstructure:"mysql"`
-	Redis     *RedisConfig     `mapstructure:"redis"`
-	Log       *LogConfig       `mapstructure:"log"`
-	Snowflake *SnowflakeConfig `mapstructure:"snowflake"`
-	RateLimit *RateLimitConfig `mapstructure:"ratelimit"`
-	JWT       *JWTConfig       `mapstructure:"jwt"`
+	App       *appConfig       `mapstructure:"app"`
+	Mysql     *mysqlConfig     `mapstructure:"mysql"`
+	Redis     *redisConfig     `mapstructure:"redis"`
+	Log       *logConfig       `mapstructure:"log"`
+	Snowflake *snowflakeConfig `mapstructure:"snowflake"`
+	RateLimit *rateLimitConfig `mapstructure:"ratelimit"`
+	JWT       *jwtConfig       `mapstructure:"jwt"`
 }
 
 var atva atomic.Value
