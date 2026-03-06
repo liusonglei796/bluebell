@@ -28,14 +28,7 @@ func Init(startTime time.Time, machineID int64) (err error) {
 	return
 }
 
-// GetID 生成 ID
-// 为什么：对外提供简单的接口获取唯一 ID
-func GetID() int64 {
-	// Generate() 返回的是 ID 类型，转换为 int64 需要用 Int64() 方法（首字母大写）
-	return node.Generate().Int64()
-}
-
-// GenID 生成 ID 的别名函数，与教学文档保持一致
+// GenID 生成 ID
 func GenID() int64 {
-	return GetID()
+	return node.Generate().Int64()
 }

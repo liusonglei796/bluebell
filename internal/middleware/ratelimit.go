@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"bluebell/internal/response"
+	"bluebell/internal/backfront"
 	"bluebell/pkg/errorx"
 	"time"
 
@@ -14,10 +14,13 @@ func RateLimitMiddleware(fillInterval time.Duration, capacity int64) gin.Handler
 	bucket := ratelimit.NewBucket(fillInterval, capacity)
 	return func(c *gin.Context) {
 		if bucket.TakeAvailable(1) < 1 {
-			response.HandleError(c, errorx.ErrRateLimitExceeded)
+			backfront.HandleError(c, errorx.ErrRateLimitExceeded)
 			c.Abort()
 			return
 		}
 		c.Next()
 	}
 }
+
+
+

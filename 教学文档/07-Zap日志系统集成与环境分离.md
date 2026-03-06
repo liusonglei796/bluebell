@@ -264,7 +264,7 @@ type LogConfig struct {
 ### 4.1 完整的 Init 函数
 
 ```go
-// logger/logger.go
+// internal/infrastructure/logger/logger.go
 
 package logger
 
@@ -356,7 +356,7 @@ func Init(cfg *settings.LogConfig, mode string) (err error) {
 ### 4.2 日志切割实现
 
 ```go
-// logger/logger.go
+// internal/infrastructure/logger/logger.go
 
 // getLogWriter 获取日志写入器
 // 为什么: 使用 lumberjack 库实现日志切割(Log Rotation),防止单个日志文件过大占满磁盘
@@ -407,7 +407,7 @@ bluebell-2025-12-06T14-20-45.log
 ### 4.3 编码器配置
 
 ```go
-// logger/logger.go
+// internal/infrastructure/logger/logger.go
 
 // getEncoder 获取日志编码器
 // 为什么: 配置日志的输出格式,这里使用 JSON 格式,适合机器解析
@@ -420,7 +420,7 @@ func getEncoder() zapcore.Encoder {
     encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder  // 时间格式: 2025-12-08T17:30:00.123Z
     encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder  // 级别大写: INFO, ERROR
     encoderConfig.EncodeDuration = zapcore.SecondsDurationEncoder  // 时间间隔单位: 秒
-    encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder  // 调用者格式: logger/logger.go:42
+    encoderConfig.EncodeCaller = zapcore.ShortCallerEncoder  // 调用者格式: internal/infrastructure/logger/logger.go:42
 
     // 返回 JSON 编码器
     return zapcore.NewJSONEncoder(encoderConfig)
@@ -437,7 +437,7 @@ func getEncoder() zapcore.Encoder {
 | **CallerKey** | 调用者字段名 | "caller", "source" | "caller": "logic/user.go:42" |
 | **EncodeTime** | 时间编码格式 | ISO8601, RFC3339, EpochMillis | ISO8601: "2025-12-08T17:30:00.123Z" |
 | **EncodeLevel** | 级别编码格式 | Capital, Lower, Color | Capital: "INFO", Lower: "info" |
-| **EncodeCaller** | 调用者编码格式 | Full, Short | Short: "logger/logger.go:42" |
+| **EncodeCaller** | 调用者编码格式 | Full, Short | Short: "internal/infrastructure/logger/logger.go:42" |
 
 ---
 
@@ -461,7 +461,7 @@ func getEncoder() zapcore.Encoder {
 ### 5.2 GinLogger 中间件实现
 
 ```go
-// logger/logger.go
+// internal/infrastructure/logger/logger.go
 
 // GinLogger 是一个中间件构造函数,返回 gin.HandlerFunc 类型
 // 为什么: Gin 默认的 Logger 中间件输出格式固定,无法直接对接 zap
@@ -531,7 +531,7 @@ func GinLogger() gin.HandlerFunc {
 {
   "level": "info",
   "time": "2025-12-08T17:30:00.123Z",
-  "caller": "logger/logger.go:129",
+  "caller": "internal/infrastructure/logger/logger.go:129",
   "msg": "http request",
   "status": 200,
   "method": "POST",
@@ -547,7 +547,7 @@ func GinLogger() gin.HandlerFunc {
 ### 5.3 GinRecovery 中间件实现
 
 ```go
-// logger/logger.go
+// internal/infrastructure/logger/logger.go
 
 // GinRecovery 是一个中间件,用于捕获 panic 并恢复
 // 为什么: 防止某个请求处理发生 panic 导致整个服务崩溃
@@ -678,7 +678,7 @@ package main
 import (
     "fmt"
 
-    "bluebell/logger"
+    "bluebell/internal/infrastructure/logger"
     "bluebell/routers"
     "bluebell/settings"
 
@@ -732,7 +732,7 @@ package routers
 
 import (
     "bluebell/controller"
-    "bluebell/logger"
+    "bluebell/internal/infrastructure/logger"
     "bluebell/middlewares"
 
     "github.com/gin-gonic/gin"
@@ -871,7 +871,7 @@ go run main.go
 
 # 控制台输出 (Console 格式):
 2025-12-08T17:30:00.123Z  INFO  main.go:42  Server is starting...  {"version": "v1.0.0", "port": 8080}
-2025-12-08T17:30:00.456Z  INFO  logger/logger.go:129  http request  {"status": 200, "method": "POST", "path": "/api/v1/signup", ...}
+2025-12-08T17:30:00.456Z  INFO  internal/infrastructure/logger/logger.go:129  http request  {"status": 200, "method": "POST", "path": "/api/v1/signup", ...}
 ```
 
 **同时查看文件 bluebell.log (JSON 格式):**
@@ -888,7 +888,7 @@ go run main.go
 {
   "level": "info",
   "time": "2025-12-08T17:30:00.456Z",
-  "caller": "logger/logger.go:129",
+  "caller": "internal/infrastructure/logger/logger.go:129",
   "msg": "http request",
   "status": 200,
   "method": "POST",
@@ -1246,3 +1246,4 @@ func GinLogger() gin.HandlerFunc {
 ---
 
 **恭喜!** 你已经掌握了 Zap 日志系统的集成和环境隔离技术,能够构建专业级的日志体系。下一章我们将学习如何实现用户登录功能。🔐
+

@@ -1,4 +1,4 @@
-package response
+package backfront
 
 import (
 	"bluebell/pkg/errorx"
@@ -52,3 +52,5 @@ func HandleErrorWithMsg(c *gin.Context, code int, msg any) {
 		Data: nil,
 	})
 }
+
+

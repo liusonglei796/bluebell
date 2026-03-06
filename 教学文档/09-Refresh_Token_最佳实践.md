@@ -275,7 +275,7 @@ func ValidateRefreshToken(rTokenString string) (*models.User, error) {
 
 ### 2.2 完整的 ValidateRefreshToken 实现
 
-在 `pkg/jwt/jwt.go` 中:
+在 `internal/infrastructure/jwt/jwt.go` 中:
 
 ```go
 package jwt
@@ -347,7 +347,7 @@ package logic
 
 import (
 	"bluebell/dao/redis"
-	"bluebell/pkg/jwt"
+	"bluebell/internal/infrastructure/jwt"
 )
 
 // RefreshToken 刷新 Token
@@ -503,7 +503,7 @@ package routers
 
 import (
 	"bluebell/controller"
-	"bluebell/logger"
+	"bluebell/internal/infrastructure/logger"
 	"bluebell/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -1093,3 +1093,4 @@ func KickDevice(c *gin.Context) {
 - 📖 [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
 - 📖 [JWT Best Practices](https://tools.ietf.org/html/rfc8725)
 - 📖 下一章: [第10章:单点登录与互踢模式](./10-单点登录与互踢模式.md)
+

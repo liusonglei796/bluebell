@@ -16,3 +16,5 @@ type PostDetailResponse struct {
 	AuthorName  string    `json:"author_name"` // 作者名称
 	VoteNum     int64     `json:"vote_num"`    // 投票数（赞成票数）
 }
+
+

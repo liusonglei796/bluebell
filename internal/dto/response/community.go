@@ -9,3 +9,5 @@ type CommunityResponse struct {
 	Introduction string    `json:"introduction,omitempty"`
 	CreateTime   time.Time `json:"create_time"`
 }
+
+

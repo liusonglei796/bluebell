@@ -115,8 +115,9 @@ Snowflake 生成的是一个 **64 位的 int64** 整数,结构如下:
 ```
 bluebell/
 ├── internal/
-│   └── snowflake/
-│       └── snowflake.go  # Snowflake 封装
+│   └── infrastructure/
+│       └── snowflake/
+│           └── snowflake.go  # Snowflake 封装
 ├── internal/config/
 │   └── config.go         # 配置管理
 ├── config.yaml           # 配置文件
@@ -131,7 +132,7 @@ go get github.com/bwmarrin/snowflake
 
 ### 4.3 实现代码
 
-#### 文件: `internal/snowflake/snowflake.go`
+#### 文件: `internal/infrastructure/snowflake/snowflake.go`
 
 ```go
 package snowflake
@@ -185,7 +186,7 @@ package main
 
 import (
 	"bluebell/internal/config"
-	"bluebell/internal/snowflake"
+	"bluebell/internal/infrastructure/snowflake"
 	"time"
 	"go.uber.org/zap"
 )
@@ -219,7 +220,7 @@ func main() {
 package user
 
 import (
-	"bluebell/internal/snowflake"
+	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/model"
 	"context"
 )

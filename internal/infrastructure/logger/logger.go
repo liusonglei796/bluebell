@@ -29,11 +29,11 @@ func Init(cfg *config.Config, mode string) (err error) {
 }
 
 func getWriteSyncer(filename string, maxsize int, maxage int, maxbackups int) zapcore.WriteSyncer {
-	lumberjackLog := &lumberjack.Logger{
+	lumberjackLogger := &lumberjack.Logger{
 		Filename:   filename,
 		MaxSize:    maxsize,
 		MaxAge:     maxage,
 		MaxBackups: maxbackups,
 	}
-	return zapcore.AddSync(lumberjackLog)
+	return zapcore.AddSync(lumberjackLogger)
 }

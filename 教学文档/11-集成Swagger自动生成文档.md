@@ -548,7 +548,7 @@ package routers
 
 import (
 	"bluebell/controller"
-	"bluebell/logger"
+	"bluebell/internal/infrastructure/logger"
 	"bluebell/middlewares"
 
 	"github.com/gin-gonic/gin"
@@ -1339,3 +1339,4 @@ if os.Getenv("ENABLE_SWAGGER") == "true" {
 ---
 
 **📖 下一章: [第12章:高效开发工具Makefile与Air](./12-高效开发工具Makefile与Air.md)**
+

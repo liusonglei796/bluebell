@@ -4,7 +4,7 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/handler"
 	"bluebell/internal/infrastructure/jwt"
-	"bluebell/internal/response"
+	"bluebell/internal/backfront"
 	"bluebell/pkg/errorx"
 	"strings"
 
@@ -17,7 +17,7 @@ func JWTAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		// 1. 获取 Authorization Header
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			response.HandleError(c, errorx.ErrNeedLogin)
+			backfront.HandleError(c, errorx.ErrNeedLogin)
 			c.Abort()
 			return
 		}
@@ -25,7 +25,7 @@ func JWTAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		// 2. 解析 Bearer Token
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			response.HandleError(c, errorx.ErrInvalidToken)
+			backfront.HandleError(c, errorx.ErrInvalidToken)
 			c.Abort()
 			return
 		}
@@ -33,7 +33,7 @@ func JWTAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		// 3. 解析并校验 aToken
 		userID, err := jwt.ParseToken(cfg, parts[1])
 		if err != nil {
-			response.HandleError(c, errorx.ErrInvalidToken)
+			backfront.HandleError(c, errorx.ErrInvalidToken)
 			c.Abort()
 			return
 		}
@@ -43,3 +43,6 @@ func JWTAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+
+

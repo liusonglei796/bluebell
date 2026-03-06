@@ -1,13 +1,14 @@
 package middleware
 
 import (
-	"bluebell/internal/response"
+	"bluebell/internal/backfront"
 	"bluebell/pkg/errorx"
 	"context"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
 func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
@@ -23,10 +24,13 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 			return
 		case <-c.Request.Context().Done():
 			if c.Request.Context().Err() == context.DeadlineExceeded {
-				response.HandleError(c, errorx.ErrServerBusy)
+				backfront.HandleError(c, errorx.ErrServerBusy)
 				c.Abort()
 			}
 			return
 		}
 	}
 }
+
+
+

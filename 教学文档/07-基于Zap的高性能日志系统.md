@@ -60,7 +60,7 @@ log:
   max_age: 30            # 保留旧文件天数
 ```
 
-### 2.2 日志初始化 (`logger/logger.go`)
+### 2.2 日志初始化 (`internal/infrastructure/logger/logger.go`)
 
 这是本章的核心。我们需要编写 `Init` 函数，根据 `mode` 参数决定 Zap 的行为。
 
@@ -169,7 +169,7 @@ func getEncoder() zapcore.Encoder {
 
 Gin 默认的日志中间件输出到标准输出，我们需要编写自定义中间件，让 Gin 的请求日志也走 Zap。
 
-在 `logger/logger.go` 中添加：
+在 `internal/infrastructure/logger/logger.go` 中添加：
 
 ### 3.1 GinLogger 中间件
 
@@ -305,3 +305,4 @@ func main() {
 *   [Uber Zap GitHub](https://github.com/uber-go/zap)
 *   [Lumberjack Log Rolling](https://github.com/natefinch/lumberjack)
 *   📖 下一章: [第08章:JWT认证与登录功能实现](./08-JWT认证与登录功能实现.md)
+

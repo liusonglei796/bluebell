@@ -13,6 +13,8 @@
 - **按热度排序**: `bluebell:post:score` (Member: PostID, Score: Score)
 - **按时间排序**: `bluebell:post:time` (Member: PostID, Score: Timestamp)
 - **用户投票记录**: `bluebell:post:voted:{post_id}` (Member: UserID, Score: Direction)
+- **特定社区时间排序**: `bluebell:community:post:time:{communityID}`
+- **特定社区热度排序**: `bluebell:community:post:score:{communityID}`
 
 ---
 
@@ -21,17 +23,18 @@
 #### 文件: `internal/dao/redis/vote.go`
 
 ```go
-// PostVote 为帖子投票
-func (c *VoteCache) PostVote(ctx context.Context, userID int64, postID string, value float64) error {
+// VoteForPost 为帖子投票
+func (c *VoteCache) VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error {
 	// 1. 获取帖子发布时间 (用于判断 7 天限制)
 	postTime := c.rdb.ZScore(ctx, getRedisKey(KeyPostTimeZSet), postID).Val()
-	if float64(time.Now().Unix())-postTime > oneWeekInSeconds {
-		return errorx.ErrVoteTimeExpire
+	if float64(time.Now().Unix())-postTime > OneWeekInSeconds {
+		return repository.ErrVoteTimeExpire
 	}
 
 	// 2. 更新分数和记录 (使用 TxPipeline)
 	pipeline := c.rdb.TxPipeline()
-	pipeline.ZIncrBy(ctx, getRedisKey(KeyPostScoreZSet), op*diff*scorePerVote, postID)
+	pipeline.ZIncrBy(ctx, getRedisKey(KeyPostScoreZSet), op*diff*ScorePerVote, postID)
+	pipeline.ZIncrBy(ctx, getRedisKey(KeyCommunityPostScorePrefix+communityID), op*diff*ScorePerVote, postID)
 	// ... 更新投票记录 ...
 	_, err := pipeline.Exec(ctx)
 	return err

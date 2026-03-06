@@ -41,40 +41,60 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// mustParseDuration 解析时间字符串，失败时 panic（配置错误属于启动期致命错误）
+func mustParseDuration(s string) time.Duration {
+	d, err := time.ParseDuration(s)
+	if err != nil {
+		panic("jwt: invalid duration string: " + s)
+	}
+	return d
+}
+
 // GenToken 生成 Access Token 和 Refresh Token
-func GenToken(cfg *config.JWTConfig, userID int64) (aToken, rToken string, err error) {
+func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err error) {
 	claims := jwt.RegisteredClaims{
 		Subject:   fmt.Sprintf("%d", userID),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.AccessExpiry))),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.JWT.AccessExpiry))),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		Issuer:    "bluebell",
 	}
-	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.Secret))
+	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
 		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 AccessToken 失败")
 	}
 
 	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Subject:   fmt.Sprintf("%d", userID),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.RefreshExpiry))),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.JWT.RefreshExpiry))),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		Issuer:    "bluebell",
-	}).SignedString([]byte(cfg.Secret))
-	
+	}).SignedString([]byte(cfg.JWT.Secret))
+	if err != nil {
+		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 RefreshToken 失败")
+	}
+
 	return aToken, rToken, nil
 }
 
 // ParseToken 解析并验证 Token，返回 userID
-func ParseToken(cfg *config.JWTConfig, tokenString string) (userID int64, err error) {
+func ParseToken(cfg *config.Config, tokenString string) (userID int64, err error) {
 	claims := new(jwt.RegisteredClaims)
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(cfg.Secret), nil
+		return []byte(cfg.JWT.Secret), nil
 	})
-	if err != nil || !token.Valid {
-		return 0, errorx.ErrInvalidToken
+	if err != nil {
+		return 0, errorx.Wrap(err, errorx.CodeInvalidToken, "Token 解析失败")
+	}
+	if !token.Valid {
+		return 0, errorx.New(errorx.CodeInvalidToken, "无效的Token")
 	}
 
-	userID, _ = strconv.ParseInt(claims.Subject, 10, 64)
+	if claims.Subject == "" {
+		return 0, errorx.New(errorx.CodeInvalidToken, "无效的用户ID")
+	}
+
+	userID, err = strconv.ParseInt(claims.Subject, 10, 64)
+	if err != nil {
+		return 0, errorx.New(errorx.CodeInvalidToken, "无效的用户ID")
+	}
 	return userID, nil
 }
 ```
@@ -94,6 +114,7 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/handler"
 	"bluebell/internal/infrastructure/jwt"
+	"bluebell/internal/backfront"
 	"bluebell/pkg/errorx"
 	"strings"
 
@@ -101,25 +122,25 @@ import (
 )
 
 // JWTAuthMiddleware 基于JWT的认证中间件
-func JWTAuthMiddleware(jwtCfg *config.JWTConfig) func(c *gin.Context) {
+func JWTAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			handler.ResponseError(c, errorx.ErrNeedLogin)
+			backfront.HandleError(c, errorx.ErrNeedLogin)
 			c.Abort()
 			return
 		}
 
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			handler.ResponseError(c, errorx.ErrInvalidToken)
+			backfront.HandleError(c, errorx.ErrInvalidToken)
 			c.Abort()
 			return
 		}
 
-		userID, err := jwt.ParseToken(jwtCfg, parts[1])
+		userID, err := jwt.ParseToken(cfg, parts[1])
 		if err != nil {
-			handler.ResponseError(c, errorx.ErrInvalidToken)
+			backfront.HandleError(c, errorx.ErrInvalidToken)
 			c.Abort()
 			return
 		}
@@ -145,6 +166,14 @@ func (s *UserService) Login(ctx context.Context, p *request.LoginRequest) (strin
 		return "", "", errorx.ErrServerBusy
 	}
 
+	// 将 Token 存入 Redis，用于单点登录/互踢
+	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
+	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
+	err = s.tokenCache.SetUserToken(ctx, user.UserID, aToken, rToken, accessTokenExp, refreshTokenExp)
+	if err != nil {
+		return "", "", errorx.ErrServerBusy
+	}
+
 	return aToken, rToken, nil
 }
 ```
@@ -154,3 +183,4 @@ func (s *UserService) Login(ctx context.Context, p *request.LoginRequest) (strin
 **下一章:** [第09章:Refresh Token 最佳实践](./09-Refresh_Token_最佳实践.md)
 
 **返回目录:** [README.md](./README.md)
+
