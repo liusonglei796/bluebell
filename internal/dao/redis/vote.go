@@ -20,19 +20,19 @@ const (
 	ScorePerVote = 432
 )
 
-// VoteCache 投票缓存仓储实现
+// voteCacheStruct 投票缓存仓储实现
 // 同时实现 VoteCacheRepository 和 PostCacheRepository
-type VoteCache struct{}
+type voteCacheStruct struct{}
 
-// NewVoteCache 创建 VoteCache 实例
-func NewVoteCache() *VoteCache {
-	return &VoteCache{}
+// NewVoteCache 创建 voteCacheStruct 实例
+func NewVoteCache() *voteCacheStruct {
+	return &voteCacheStruct{}
 }
 
 // ========= VoteCacheRepository 实现 =========
 
 // VoteForPost 为帖子投票
-func (c *VoteCache) VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error {
+func (c *voteCacheStruct) VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error {
 	// 1. 判断投票时间限制
 	postTime := rdb.ZScore(ctx, getRedisKey(KeyPostTimeZSet), postID).Val()
 	if float64(time.Now().Unix())-postTime > OneWeekInSeconds {
@@ -81,7 +81,7 @@ func (c *VoteCache) VoteForPost(ctx context.Context, userID, postID, communityID
 }
 
 // GetPostsVoteData 批量获取多个帖子的投票数（赞成票数）
-func (c *VoteCache) GetPostsVoteData(ctx context.Context, ids []string) (data []int64, err error) {
+func (c *voteCacheStruct) GetPostsVoteData(ctx context.Context, ids []string) (data []int64, err error) {
 	pipeline := rdb.Pipeline()
 
 	for _, id := range ids {
@@ -103,7 +103,7 @@ func (c *VoteCache) GetPostsVoteData(ctx context.Context, ids []string) (data []
 }
 
 // GetPostVoteData 获取帖子的投票数据
-func (c *VoteCache) GetPostVoteData(ctx context.Context, postID string) (upVotes, downVotes int64, err error) {
+func (c *voteCacheStruct) GetPostVoteData(ctx context.Context, postID string) (upVotes, downVotes int64, err error) {
 	data, err := rdb.ZRangeArgsWithScores(ctx, redis.ZRangeArgs{
 		Key:   getRedisKey(KeyPostVotedZSetPrefix + postID),
 		Start: 0,
@@ -125,7 +125,7 @@ func (c *VoteCache) GetPostVoteData(ctx context.Context, postID string) (upVotes
 }
 
 // GetPostScore 获取帖子的当前分数
-func (c *VoteCache) GetPostScore(ctx context.Context, postID string) (float64, error) {
+func (c *voteCacheStruct) GetPostScore(ctx context.Context, postID string) (float64, error) {
 	score, err := rdb.ZScore(ctx, getRedisKey(KeyPostScoreZSet), postID).Result()
 	if err != nil {
 		return 0, fmt.Errorf("get post score failed (post_id: %s): %w", postID, err)
@@ -134,7 +134,7 @@ func (c *VoteCache) GetPostScore(ctx context.Context, postID string) (float64, e
 }
 
 // GetPostVoteStatus 获取用户对某个帖子的投票状态
-func (c *VoteCache) GetPostVoteStatus(ctx context.Context, userID, postID string) (int8, error) {
+func (c *voteCacheStruct) GetPostVoteStatus(ctx context.Context, userID, postID string) (int8, error) {
 	score, err := rdb.ZScore(ctx, getRedisKey(KeyPostVotedZSetPrefix+postID), userID).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -146,7 +146,7 @@ func (c *VoteCache) GetPostVoteStatus(ctx context.Context, userID, postID string
 }
 
 // BatchGetPostVoteStatus 批量获取用户对多个帖子的投票状态
-func (c *VoteCache) BatchGetPostVoteStatus(ctx context.Context, userID string, postIDs []string) (map[string]int8, error) {
+func (c *voteCacheStruct) BatchGetPostVoteStatus(ctx context.Context, userID string, postIDs []string) (map[string]int8, error) {
 	pipeline := rdb.Pipeline()
 
 	cmds := make([]*redis.FloatCmd, 0, len(postIDs))
@@ -179,7 +179,7 @@ func (c *VoteCache) BatchGetPostVoteStatus(ctx context.Context, userID string, p
 // ========= PostCacheRepository 实现 =========
 
 // CreatePost 创建帖子时初始化 Redis 数据
-func (c *VoteCache) CreatePost(ctx context.Context, postID, communityID int64) error {
+func (c *voteCacheStruct) CreatePost(ctx context.Context, postID, communityID int64) error {
 	pipeline := rdb.TxPipeline()
 
 	timestamp := float64(time.Now().Unix())
@@ -214,7 +214,7 @@ func (c *VoteCache) CreatePost(ctx context.Context, postID, communityID int64) e
 }
 
 // GetPostIDsInOrder 按照指定顺序获取帖子ID列表
-func (c *VoteCache) GetPostIDsInOrder(ctx context.Context, orderKey string, page, size int64) ([]string, error) {
+func (c *voteCacheStruct) GetPostIDsInOrder(ctx context.Context, orderKey string, page, size int64) ([]string, error) {
 	key := getRedisKey(KeyPostTimeZSet)
 	if orderKey == "score" {
 		key = getRedisKey(KeyPostScoreZSet)
@@ -235,7 +235,7 @@ func (c *VoteCache) GetPostIDsInOrder(ctx context.Context, orderKey string, page
 }
 
 // GetCommunityPostIDsInOrder 按照指定顺序获取指定社区的帖子ID列表
-func (c *VoteCache) GetCommunityPostIDsInOrder(ctx context.Context, communityID int64, orderKey string, page, size int64) ([]string, error) {
+func (c *voteCacheStruct) GetCommunityPostIDsInOrder(ctx context.Context, communityID int64, orderKey string, page, size int64) ([]string, error) {
 	keyPrefix := KeyCommunityPostTimePrefix
 	if orderKey == "score" {
 		keyPrefix = KeyCommunityPostScorePrefix

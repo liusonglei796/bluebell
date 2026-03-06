@@ -11,18 +11,18 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserRepo 用户数据访问实现
-type UserRepo struct {
+// userRepoStruct 用户数据访问实现
+type userRepoStruct struct {
 	db *gorm.DB
 }
 
-// NewUserRepo 创建 UserRepo 实例
-func NewUserRepo(db *gorm.DB) *UserRepo {
-	return &UserRepo{db: db}
+// NewUserRepo 创建 userRepoStruct 实例
+func NewUserRepo(db *gorm.DB) *userRepoStruct {
+	return &userRepoStruct{db: db}
 }
 
 // CheckUserExist 检查指定用户名的用户是否存在
-func (r *UserRepo) CheckUserExist(ctx context.Context, username string) (err error) {
+func (r *userRepoStruct) CheckUserExist(ctx context.Context, username string) (err error) {
 	var count int64
 	err = r.db.WithContext(ctx).Model(&model.User{}).Where("user_name = ?", username).Count(&count).Error
 	if err != nil {
@@ -36,7 +36,7 @@ func (r *UserRepo) CheckUserExist(ctx context.Context, username string) (err err
 
 // InsertUser 插入新用户
 // 密码加密已移至 Model 的 BeforeCreate 钩子中自动处理
-func (r *UserRepo) InsertUser(ctx context.Context, user *model.User) (err error) {
+func (r *userRepoStruct) InsertUser(ctx context.Context, user *model.User) (err error) {
 	err = r.db.WithContext(ctx).Create(user).Error
 	if err != nil {
 		return fmt.Errorf("插入用户失败: %w", err)
@@ -45,7 +45,7 @@ func (r *UserRepo) InsertUser(ctx context.Context, user *model.User) (err error)
 }
 
 // CheckLogin 登录验证
-func (r *UserRepo) CheckLogin(ctx context.Context, user *model.User) (err error) {
+func (r *userRepoStruct) CheckLogin(ctx context.Context, user *model.User) (err error) {
 	oPassword := user.Passwd
 
 	err = r.db.WithContext(ctx).Where("user_name = ?", user.UserName).First(user).Error
@@ -64,7 +64,7 @@ func (r *UserRepo) CheckLogin(ctx context.Context, user *model.User) (err error)
 }
 
 // GetUserByID 根据用户ID查询用户信息
-func (r *UserRepo) GetUserByID(ctx context.Context, uid int64) (*model.User, error) {
+func (r *userRepoStruct) GetUserByID(ctx context.Context, uid int64) (*model.User, error) {
 	user := &model.User{}
 	err := r.db.WithContext(ctx).Where("user_id = ?", uid).First(user).Error
 	if err != nil {
@@ -77,7 +77,7 @@ func (r *UserRepo) GetUserByID(ctx context.Context, uid int64) (*model.User, err
 }
 
 // GetUsersByIDs 根据用户ID列表批量获取用户信息
-func (r *UserRepo) GetUsersByIDs(ctx context.Context, ids []int64) (users []*model.User, err error) {
+func (r *userRepoStruct) GetUsersByIDs(ctx context.Context, ids []int64) (users []*model.User, err error) {
 	if len(ids) == 0 {
 		return make([]*model.User, 0), nil
 	}

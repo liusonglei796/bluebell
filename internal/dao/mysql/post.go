@@ -9,18 +9,18 @@ import (
 	"gorm.io/gorm"
 )
 
-// PostRepo 帖子数据访问实现
-type PostRepo struct {
+// postRepoStruct 帖子数据访问实现
+type postRepoStruct struct {
 	db *gorm.DB
 }
 
-// NewPostRepo 创建 PostRepo 实例
-func NewPostRepo(db *gorm.DB) *PostRepo {
-	return &PostRepo{db: db}
+// NewPostRepo 创建 postRepoStruct 实例
+func NewPostRepo(db *gorm.DB) *postRepoStruct {
+	return &postRepoStruct{db: db}
 }
 
 // CreatePost 创建帖子
-func (r *PostRepo) CreatePost(ctx context.Context, post *model.Post) (err error) {
+func (r *postRepoStruct) CreatePost(ctx context.Context, post *model.Post) (err error) {
 	err = r.db.WithContext(ctx).Create(post).Error
 	if err != nil {
 		return fmt.Errorf("insert post failed: %w", err)
@@ -31,7 +31,7 @@ func (r *PostRepo) CreatePost(ctx context.Context, post *model.Post) (err error)
 // GetPostByID 根据帖子ID查询帖子详情（带预加载）
 // 使用 Preload 自动加载关联的作者和社区信息，避免 N+1 查询问题
 // 自动过滤已删除帖子（status = 0）
-func (r *PostRepo) GetPostByID(ctx context.Context, pid int64) (post *model.Post, err error) {
+func (r *postRepoStruct) GetPostByID(ctx context.Context, pid int64) (post *model.Post, err error) {
 	post = new(model.Post)
 
 	err = r.db.WithContext(ctx).Preload("Author").
@@ -51,7 +51,7 @@ func (r *PostRepo) GetPostByID(ctx context.Context, pid int64) (post *model.Post
 
 // GetPostListByIDsWithPreload 根据给定的ID列表查询帖子详情（带预加载）
 // 自动过滤已删除帖子（status = 0）
-func (r *PostRepo) GetPostListByIDsWithPreload(ctx context.Context, ids []string) (posts []*model.Post, err error) {
+func (r *postRepoStruct) GetPostListByIDsWithPreload(ctx context.Context, ids []string) (posts []*model.Post, err error) {
 	if len(ids) == 0 {
 		return make([]*model.Post, 0), nil
 	}
@@ -85,7 +85,7 @@ func (r *PostRepo) GetPostListByIDsWithPreload(ctx context.Context, ids []string
 }
 
 // DeletePost 软删除帖子（更新 status 为 0）
-func (r *PostRepo) DeletePost(ctx context.Context, postID int64) error {
+func (r *postRepoStruct) DeletePost(ctx context.Context, postID int64) error {
 	result := r.db.WithContext(ctx).Model(&model.Post{}).
 		Where("post_id = ?", postID).
 		Where("status = ?", 1).
@@ -101,7 +101,7 @@ func (r *PostRepo) DeletePost(ctx context.Context, postID int64) error {
 }
 
 // DeletePostByAuthor 软删除帖子（带作者验证）
-func (r *PostRepo) DeletePostByAuthor(ctx context.Context, postID, authorID int64) error {
+func (r *postRepoStruct) DeletePostByAuthor(ctx context.Context, postID, authorID int64) error {
 	result := r.db.WithContext(ctx).Model(&model.Post{}).
 		Where("post_id = ?", postID).
 		Where("author_id = ?", authorID).

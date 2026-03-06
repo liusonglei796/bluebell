@@ -17,7 +17,7 @@ import (
 // 作为依赖注入的入口，Service 层通过此结构访问数据层
 // 实现了 repointerface.UnitOfWork 接口
 type Repositories struct {
-	db        *gorm.DB                       // GORM 数据库实例
+	db        *gorm.DB                          // GORM 数据库实例
 	Post      repointerface.PostRepository      // 帖子 Repository
 	Community repointerface.CommunityRepository // 社区 Repository
 	User      repointerface.UserRepository      // 用户 Repository
