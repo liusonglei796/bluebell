@@ -1,8 +1,8 @@
 package snowflake
 
 import (
+	"bluebell/internal/config"
 	"bluebell/pkg/errorx"
-	"time"
 
 	// 建议给引入的包起个别名 sf，防止和你自己的包名 snowflake 冲突
 	sf "github.com/bwmarrin/snowflake"
@@ -14,16 +14,16 @@ var node *sf.Node
 
 // Init 初始化雪花算法节点
 // 为什么：需要设置起始时间（Epoch）和机器 ID，确保生成的 ID 在分布式环境中唯一且有序
-func Init(startTime time.Time, machineID int64) (err error) {
+func Init(cfg *config.Config) (err error) {
 	// 设置 Epoch (起始时间)，单位是毫秒
 	// 为什么：雪花算法生成的 ID 包含时间戳部分，是相对于 Epoch 的偏移量
-	sf.Epoch = startTime.UnixNano() / 1000000
+	sf.Epoch = cfg.Snowflake.StartTime.UnixNano() / 1000000
 
 	// 创建节点
 	// 为什么：每个服务实例需要唯一的 machineID，防止多实例生成重复 ID
-	node, err = sf.NewNode(machineID)
+	node, err = sf.NewNode(cfg.Snowflake.MachineID)
 	if err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "初始化雪花算法节点失败, machineID=%d", machineID)
+		return errorx.Wrapf(err, errorx.CodeInfraError, "初始化雪花算法节点失败, machineID=%d", cfg.Snowflake.MachineID)
 	}
 	return
 }

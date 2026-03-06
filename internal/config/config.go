@@ -4,6 +4,7 @@ import (
 	"bluebell/pkg/errorx"
 	"fmt"
 	"sync/atomic"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/spf13/viper"
@@ -48,7 +49,7 @@ type rateLimitConfig struct {
 }
 
 type snowflakeConfig struct {
-	StartTime string `mapstructure:"start_time"`
+	StartTime time.Time `mapstructure:"start_time"`
 	MachineID int64  `mapstructure:"machine_id"`
 }
 

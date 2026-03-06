@@ -1,10 +1,9 @@
 package middleware
 
 import (
-	"bluebell/internal/config"
-	"bluebell/internal/handler"
-	"bluebell/internal/infrastructure/jwt"
 	"bluebell/internal/backfront"
+	"bluebell/internal/config"
+	"bluebell/internal/infrastructure/jwt"
 	"bluebell/pkg/errorx"
 	"strings"
 
@@ -39,10 +38,7 @@ func JWTAuthMiddleware(cfg *config.Config) gin.HandlerFunc {
 		}
 
 		// 4. 将用户信息存入上下文可以自定义atoken的Claims填充这些字段，用自定义的claims生成atoken后再解析atoken（这个过程会填充一个空的自定义的claims）用这个空的自定义的claims返回字段
-		c.Set(handler.CtxUserIDKey, userID)
+		c.Set("UserIDKey", userID)
 		c.Next()
 	}
 }
-
-
-

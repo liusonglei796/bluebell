@@ -1,8 +1,9 @@
 package handler
 
 import (
-	"bluebell/internal/dto/request"
 	"bluebell/internal/backfront"
+	"bluebell/internal/dto/request"
+	myvalidator "bluebell/internal/infrastructure/validator"
 	"bluebell/pkg/errorx"
 	"strings"
 
@@ -11,7 +12,7 @@ import (
 )
 
 // SignUpHandler 处理用户注册请求
-func (h *Handlers) SignUpHandler(c *gin.Context) {
+func (h *UserHandler) SignUpHandler(c *gin.Context) {
 	p := new(request.SignUpRequest)
 	if err := c.ShouldBindJSON(p); err != nil {
 		errs, ok := err.(validator.ValidationErrors)
@@ -19,11 +20,11 @@ func (h *Handlers) SignUpHandler(c *gin.Context) {
 			backfront.HandleError(c, errorx.ErrInvalidParam)
 			return
 		}
-		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, removeTopStruct(errs.Translate(trans)))
+		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, myvalidator.RemoveTopStruct(errs.Translate(myvalidator.Trans)))
 		return
 	}
 
-	if err := h.Services.User.SignUp(c.Request.Context(), p); err != nil {
+	if err := h.userService.SignUp(c.Request.Context(), p); err != nil {
 		backfront.HandleError(c, err)
 		return
 	}
@@ -32,7 +33,7 @@ func (h *Handlers) SignUpHandler(c *gin.Context) {
 }
 
 // LoginHandler 处理用户登录请求
-func (h *Handlers) LoginHandler(c *gin.Context) {
+func (h *UserHandler) LoginHandler(c *gin.Context) {
 	var p request.LoginRequest
 	if err := c.ShouldBindJSON(&p); err != nil {
 		errs, ok := err.(validator.ValidationErrors)
@@ -40,11 +41,11 @@ func (h *Handlers) LoginHandler(c *gin.Context) {
 			backfront.HandleError(c, errorx.ErrInvalidParam)
 			return
 		}
-		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, removeTopStruct(errs.Translate(trans)))
+		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, myvalidator.RemoveTopStruct(errs.Translate(myvalidator.Trans)))
 		return
 	}
 
-	aToken, rToken, err := h.Services.User.Login(c.Request.Context(), &p)
+	aToken, rToken, err := h.userService.Login(c.Request.Context(), &p)
 	if err != nil {
 		backfront.HandleError(c, err)
 		return
@@ -57,23 +58,26 @@ func (h *Handlers) LoginHandler(c *gin.Context) {
 }
 
 // RefreshTokenHandler 刷新AccessToken
-func (h *Handlers) RefreshTokenHandler(c *gin.Context) {
-	rt := c.Query("refresh_token")
-	authHeader := c.Request.Header.Get("Authorization")
-	if authHeader == "" {
-		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidToken, "请求头缺少Auth Token")
-		c.Abort()
+func (h *UserHandler) RefreshTokenHandler(c *gin.Context) {
+	var p request.RefreshTokenRequest
+	if err := c.ShouldBind(&p); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			backfront.HandleError(c, errorx.ErrInvalidParam)
+			return
+		}
+		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, myvalidator.RemoveTopStruct(errs.Translate(myvalidator.Trans)))
 		return
 	}
-	parts := strings.SplitN(authHeader, " ", 2)
+
+	parts := strings.SplitN(p.AccessToken, " ", 2)
 	if !(len(parts) == 2 && parts[0] == "Bearer") {
 		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidToken, "Token格式错误")
-		c.Abort()
 		return
 	}
 	aToken := parts[1]
 
-	newAToken, newRToken, err := h.Services.User.RefreshToken(c.Request.Context(), aToken, rt)
+	newAToken, newRToken, err := h.userService.RefreshToken(c.Request.Context(), aToken, p.RefreshToken)
 	if err != nil {
 		backfront.HandleError(c, err)
 		return
@@ -84,6 +88,3 @@ func (h *Handlers) RefreshTokenHandler(c *gin.Context) {
 		"refresh_token": newRToken,
 	})
 }
-
-
-

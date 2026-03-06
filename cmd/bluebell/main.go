@@ -9,11 +9,11 @@ import (
 	"bluebell/internal/http_server"
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/snowflake"
+	"bluebell/internal/infrastructure/validator"
 	"bluebell/internal/router"
 	"bluebell/internal/service"
 	"flag"
 	"fmt"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -60,16 +60,8 @@ func main() {
 	}
 	defer zap.L().Sync()
 
-	// 解析 snowflake 起始时间
-	startTime, err := time.Parse("2006-01-02", cfg.Snowflake.StartTime)
-	if err != nil {
-		// 尝试 RFC3339 格式
-		startTime, err = time.Parse(time.RFC3339, cfg.Snowflake.StartTime)
-		if err != nil {
-			zap.L().Fatal("parse snowflake start_time failed", zap.Error(err))
-		}
-	}
-	if err := snowflake.Init(startTime, cfg.Snowflake.MachineID); err != nil {
+	// 初始化 snowflake
+	if err := snowflake.Init(cfg); err != nil {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
 
@@ -87,32 +79,41 @@ func main() {
 	defer redis.Close()
 
 	// 初始化 Validator
-	if err := handler.InitTrans("zh"); err != nil {
+	if err := validator.InitTrans(); err != nil {
 		zap.L().Fatal("init validator trans failed", zap.Error(err))
 	}
 
-	// ====== 依赖注入：DDD 风格组装整个应用 ======
+	// ====== 完整的 DI 流程 ======
+	// 按照分层架构从下往上依次注入依赖
 
-	// 1) 创建 UnitOfWork 实例（DAO 层）
-	uow := mysql.NewRepositories(gormDB)
-
-	// 2) 创建 Cache Repository 实例
+	// 1) 基础设施层：创建 Repository 实例（数据访问层）
+	repositoriesUOW := mysql.NewRepositories(gormDB)
 	voteCache := redis.NewVoteCache()
 	tokenCache := redis.NewUserTokenCache()
 
-	// 3) 创建 Services 聚合器，注入 UnitOfWork 和 Cache
-	// VoteCache 同时实现了 VoteCacheRepository 和 PostCacheRepository
-	services := service.NewServices(uow, voteCache, voteCache, tokenCache, cfg)
+	// 2) 业务逻辑层：创建 Service 实例
+	services := service.NewServices(
+		repositoriesUOW,
+		voteCache,
+		voteCache,
+		tokenCache,
+		cfg,
+	)
 
-	// 4) 创建 Handlers 聚合器，注入 Services
-	handlers := handler.NewHandlers(services)
+	// 3) 表现层：创建 Handler 实例（通过 DI 注入 Service 接口）
+	handlerProvider := handler.NewHandlerProvider(
+		services.User,      // 注入 UserService 接口
+		services.Post,      // 注入 PostService 接口
+		services.Community, // 注入 CommunityService 接口
+		services.Vote,      // 注入 VoteService 接口
+	)
 
-	// 5) 注册路由，注入 Handlers
-	r, err := router.NewRouter(cfg.App.Mode, handlers, cfg)
+	// 4) 路由层：初始化路由，注入 Handler
+	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg)
 	if err != nil {
 		zap.L().Fatal("init router failed", zap.Error(err))
 	}
 
-	// 6. 启动 HTTP 服务（含优雅关机）
+	// 5. 启动 HTTP 服务（含优雅关机）
 	http_server.Run(r, cfg.App.Port)
 }

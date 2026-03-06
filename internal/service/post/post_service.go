@@ -35,14 +35,13 @@ func NewPostService(
 }
 
 // CreatePost 创建帖子,返回新创建的帖子ID
-func (s *PostService) CreatePost(ctx context.Context, p *request.CreatePostRequest) (postID int64, err error) {
+func (s *PostService) CreatePost(ctx context.Context, p *request.CreatePostRequest, authorID int64) (postID int64, err error) {
 	postID = snowflake.GenID()
 
-	authorID, _ := strconv.ParseInt(p.AuthorID, 10, 64)
-
 	post := &model.Post{
-		PostID:      strconv.FormatInt(postID, 10),
-		AuthorID:    authorID,
+		PostID:   strconv.FormatInt(postID, 10),
+		AuthorID: authorID,
+
 		CommunityID: p.CommunityID,
 		PostTitle:   p.Title,
 		Content:     p.Content,

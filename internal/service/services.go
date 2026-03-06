@@ -2,6 +2,7 @@
 package service
 
 import (
+	domainService "bluebell/internal/domain/service"
 	"bluebell/internal/config"
 	"bluebell/internal/domain/repository"
 	"bluebell/internal/service/community"
@@ -13,10 +14,10 @@ import (
 // Services 聚合所有 Service 实例
 // 作为依赖注入的入口，Handler 层通过 service.Services 访问各个 Service
 type Services struct {
-	Post      *post.PostService           // 帖子 Service
-	Community *community.CommunityService // 社区 Service
-	User      *user.UserService           // 用户 Service
-	Vote      *vote.VoteService           // 投票 Service
+	Post      domainService.PostService      // 帖子 Service 接口
+	Community domainService.CommunityService // 社区 Service 接口
+	User      domainService.UserService      // 用户 Service 接口
+	Vote      domainService.VoteService      // 投票 Service 接口
 }
 
 // NewServices 创建并注入所有 Service 实例

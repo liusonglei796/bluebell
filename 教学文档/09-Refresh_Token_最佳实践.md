@@ -437,40 +437,44 @@ Logic.RefreshToken(aToken, rToken)
 package controller
 
 import (
+	"bluebell/internal/backfront"
+	"bluebell/internal/dto/request"
+	myvalidator "bluebell/internal/infrastructure/validator"
 	"bluebell/logic"
 	"bluebell/pkg/errorx"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 // RefreshTokenHandler 刷新 Access Token
 func RefreshTokenHandler(c *gin.Context) {
-	rt := c.Query("refresh_token")
-	// 客户端需要在 Header 中携带 Authorization: Bearer <access_token>
-	authHeader := c.Request.Header.Get("Authorization")
-	if authHeader == "" {
-		ResponseErrorWithMsg(c, errorx.CodeInvalidToken, "请求头缺少Auth Token")
-		c.Abort()
+	var p request.RefreshTokenRequest
+	if err := c.ShouldBind(&p); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			backfront.HandleError(c, errorx.ErrInvalidParam)
+			return
+		}
+		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, myvalidator.RemoveTopStruct(errs.Translate(myvalidator.Trans)))
 		return
 	}
-	// 按空格分割
-	parts := strings.SplitN(authHeader, " ", 2)
+
+	parts := strings.SplitN(p.AccessToken, " ", 2)
 	if !(len(parts) == 2 && parts[0] == "Bearer") {
-		ResponseErrorWithMsg(c, errorx.CodeInvalidToken, "Token格式错误")
-		c.Abort()
+		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidToken, "Token格式错误")
 		return
 	}
 	aToken := parts[1]
 
-	newAToken, newRToken, err := logic.RefreshToken(aToken, rt)
+	newAToken, newRToken, err := logic.RefreshToken(aToken, p.RefreshToken)
 	if err != nil {
-		// 使用 HandleError 处理错误（会自动记录日志）
-		HandleError(c, err)
+		backfront.HandleError(c, err)
 		return
 	}
 
-	ResponseSuccess(c, map[string]string{
+	backfront.ResponseSuccess(c, map[string]string{
 		"access_token":  newAToken,
 		"refresh_token": newRToken,
 	})

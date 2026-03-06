@@ -5,7 +5,6 @@ type CreatePostRequest struct {
 	Title       string `json:"title" binding:"required"`
 	Content     string `json:"content" binding:"required"`
 	CommunityID int64  `json:"community_id" binding:"required"`
-	AuthorID    string `json:"author_id"` // 从 Token 获取，不需要前端传
 }
 
 // PostListRequest 用于获取帖子列表时的分页和排序参数

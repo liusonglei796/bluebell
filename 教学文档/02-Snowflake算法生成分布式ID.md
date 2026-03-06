@@ -138,8 +138,8 @@ go get github.com/bwmarrin/snowflake
 package snowflake
 
 import (
+	"bluebell/internal/config"
 	"bluebell/pkg/errorx"
-	"time"
 
 	sf "github.com/bwmarrin/snowflake"
 )
@@ -147,11 +147,11 @@ import (
 var node *sf.Node
 
 // Init 初始化雪花算法节点
-func Init(startTime time.Time, machineID int64) (err error) {
-	sf.Epoch = startTime.UnixNano() / 1000000
-	node, err = sf.NewNode(machineID)
+func Init(cfg *config.Config) (err error) {
+	sf.Epoch = cfg.Snowflake.StartTime.UnixNano() / 1000000
+	node, err = sf.NewNode(cfg.Snowflake.MachineID)
 	if err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "初始化雪花算法节点失败, machineID=%d", machineID)
+		return errorx.Wrapf(err, errorx.CodeInfraError, "初始化雪花算法节点失败, machineID=%d", cfg.Snowflake.MachineID)
 	}
 	return
 }
@@ -200,9 +200,8 @@ func main() {
 
     // ...
 
-    // 5. 初始化 Snowflake
-    startTime, _ := time.Parse("2006-01-02", cfg.Snowflake.StartTime)
-    if err := snowflake.Init(startTime, cfg.Snowflake.MachineID); err != nil {
+    // 5. 初始化 Snowflake (Viper 会自动将 RFC3339 格式的字符串解析为 time.Time)
+    if err := snowflake.Init(cfg); err != nil {
         zap.L().Fatal("初始化雪花算法失败", zap.Error(err))
     }
 }

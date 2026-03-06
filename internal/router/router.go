@@ -16,9 +16,10 @@ import (
 )
 
 // NewRouter 初始化路由配置
+// 接收 HandlerProvider（DI 容器）作为参数
 func NewRouter(
 	mode string,
-	h *handler.Handlers,
+	hp *handler.HandlerProvider,
 	cfg *config.Config,
 ) (*gin.Engine, error) {
 	if mode == gin.ReleaseMode {
@@ -52,30 +53,29 @@ func NewRouter(
 	// 路由组
 	apiV1 := r.Group("/api/v1")
 
-	// 公共路由
+	// 公共路由（用户认证相关）
 	{
-		apiV1.POST("/signup", h.SignUpHandler)
-		apiV1.POST("/login", h.LoginHandler)
-		apiV1.POST("/refresh_token", h.RefreshTokenHandler)
+		apiV1.POST("/signup", hp.UserHandler.SignUpHandler)
+		apiV1.POST("/login", hp.UserHandler.LoginHandler)
+		apiV1.POST("/refresh_token", hp.UserHandler.RefreshTokenHandler)
 	}
 
-	// 认证路由
+	// 认证路由（需要 JWT 认证）
 	authGroup := apiV1.Group("")
 	authGroup.Use(middleware.JWTAuthMiddleware(cfg))
 	{
 		// 社区相关
-		authGroup.GET("/community", h.CommunityHandler)
-		authGroup.GET("/community/:id", h.CommunityHandlerByID)
+		authGroup.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
+		authGroup.GET("/community/:id", hp.CommunityHandler.GetCommunityDetailHandler)
 
 		// 帖子相关
-		authGroup.POST("/post", h.CreatePostHandler)
-		authGroup.GET("/post/:id", h.GetPostDetailHandler)
-		authGroup.DELETE("/post/:id", h.DeletePostHandler)
-		authGroup.GET("/posts", h.GetPostListHandler)
+		authGroup.POST("/post", hp.PostHandler.CreatePostHandler)
+		authGroup.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
+		authGroup.DELETE("/post/:id", hp.PostHandler.DeletePostHandler)
+		authGroup.GET("/posts", hp.PostHandler.GetPostListHandler)
 
 		// 投票相关
-		authGroup.POST("/vote", h.PostVoteHandler)
-
+		authGroup.POST("/vote", hp.VoteHandler.PostVoteHandler)
 	}
 
 	// 404
