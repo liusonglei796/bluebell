@@ -1,68 +1,69 @@
 package handler
 
 import (
-	domainService "bluebell/internal/domain/service"
+	domainService "bluebell/internal/domain/serviceinterface"
 )
 
-// UserHandler 用户相关处理器
-type UserHandler struct {
+// userHandlerStruct 用户相关处理器
+type userHandlerStruct struct {
 	userService domainService.UserService
 }
 
-// NewUserHandler 创建 UserHandler 实例
+// NewUserHandler 创建 userHandlerStruct 实例
 // 通过构造函数进行依赖注入
-func NewUserHandler(userService domainService.UserService) *UserHandler {
+func NewUserHandler(userService domainService.UserService) *userHandlerStruct {
 	if userService == nil {
 		panic("userService cannot be nil")
 	}
-	return &UserHandler{
+	return &userHandlerStruct{
 		userService: userService,
 	}
 }
-// PostHandler 帖子相关处理器
-type PostHandler struct {
+
+// postHandlerStruct 帖子相关处理器
+type postHandlerStruct struct {
 	postService domainService.PostService
 }
 
-// NewPostHandler 创建 PostHandler 实例
+// NewPostHandler 创建 postHandlerStruct 实例
 // 通过构造函数进行依赖注入
-func NewPostHandler(postService domainService.PostService) *PostHandler {
+func NewPostHandler(postService domainService.PostService) *postHandlerStruct {
 	if postService == nil {
 		panic("postService cannot be nil")
 	}
-	return &PostHandler{
+	return &postHandlerStruct{
 		postService: postService,
 	}
 }
 
-// CommunityHandler 社区相关处理器
-type CommunityHandler struct {
+// communityHandlerStruct 社区相关处理器
+type communityHandlerStruct struct {
 	communityService domainService.CommunityService
 }
 
-// NewCommunityHandler 创建 CommunityHandler 实例
+// NewCommunityHandler 创建 communityHandlerStruct 实例
 // 通过构造函数进行依赖注入
-func NewCommunityHandler(communityService domainService.CommunityService) *CommunityHandler {
+func NewCommunityHandler(communityService domainService.CommunityService) *communityHandlerStruct {
 	if communityService == nil {
 		panic("communityService cannot be nil")
 	}
-	return &CommunityHandler{
+	return &communityHandlerStruct{
 		communityService: communityService,
 	}
 }
 
-// VoteHandler 投票相关处理器
-type VoteHandler struct {
+// voteHandlerStruct 投票相关处理器
+type voteHandlerStruct struct {
 	voteService domainService.VoteService
 }
 
-// NewVoteHandler 创建 VoteHandler 实例
+// NewVoteHandler 创建 voteHandlerStruct 实例
 // 通过构造函数进行依赖注入
-func NewVoteHandler(voteService domainService.VoteService) *VoteHandler {
+func NewVoteHandler(voteService domainService.VoteService) *voteHandlerStruct {
 	if voteService == nil {
 		panic("voteService cannot be nil")
 	}
-	return &VoteHandler{
+	return &voteHandlerStruct{
 		voteService: voteService,
 	}
 }
@@ -70,10 +71,10 @@ func NewVoteHandler(voteService domainService.VoteService) *VoteHandler {
 // HandlerProvider 处理器提供者（DI容器）
 // 聚合所有 Handler 实例，作为依赖注入的入口点
 type HandlerProvider struct {
-	UserHandler      *UserHandler
-	PostHandler      *PostHandler
-	CommunityHandler *CommunityHandler
-	VoteHandler      *VoteHandler
+	UserHandler      *userHandlerStruct
+	PostHandler      *postHandlerStruct
+	CommunityHandler *communityHandlerStruct
+	VoteHandler      *voteHandlerStruct
 }
 
 // NewHandlerProvider 创建 HandlerProvider 实例
@@ -91,4 +92,3 @@ func NewHandlerProvider(
 		VoteHandler:      NewVoteHandler(voteService),
 	}
 }
-

@@ -2,9 +2,9 @@
 package service
 
 import (
-	domainService "bluebell/internal/domain/service"
+	domainService "bluebell/internal/domain/serviceinterface"
 	"bluebell/internal/config"
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"bluebell/internal/service/community"
 	"bluebell/internal/service/post"
 	"bluebell/internal/service/user"
@@ -27,10 +27,10 @@ type Services struct {
 // tokenCache: 用户Token缓存仓储
 // jwtCfg: JWT 配置
 func NewServices(
-	uow repository.UnitOfWork,
-	voteCache repository.VoteCacheRepository,
-	postCache repository.PostCacheRepository,
-	tokenCache repository.UserTokenCacheRepository,
+	uow repointerface.UnitOfWork,
+	voteCache repointerface.VoteCacheRepository,
+	postCache repointerface.PostCacheRepository,
+	tokenCache repointerface.UserTokenCacheRepository,
 	jwtCfg *config.Config,
 ) *Services {
 	postSvc := post.NewPostService(uow.PostRepo(), postCache, voteCache)

@@ -2,7 +2,7 @@ package mysql
 
 import (
 	"bluebell/internal/config"
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"context"
 	"fmt"
 	"time"
@@ -15,12 +15,12 @@ import (
 
 // Repositories 聚合所有 Repository 实例
 // 作为依赖注入的入口，Service 层通过此结构访问数据层
-// 实现了 repository.UnitOfWork 接口
+// 实现了 repointerface.UnitOfWork 接口
 type Repositories struct {
 	db        *gorm.DB                       // GORM 数据库实例
-	Post      repository.PostRepository      // 帖子 Repository
-	Community repository.CommunityRepository // 社区 Repository
-	User      repository.UserRepository      // 用户 Repository
+	Post      repointerface.PostRepository      // 帖子 Repository
+	Community repointerface.CommunityRepository // 社区 Repository
+	User      repointerface.UserRepository      // 用户 Repository
 }
 
 // NewRepositories 创建所有 Repository 实例
@@ -47,24 +47,24 @@ UserRepo()
 UnitOfWork
 （工作单元）模式以及方便进行依赖注入*/
 // PostRepo 返回 PostRepository 实例
-func (r *Repositories) PostRepo() repository.PostRepository {
+func (r *Repositories) PostRepo() repointerface.PostRepository {
 	return r.Post
 }
 
 // CommunityRepo 返回 CommunityRepository 实例
-func (r *Repositories) CommunityRepo() repository.CommunityRepository {
+func (r *Repositories) CommunityRepo() repointerface.CommunityRepository {
 	return r.Community
 }
 
 // UserRepo 返回 UserRepository 实例
-func (r *Repositories) UserRepo() repository.UserRepository {
+func (r *Repositories) UserRepo() repointerface.UserRepository {
 	return r.User
 }
 
 // Transaction 在数据库事务中执行函数
 // 回调参数 uow 是绑定了事务连接的新 UnitOfWork 实例
 // uow 也就是此时的 r，它内部的 r.db 存的是【全局普通数据库连接对象 db】
-func (r *Repositories) Transaction(fn func(uow repository.UnitOfWork) error) error {
+func (r *Repositories) Transaction(fn func(uow repointerface.UnitOfWork) error) error {
 
 	// r.db.Transaction 会要求 GORM 从连接池拿一根专属的长连接并开启事务，
 	// 然后把这个绑定了长连接的特殊对象赋值给入参变量 `tx`（它就是【事务绑定的专属数据库连接对象】）。

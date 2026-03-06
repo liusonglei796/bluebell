@@ -2,7 +2,7 @@ package user
 
 import (
 	"bluebell/internal/config"
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"bluebell/internal/dto/request"
 	"bluebell/internal/infrastructure/jwt"
 	"bluebell/internal/infrastructure/snowflake"
@@ -17,13 +17,13 @@ import (
 
 // UserService 用户业务逻辑服务
 type UserService struct {
-	userRepo   repository.UserRepository
-	tokenCache repository.UserTokenCacheRepository
+	userRepo   repointerface.UserRepository
+	tokenCache repointerface.UserTokenCacheRepository
 	jwtCfg     *config.Config
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo repository.UserRepository, tokenCache repository.UserTokenCacheRepository, jwtCfg *config.Config) *UserService {
+func NewUserService(userRepo repointerface.UserRepository, tokenCache repointerface.UserTokenCacheRepository, jwtCfg *config.Config) *UserService {
 	return &UserService{
 		userRepo:   userRepo,
 		tokenCache: tokenCache,
@@ -34,7 +34,7 @@ func NewUserService(userRepo repository.UserRepository, tokenCache repository.Us
 // SignUp 处理用户注册业务逻辑
 func (s *UserService) SignUp(ctx context.Context, p *request.SignUpRequest) (err error) {
 	if err = s.userRepo.CheckUserExist(ctx, p.Username); err != nil {
-		if errors.Is(err, repository.ErrUserExist) {
+		if errors.Is(err, repointerface.ErrUserExist) {
 			return errorx.ErrUserExist
 		}
 		zap.L().Error("userRepo.CheckUserExist failed",
@@ -74,10 +74,10 @@ func (s *UserService) Login(ctx context.Context, p *request.LoginRequest) (strin
 
 	err := s.userRepo.CheckLogin(ctx, user)
 	if err != nil {
-		if errors.Is(err, repository.ErrUserNotExist) {
+		if errors.Is(err, repointerface.ErrUserNotExist) {
 			return "", "", errorx.ErrUserNotExist
 		}
-		if errors.Is(err, repository.ErrInvalidPassword) {
+		if errors.Is(err, repointerface.ErrInvalidPassword) {
 			return "", "", errorx.ErrInvalidPassword
 		}
 

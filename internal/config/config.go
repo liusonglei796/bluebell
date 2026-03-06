@@ -48,9 +48,13 @@ type rateLimitConfig struct {
 	Capacity     int64  `mapstructure:"capacity"`
 }
 
+type timeoutConfig struct {
+	Timeout string `mapstructure:"timeout"`
+}
+
 type snowflakeConfig struct {
 	StartTime time.Time `mapstructure:"start_time"`
-	MachineID int64  `mapstructure:"machine_id"`
+	MachineID int64     `mapstructure:"machine_id"`
 }
 
 type jwtConfig struct {
@@ -69,6 +73,7 @@ type Config struct {
 	Snowflake *snowflakeConfig `mapstructure:"snowflake"`
 	RateLimit *rateLimitConfig `mapstructure:"ratelimit"`
 	JWT       *jwtConfig       `mapstructure:"jwt"`
+	Timeout   *timeoutConfig   `mapstructure:"timeout"`
 }
 
 var atva atomic.Value

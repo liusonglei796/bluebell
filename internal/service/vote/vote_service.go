@@ -1,7 +1,7 @@
 package vote
 
 import (
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"bluebell/internal/dto/request"
 	"bluebell/pkg/errorx"
 	"context"
@@ -13,12 +13,12 @@ import (
 
 // VoteService 投票业务逻辑服务
 type VoteService struct {
-	postRepo  repository.PostRepository
-	voteCache repository.VoteCacheRepository
+	postRepo  repointerface.PostRepository
+	voteCache repointerface.VoteCacheRepository
 }
 
 // NewVoteService 创建投票服务实例
-func NewVoteService(postRepo repository.PostRepository, voteCache repository.VoteCacheRepository) *VoteService {
+func NewVoteService(postRepo repointerface.PostRepository, voteCache repointerface.VoteCacheRepository) *VoteService {
 	return &VoteService{
 		postRepo:  postRepo,
 		voteCache: voteCache,
@@ -52,10 +52,10 @@ func (s *VoteService) VoteForPost(ctx context.Context, userID int64, p *request.
 	)
 
 	if err != nil {
-		if errors.Is(err, repository.ErrVoteTimeExpire) {
+		if errors.Is(err, repointerface.ErrVoteTimeExpire) {
 			return errorx.ErrVoteTimeExpire
 		}
-		if errors.Is(err, repository.ErrVoteRepeated) {
+		if errors.Is(err, repointerface.ErrVoteRepeated) {
 			return errorx.ErrVoteRepeated
 		}
 

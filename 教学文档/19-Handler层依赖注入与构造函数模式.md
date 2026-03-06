@@ -48,24 +48,24 @@ func (h *Handlers) LoginHandler(c *gin.Context) {
 将一个大的 Handlers 结构体拆分为多个独立的、职责清晰的 Handler：
 
 ```go
-// ✅ UserHandler - 专门处理用户相关业务
-type UserHandler struct {
-    userService domain.service.UserService  // 依赖接口，不是实现
+// ✅ userHandlerStruct - 专门处理用户相关业务
+type userHandlerStruct struct {
+    userService domain.serviceinterface.UserService  // 依赖接口，不是实现
 }
 
-// ✅ PostHandler - 专门处理帖子相关业务
-type PostHandler struct {
-    postService domain.service.PostService  // 依赖接口
+// ✅ postHandlerStruct - 专门处理帖子相关业务
+type postHandlerStruct struct {
+    postService domain.serviceinterface.PostService  // 依赖接口
 }
 
-// ✅ CommunityHandler - 专门处理社区相关业务
-type CommunityHandler struct {
-    communityService domain.service.CommunityService
+// ✅ communityHandlerStruct - 专门处理社区相关业务
+type communityHandlerStruct struct {
+    communityService domain.serviceinterface.CommunityService
 }
 
-// ✅ VoteHandler - 专门处理投票相关业务
-type VoteHandler struct {
-    voteService domain.service.VoteService
+// ✅ voteHandlerStruct - 专门处理投票相关业务
+type voteHandlerStruct struct {
+    voteService domain.serviceinterface.VoteService
 }
 ```
 
@@ -79,22 +79,22 @@ type VoteHandler struct {
 为每个 Handler 创建独立的构造函数，进行依赖注入：
 
 ```go
-// ✅ UserHandler 构造函数
-func NewUserHandler(userService domain.service.UserService) *UserHandler {
+// ✅ userHandlerStruct 构造函数
+func NewUserHandler(userService domain.serviceinterface.UserService) *userHandlerStruct {
     if userService == nil {
         panic("userService cannot be nil")  // 防御性编程
     }
-    return &UserHandler{
+    return &userHandlerStruct{
         userService: userService,
     }
 }
 
-// ✅ PostHandler 构造函数
-func NewPostHandler(postService domain.service.PostService) *PostHandler {
+// ✅ postHandlerStruct 构造函数
+func NewPostHandler(postService domain.serviceinterface.PostService) *postHandlerStruct {
     if postService == nil {
         panic("postService cannot be nil")
     }
-    return &PostHandler{
+    return &postHandlerStruct{
         postService: postService,
     }
 }
@@ -113,13 +113,13 @@ func NewPostHandler(postService domain.service.PostService) *PostHandler {
 
 ```go
 // ❌ 错误做法：依赖具体实现
-type UserHandler struct {
+type userHandlerStruct struct {
     userService *service.UserService  // ← 具体实现
 }
 
 // ✅ 正确做法：依赖接口
-type UserHandler struct {
-    userService domain.service.UserService  // ← 接口
+type userHandlerStruct struct {
+    userService domain.serviceinterface.UserService  // ← 接口
 }
 ```
 
@@ -136,18 +136,18 @@ type UserHandler struct {
 ```go
 // ✅ HandlerProvider 作为 DI 容器
 type HandlerProvider struct {
-    UserHandler      *UserHandler
-    PostHandler      *PostHandler
-    CommunityHandler *CommunityHandler
-    VoteHandler      *VoteHandler
+    UserHandler      *userHandlerStruct
+    PostHandler      *postHandlerStruct
+    CommunityHandler *communityHandlerStruct
+    VoteHandler      *voteHandlerStruct
 }
 
 // ✅ 完整的装配函数
 func NewHandlerProvider(
-    userService domain.service.UserService,
-    postService domain.service.PostService,
-    communityService domain.service.CommunityService,
-    voteService domain.service.VoteService,
+    userService domain.serviceinterface.UserService,
+    postService domain.serviceinterface.PostService,
+    communityService domain.serviceinterface.CommunityService,
+    voteService domain.serviceinterface.VoteService,
 ) *HandlerProvider {
     return &HandlerProvider{
         UserHandler:      NewUserHandler(userService),
@@ -223,7 +223,7 @@ internal/handler/
 ├── community_handler.go    ← CommunityHandler 实现
 └── vote_handler.go         ← VoteHandler 实现
 
-internal/domain/service/
+internal/domain/serviceinterface/
 ├── user_service.go         ← UserService 接口
 ├── post_service.go         ← PostService 接口
 ├── community_service.go    ← CommunityService 接口
@@ -237,7 +237,7 @@ package handler
 
 import (
     "bluebell/internal/backfront"
-    domainService "bluebell/internal/domain/service"
+    domainService "bluebell/internal/domain/serviceinterface"
     "bluebell/internal/dto/request"
     myvalidator "bluebell/internal/infrastructure/validator"
     "bluebell/pkg/errorx"
@@ -247,58 +247,77 @@ import (
     "github.com/go-playground/validator/v10"
 )
 
-// ✅ UserHandler 结构体
-type UserHandler struct {
+// ✅ userHandlerStruct 结构体
+type userHandlerStruct struct {
     userService domainService.UserService  // 依赖接口
 }
 
 // ✅ 构造函数
-func NewUserHandler(userService domainService.UserService) *UserHandler {
+func NewUserHandler(userService domainService.UserService) *userHandlerStruct {
     if userService == nil {
         panic("userService cannot be nil")
     }
-    return &UserHandler{
+    return &userHandlerStruct{
         userService: userService,
     }
 }
 
-// ✅ Handler 方法
-func (h *UserHandler) SignUpHandler(c *gin.Context) {
-    p := new(request.SignUpRequest)
+// ✅ Handler 方法 (SignUpHandler)
+func (h *userHandlerStruct) SignUpHandler(c *gin.Context) {
+    p := &request.SignUpRequest{}
+    // 1. 尝试绑定 JSON 数据到结构体
     if err := c.ShouldBindJSON(p); err != nil {
-        errs, ok := err.(validator.ValidationErrors)
-        if !ok {
-            backfront.HandleError(c, errorx.ErrInvalidParam)
+        // 2. 判断是否为参数验证错误 (ValidationErrors)
+        var errs validator.ValidationErrors
+        if errors.As(err, &errs) {
+            // 如果是验证错误，进行翻译并去除结构体名前缀
+            translatedErrs := errs.Translate(myvalidator.Trans)
+            backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam,
+                myvalidator.RemoveTopStruct(translatedErrs))
             return
         }
-        backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, 
-            myvalidator.RemoveTopStruct(errs.Translate(myvalidator.Trans)))
+
+        // 3. 如果是其他类型的错误（如 JSON 格式不正确），返回通用参数错误
+        backfront.HandleError(c, errorx.ErrInvalidParam)
         return
     }
 
-    // 通过注入的接口调用 Service 方法
+    // 4. 调用 Service 层处理业务逻辑
     if err := h.userService.SignUp(c.Request.Context(), p); err != nil {
         backfront.HandleError(c, err)
         return
     }
 
+    // 5. 业务处理成功
     backfront.ResponseSuccess(c, nil)
 }
 
-func (h *UserHandler) LoginHandler(c *gin.Context) {
-    var p request.LoginRequest
-    if err := c.ShouldBindJSON(&p); err != nil {
-        // 错误处理...
+// ✅ LoginHandler
+func (h *userHandlerStruct) LoginHandler(c *gin.Context) {
+    p := &request.LoginRequest{}
+    // 1. 尝试绑定 JSON 数据到结构体
+    if err := c.ShouldBindJSON(p); err != nil {
+        // 2. 判断是否为参数验证错误
+        var errs validator.ValidationErrors
+        if errors.As(err, &errs) {
+            translatedErrs := errs.Translate(myvalidator.Trans)
+            backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, 
+                myvalidator.RemoveTopStruct(translatedErrs))
+            return
+        }
+        // 3. 其他类型的错误
+        backfront.HandleError(c, errorx.ErrInvalidParam)
         return
     }
 
-    // 通过注入的接口调用 Service 方法
-    aToken, rToken, err := h.userService.Login(c.Request.Context(), &p)
+    // 4. 通过注入的接口调用 Service 方法
+    aToken, rToken, err := h.userService.Login(c.Request.Context(), p)
     if err != nil {
         backfront.HandleError(c, err)
         return
     }
 
+    // 5. 业务处理成功
     backfront.ResponseSuccess(c, map[string]string{
         "access_token":  aToken,
         "refresh_token": rToken,
@@ -446,10 +465,10 @@ func NewRouter(mode string, hp *handler.HandlerProvider, cfg *config.Config) (*g
 ### S - Single Responsibility（单一职责）
 ```go
 // ✅ 每个 Handler 只处理一类业务
-- UserHandler：用户相关（注册、登录、刷新 Token）
-- PostHandler：帖子相关（创建、获取、删除）
-- CommunityHandler：社区相关（列表、详情）
-- VoteHandler：投票相关
+- userHandler：用户相关（注册、登录、刷新 Token）
+- postHandler：帖子相关（创建、获取、删除）
+- communityHandler：社区相关（列表、详情）
+- voteHandler：投票相关
 ```
 
 ### O - Open/Closed（开闭原则）
@@ -479,7 +498,7 @@ type UserService interface {
 }
 
 // ✅ Handler 只依赖必需的接口
-type UserHandler struct {
+type userHandler struct {
     userService UserService  // 只依赖 UserService
 }
 ```
@@ -487,12 +506,12 @@ type UserHandler struct {
 ### D - Dependency Inversion（依赖反转）
 ```go
 // ✅ Handler 依赖抽象（接口）而非具体（实现）
-type UserHandler struct {
+type userHandler struct {
     userService domain.service.UserService  // 接口
 }
 
 // ✅ 通过构造函数注入依赖
-func NewUserHandler(userService domain.service.UserService) *UserHandler { }
+func NewUserHandler(userService domain.service.UserService) *userHandler { }
 ```
 
 ## 🔄 工厂方法
@@ -547,12 +566,12 @@ handlerProvider := handler.NewHandlerProvider(
 ### 1. 始终使用接口
 ```go
 // ✅ 好做法
-type UserHandler struct {
+type userHandler struct {
     userService domain.service.UserService  // 接口
 }
 
 // ❌ 错误做法
-type UserHandler struct {
+type userHandler struct {
     userService *service.UserService  // 具体实现
 }
 ```
@@ -560,25 +579,25 @@ type UserHandler struct {
 ### 2. 构造函数中进行 nil 检查
 ```go
 // ✅ 防御性编程
-func NewUserHandler(userService domain.service.UserService) *UserHandler {
+func NewUserHandler(userService domain.service.UserService) *userHandler {
     if userService == nil {
         panic("userService cannot be nil")
     }
-    return &UserHandler{userService: userService}
+    return &userHandler{userService: userService}
 }
 ```
 
 ### 3. 单一职责
 ```go
 // ✅ 每个 Handler 只做一件事
-type UserHandler struct {
+type userHandler struct {
     userService domain.service.UserService  // 只依赖 UserService
 }
 
 // ❌ 不要混合职责
 type Handler struct {
-    userService domain.service.UserService
-    postService domain.service.PostService
+    userService domain.serviceinterface.UserService
+    postService domain.serviceinterface.PostService
     // ... 混合了多个职责
 }
 ```

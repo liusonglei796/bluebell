@@ -1,4 +1,4 @@
-package repository
+package repointerface
 
 // UnitOfWork 工作单元接口
 // 提供事务支持和 Repository 访问器

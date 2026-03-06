@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"context"
 	"errors"
 	"fmt"
@@ -36,7 +36,7 @@ func (c *VoteCache) VoteForPost(ctx context.Context, userID, postID, communityID
 	// 1. 判断投票时间限制
 	postTime := rdb.ZScore(ctx, getRedisKey(KeyPostTimeZSet), postID).Val()
 	if float64(time.Now().Unix())-postTime > OneWeekInSeconds {
-		return repository.ErrVoteTimeExpire
+		return repointerface.ErrVoteTimeExpire
 	}
 
 	// 2. 查询用户之前对该帖子的投票记录
@@ -44,7 +44,7 @@ func (c *VoteCache) VoteForPost(ctx context.Context, userID, postID, communityID
 
 	// 3. 如果新旧投票值相同,直接返回
 	if value == oldValue {
-		return repository.ErrVoteRepeated
+		return repointerface.ErrVoteRepeated
 	}
 
 	// 4. 计算分数变化

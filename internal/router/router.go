@@ -4,9 +4,8 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/handler"
 	"bluebell/internal/middleware"
-
 	"bluebell/pkg/errorx"
-	"fmt"
+
 	"net/http"
 	"time"
 
@@ -22,27 +21,24 @@ func NewRouter(
 	hp *handler.HandlerProvider,
 	cfg *config.Config,
 ) (*gin.Engine, error) {
-	if mode == gin.ReleaseMode {
-		gin.SetMode(gin.ReleaseMode)
-	}
 
 	r := gin.New()
 
-	if cfg.RateLimit == nil {
-		return nil, errorx.New(errorx.CodeConfigError, "missing rate limit configuration")
-	}
-
 	fillInterval, err := time.ParseDuration(cfg.RateLimit.FillInterval)
 	if err != nil {
-		return nil, fmt.Errorf("parse rate limit fill_interval failed: %w", err)
+		return nil, errorx.Wrap(err, errorx.CodeConfigError, "parse rate limit fill interval failed")
 	}
-	capacity := cfg.RateLimit.Capacity
+
+	timeout, err := time.ParseDuration(cfg.Timeout.Timeout)
+	if err != nil {
+		return nil, errorx.Wrap(err, errorx.CodeConfigError, "parse request timeout failed")
+	}
 
 	r.Use(
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
-		middleware.RateLimitMiddleware(fillInterval, capacity),
-		middleware.TimeoutMiddleware(10*time.Second),
+		middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity),
+		middleware.TimeoutMiddleware(timeout),
 	)
 
 	// Swagger (仅在非生产环境)
@@ -51,7 +47,7 @@ func NewRouter(
 	}
 
 	// 路由组
-	apiV1 := r.Group("/api/v1")
+	apiV1 := r.Group("")
 
 	// 公共路由（用户认证相关）
 	{

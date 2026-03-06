@@ -1,7 +1,7 @@
 package mysql
 
 import (
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"bluebell/internal/model"
 	"context"
 	"errors"
@@ -29,7 +29,7 @@ func (r *UserRepo) CheckUserExist(ctx context.Context, username string) (err err
 		return err
 	}
 	if count > 0 {
-		return repository.ErrUserExist
+		return repointerface.ErrUserExist
 	}
 	return nil
 }
@@ -51,14 +51,14 @@ func (r *UserRepo) CheckLogin(ctx context.Context, user *model.User) (err error)
 	err = r.db.WithContext(ctx).Where("user_name = ?", user.UserName).First(user).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return repository.ErrUserNotExist
+			return repointerface.ErrUserNotExist
 		}
 		return fmt.Errorf("login failed: %w", err)
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Passwd), []byte(oPassword))
 	if err != nil {
-		return repository.ErrInvalidPassword
+		return repointerface.ErrInvalidPassword
 	}
 	return nil
 }

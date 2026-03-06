@@ -1,4 +1,4 @@
-package service
+package serviceinterface
 
 import (
 	"bluebell/internal/dto/response"

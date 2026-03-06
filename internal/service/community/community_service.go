@@ -1,7 +1,7 @@
 package community
 
 import (
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"bluebell/internal/dto/response"
 	"bluebell/internal/model"
 	"bluebell/pkg/errorx"
@@ -13,11 +13,11 @@ import (
 
 // CommunityService 社区业务逻辑服务
 type CommunityService struct {
-	communityRepo repository.CommunityRepository
+	communityRepo repointerface.CommunityRepository
 }
 
 // NewCommunityService 创建社区服务实例
-func NewCommunityService(communityRepo repository.CommunityRepository) *CommunityService {
+func NewCommunityService(communityRepo repointerface.CommunityRepository) *CommunityService {
 	return &CommunityService{communityRepo: communityRepo}
 }
 

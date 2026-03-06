@@ -1,7 +1,7 @@
 package post
 
 import (
-	"bluebell/internal/domain/repository"
+	"bluebell/internal/domain/repointerface"
 	"bluebell/internal/dto/request"
 	"bluebell/internal/dto/response"
 	"bluebell/internal/infrastructure/snowflake"
@@ -16,16 +16,16 @@ import (
 
 // PostService 帖子业务逻辑服务
 type PostService struct {
-	postRepo  repository.PostRepository
-	postCache repository.PostCacheRepository
-	voteCache repository.VoteCacheRepository
+	postRepo  repointerface.PostRepository
+	postCache repointerface.PostCacheRepository
+	voteCache repointerface.VoteCacheRepository
 }
 
 // NewPostService 创建帖子服务实例
 func NewPostService(
-	postRepo repository.PostRepository,
-	postCache repository.PostCacheRepository,
-	voteCache repository.VoteCacheRepository,
+	postRepo repointerface.PostRepository,
+	postCache repointerface.PostCacheRepository,
+	voteCache repointerface.VoteCacheRepository,
 ) *PostService {
 	return &PostService{
 		postRepo:  postRepo,
