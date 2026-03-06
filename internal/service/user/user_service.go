@@ -15,16 +15,16 @@ import (
 	"go.uber.org/zap"
 )
 
-// UserService 用户业务逻辑服务
-type UserService struct {
+// userServiceStruct 用户业务逻辑服务
+type userServiceStruct struct {
 	userRepo   repointerface.UserRepository
 	tokenCache repointerface.UserTokenCacheRepository
 	jwtCfg     *config.Config
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo repointerface.UserRepository, tokenCache repointerface.UserTokenCacheRepository, jwtCfg *config.Config) *UserService {
-	return &UserService{
+func NewUserService(userRepo repointerface.UserRepository, tokenCache repointerface.UserTokenCacheRepository, jwtCfg *config.Config) *userServiceStruct {
+	return &userServiceStruct{
 		userRepo:   userRepo,
 		tokenCache: tokenCache,
 		jwtCfg:     jwtCfg,
@@ -32,7 +32,7 @@ func NewUserService(userRepo repointerface.UserRepository, tokenCache repointerf
 }
 
 // SignUp 处理用户注册业务逻辑
-func (s *UserService) SignUp(ctx context.Context, p *request.SignUpRequest) (err error) {
+func (s *userServiceStruct) SignUp(ctx context.Context, p *request.SignUpRequest) (err error) {
 	if err = s.userRepo.CheckUserExist(ctx, p.Username); err != nil {
 		if errors.Is(err, repointerface.ErrUserExist) {
 			return errorx.ErrUserExist
@@ -66,7 +66,7 @@ func (s *UserService) SignUp(ctx context.Context, p *request.SignUpRequest) (err
 }
 
 // Login 处理用户登录业务逻辑
-func (s *UserService) Login(ctx context.Context, p *request.LoginRequest) (string, string, error) {
+func (s *userServiceStruct) Login(ctx context.Context, p *request.LoginRequest) (string, string, error) {
 	user := &model.User{
 		UserName: p.Username,
 		Passwd:   p.Password,
@@ -110,7 +110,7 @@ func (s *UserService) Login(ctx context.Context, p *request.LoginRequest) (strin
 }
 
 // RefreshToken 刷新 Token
-func (s *UserService) RefreshToken(ctx context.Context, aToken, rToken string) (newAToken, newRToken string, err error) {
+func (s *userServiceStruct) RefreshToken(ctx context.Context, aToken, rToken string) (newAToken, newRToken string, err error) {
 	// 1. 解析 Refresh Token 获取 UserID
 	userID, err := jwt.ParseToken(s.jwtCfg, rToken)
 	if err != nil {

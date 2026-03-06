@@ -566,13 +566,21 @@ handlerProvider := handler.NewHandlerProvider(
 ### 1. 始终使用接口
 ```go
 // ✅ 好做法
-type userHandler struct {
-    userService domain.service.UserService  // 接口
+type userHandlerStruct struct {
+    userService domain.serviceinterface.UserService  // 接口
 }
 
 // ❌ 错误做法
-type userHandler struct {
-    userService *service.UserService  // 具体实现
+type userHandlerStruct struct {
+    userService *user.userServiceStruct  // 具体实现（虽然是私有的，但在 handler 层也不应直接依赖实现包的结构体）
+}
+```
+
+### 2. Service 层也应遵循私有化规范
+```go
+// ✅ 在 internal/service/user/user_service.go 中
+type userServiceStruct struct {
+    userRepo repointerface.UserRepository
 }
 ```
 

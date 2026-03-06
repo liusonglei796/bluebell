@@ -11,14 +11,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// CommunityService 社区业务逻辑服务
-type CommunityService struct {
+// communityServiceStruct 社区业务逻辑服务
+type communityServiceStruct struct {
 	communityRepo repointerface.CommunityRepository
 }
 
 // NewCommunityService 创建社区服务实例
-func NewCommunityService(communityRepo repointerface.CommunityRepository) *CommunityService {
-	return &CommunityService{communityRepo: communityRepo}
+func NewCommunityService(communityRepo repointerface.CommunityRepository) *communityServiceStruct {
+	return &communityServiceStruct{communityRepo: communityRepo}
 }
 
 // toResponse 将 model.Community 转换为 response.CommunityResponse
@@ -32,7 +32,7 @@ func toResponse(c *model.Community) *response.CommunityResponse {
 }
 
 // GetCommunityList 获取社区列表
-func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*response.CommunityResponse, error) {
+func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*response.CommunityResponse, error) {
 	data, err := s.communityRepo.GetCommunityList(ctx)
 	if err != nil {
 		zap.L().Error("communityRepo.GetCommunityList failed", zap.Error(err))
@@ -47,7 +47,7 @@ func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*response.Co
 }
 
 // GetCommunityDetail 根据ID获取社区详情
-func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*response.CommunityResponse, error) {
+func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int64) (*response.CommunityResponse, error) {
 	data, err := s.communityRepo.GetCommunityDetailByID(ctx, id)
 	if err != nil {
 		zap.L().Error("communityRepo.GetCommunityDetailByID failed",

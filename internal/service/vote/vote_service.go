@@ -11,22 +11,22 @@ import (
 	"go.uber.org/zap"
 )
 
-// VoteService 投票业务逻辑服务
-type VoteService struct {
+// voteServiceStruct 投票业务逻辑服务
+type voteServiceStruct struct {
 	postRepo  repointerface.PostRepository
 	voteCache repointerface.VoteCacheRepository
 }
 
 // NewVoteService 创建投票服务实例
-func NewVoteService(postRepo repointerface.PostRepository, voteCache repointerface.VoteCacheRepository) *VoteService {
-	return &VoteService{
+func NewVoteService(postRepo repointerface.PostRepository, voteCache repointerface.VoteCacheRepository) *voteServiceStruct {
+	return &voteServiceStruct{
 		postRepo:  postRepo,
 		voteCache: voteCache,
 	}
 }
 
 // VoteForPost 投票业务逻辑
-func (s *VoteService) VoteForPost(ctx context.Context, userID int64, p *request.VoteRequest) error {
+func (s *voteServiceStruct) VoteForPost(ctx context.Context, userID int64, p *request.VoteRequest) error {
 	zap.L().Debug("VoteForPost",
 		zap.Int64("userID", userID),
 		zap.Int64("postID", p.PostID),

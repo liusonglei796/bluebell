@@ -14,8 +14,8 @@ import (
 	"go.uber.org/zap"
 )
 
-// PostService 帖子业务逻辑服务
-type PostService struct {
+// postServiceStruct 帖子业务逻辑服务
+type postServiceStruct struct {
 	postRepo  repointerface.PostRepository
 	postCache repointerface.PostCacheRepository
 	voteCache repointerface.VoteCacheRepository
@@ -26,8 +26,8 @@ func NewPostService(
 	postRepo repointerface.PostRepository,
 	postCache repointerface.PostCacheRepository,
 	voteCache repointerface.VoteCacheRepository,
-) *PostService {
-	return &PostService{
+) *postServiceStruct {
+	return &postServiceStruct{
 		postRepo:  postRepo,
 		postCache: postCache,
 		voteCache: voteCache,
@@ -35,7 +35,7 @@ func NewPostService(
 }
 
 // CreatePost 创建帖子,返回新创建的帖子ID
-func (s *PostService) CreatePost(ctx context.Context, p *request.CreatePostRequest, authorID int64) (postID int64, err error) {
+func (s *postServiceStruct) CreatePost(ctx context.Context, p *request.CreatePostRequest, authorID int64) (postID int64, err error) {
 	postID = snowflake.GenID()
 
 	post := &model.Post{
@@ -68,7 +68,7 @@ func (s *PostService) CreatePost(ctx context.Context, p *request.CreatePostReque
 }
 
 // GetPostByID 查询单个帖子详情
-func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *response.PostDetailResponse, err error) {
+func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *response.PostDetailResponse, err error) {
 	post, err := s.postRepo.GetPostByID(ctx, pid)
 	if err != nil {
 		zap.L().Error("postRepo.GetPostByID failed",
@@ -110,7 +110,7 @@ func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *respons
 }
 
 // GetPostList 获取帖子列表
-func (s *PostService) GetPostList(ctx context.Context, p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
+func (s *postServiceStruct) GetPostList(ctx context.Context, p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
 	ids, err := s.postCache.GetPostIDsInOrder(ctx, p.Order, p.Page, p.Size)
 	if err != nil {
 		zap.L().Error("postCache.GetPostIDsInOrder failed",
@@ -169,7 +169,7 @@ func (s *PostService) GetPostList(ctx context.Context, p *request.PostListReques
 }
 
 // GetCommunityPostList 根据社区ID获取帖子列表
-func (s *PostService) GetCommunityPostList(ctx context.Context, p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
+func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *request.PostListRequest) (data []*response.PostDetailResponse, err error) {
 	ids, err := s.postCache.GetCommunityPostIDsInOrder(ctx, p.CommunityID, p.Order, p.Page, p.Size)
 	if err != nil {
 		zap.L().Error("postCache.GetCommunityPostIDsInOrder failed",
@@ -229,7 +229,7 @@ func (s *PostService) GetCommunityPostList(ctx context.Context, p *request.PostL
 }
 
 // DeletePost 删除帖子（软删除）
-func (s *PostService) DeletePost(ctx context.Context, postID int64, userID int64) error {
+func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID int64) error {
 	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		zap.L().Error("postRepo.GetPostByID failed",

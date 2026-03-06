@@ -2,9 +2,9 @@
 package service
 
 import (
-	domainService "bluebell/internal/domain/serviceinterface"
 	"bluebell/internal/config"
 	"bluebell/internal/domain/repointerface"
+	domainService "bluebell/internal/domain/serviceinterface"
 	"bluebell/internal/service/community"
 	"bluebell/internal/service/post"
 	"bluebell/internal/service/user"
