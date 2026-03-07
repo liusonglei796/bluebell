@@ -3,13 +3,13 @@ package main
 import (
 	_ "bluebell/docs" // 导入生成的 Swagger 文档包
 	"bluebell/internal/config"
-	"bluebell/internal/dao/mysql"
-	"bluebell/internal/dao/redis"
+	"bluebell/internal/dao/cache"
+	"bluebell/internal/dao/database"
 	"bluebell/internal/handler"
 	"bluebell/internal/http_server"
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/snowflake"
-	"bluebell/internal/infrastructure/validator"
+	"bluebell/internal/infrastructure/translate"
 	"bluebell/internal/router"
 	"bluebell/internal/service"
 	"flag"
@@ -66,20 +66,21 @@ func main() {
 	}
 
 	// 3. 初始化 MySQL
-	gormDB, err := mysql.Init(cfg)
+	gormDB, err := database.Init(cfg)
 	if err != nil {
 		zap.L().Fatal("Init MySQL failed", zap.Error(err))
 	}
-	defer mysql.Close(gormDB)
+	defer database.Close(gormDB)
 
 	// 4. 初始化 Redis
-	if err := redis.Init(cfg); err != nil {
+	rdb, err := cache.Init(cfg)
+	if err != nil {
 		zap.L().Fatal("Init Redis failed", zap.Error(err))
 	}
-	defer redis.Close()
+	defer cache.Close(rdb)
 
 	// 初始化 Validator
-	if err := validator.InitTrans(); err != nil {
+	if err := translate.InitTrans(); err != nil {
 		zap.L().Fatal("init validator trans failed", zap.Error(err))
 	}
 
@@ -87,25 +88,17 @@ func main() {
 	// 按照分层架构从下往上依次注入依赖
 
 	// 1) 基础设施层：创建 Repository 实例（数据访问层）
-	repositoriesUOW := mysql.NewRepositories(gormDB)
-	voteCache := redis.NewVoteCache()
-	tokenCache := redis.NewUserTokenCache()
+	repositoriesUOW := database.NewRepositories(gormDB)
+	cacheRepos := cache.NewRepositories(rdb)
 
 	// 2) 业务逻辑层：创建 Service 实例
-	services := service.NewServices(
-		repositoriesUOW,
-		voteCache,
-		voteCache,
-		tokenCache,
-		cfg,
-	)
+	services := service.NewServices(repositoriesUOW, cacheRepos, cfg)
 
 	// 3) 表现层：创建 Handler 实例（通过 DI 注入 Service 接口）
-	handlerProvider := handler.NewHandlerProvider(
+	handlerProvider := handler.NewProvider(
 		services.User,      // 注入 UserService 接口
 		services.Post,      // 注入 PostService 接口
 		services.Community, // 注入 CommunityService 接口
-		services.Vote,      // 注入 VoteService 接口
 	)
 
 	// 4) 路由层：初始化路由，注入 Handler

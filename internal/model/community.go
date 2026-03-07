@@ -6,7 +6,6 @@ import "gorm.io/gorm"
 // 为什么：使用 GORM ORM 映射数据库 community 表
 type Community struct {
 	gorm.Model
-	CommunityID   int64  `gorm:"column:community_id;uniqueIndex"`
 	CommunityName string `gorm:"column:community_name;not null;size:255"`
 	Introduction  string `gorm:"column:introduction;not null;type:text"`
 }

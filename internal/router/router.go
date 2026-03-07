@@ -15,10 +15,10 @@ import (
 )
 
 // NewRouter 初始化路由配置
-// 接收 HandlerProvider（DI 容器）作为参数
+// 接收 Provider（DI 容器）作为参数
 func NewRouter(
 	mode string,
-	hp *handler.HandlerProvider,
+	hp *handler.Provider,
 	cfg *config.Config,
 ) (*gin.Engine, error) {
 
@@ -69,9 +69,7 @@ func NewRouter(
 		authGroup.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
 		authGroup.DELETE("/post/:id", hp.PostHandler.DeletePostHandler)
 		authGroup.GET("/posts", hp.PostHandler.GetPostListHandler)
-
-		// 投票相关
-		authGroup.POST("/vote", hp.VoteHandler.PostVoteHandler)
+		authGroup.POST("/vote", hp.PostHandler.PostVoteHandler)
 	}
 
 	// 404

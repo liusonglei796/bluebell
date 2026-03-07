@@ -5,10 +5,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// BcryptCost bcrypt 加密成本参数
+// bcryptCost bcrypt 加密成本参数
 // DefaultCost = 10，每增加1，计算时间翻倍
 // 性能考虑：生产环境使用 10 可以平衡安全性和性能
-const BcryptCost = 10
+const bcryptCost = 10
 
 // User 用户模型
 // 为什么：对应数据库中的 user 表结构，使用 GORM ORM 映射
@@ -31,7 +31,7 @@ func (User) TableName() string {
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	// 如果密码不为空，则进行加密
 	if u.Passwd != "" {
-		hash, err := bcrypt.GenerateFromPassword([]byte(u.Passwd), BcryptCost)
+		hash, err := bcrypt.GenerateFromPassword([]byte(u.Passwd), bcryptCost)
 		if err != nil {
 			return err
 		}

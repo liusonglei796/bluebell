@@ -80,7 +80,7 @@ type voteHandlerStruct struct {
 
 ```go
 // ✅ userHandlerStruct 构造函数
-func NewUserHandler(userService domain.serviceinterface.UserService) *userHandlerStruct {
+func newUserHandler(userService domain.serviceinterface.UserService) *userHandlerStruct {
     if userService == nil {
         panic("userService cannot be nil")  // 防御性编程
     }
@@ -90,7 +90,7 @@ func NewUserHandler(userService domain.serviceinterface.UserService) *userHandle
 }
 
 // ✅ postHandlerStruct 构造函数
-func NewPostHandler(postService domain.serviceinterface.PostService) *postHandlerStruct {
+func newPostHandler(postService domain.serviceinterface.PostService) *postHandlerStruct {
     if postService == nil {
         panic("postService cannot be nil")
     }
@@ -150,10 +150,10 @@ func NewHandlerProvider(
     voteService domain.serviceinterface.VoteService,
 ) *HandlerProvider {
     return &HandlerProvider{
-        UserHandler:      NewUserHandler(userService),
-        PostHandler:      NewPostHandler(postService),
-        CommunityHandler: NewCommunityHandler(communityService),
-        VoteHandler:      NewVoteHandler(voteService),
+        UserHandler:      newUserHandler(userService),
+        PostHandler:      newPostHandler(postService),
+        CommunityHandler: newCommunityHandler(communityService),
+        VoteHandler:      newVoteHandler(voteService),
     }
 }
 
@@ -172,21 +172,20 @@ type Handlers = HandlerProvider
 ### 完整的 6 步 DI 流程
 
 ```go
-// Step 1: 初始化基础设施
-gormDB := mysql.Init(cfg)
-redisClient := redis.Init(cfg)
+// Step 1: 初始化基础设施（返回 local 变量）
+gormDB, err := database.Init(cfg)
+rdb, err := cache.Init(cfg)
+defer database.Close(gormDB)
+defer cache.Close(rdb)
 
-// Step 2: 创建 Repository 实例
-repositoriesUOW := mysql.NewRepositories(gormDB)
-voteCache := redis.NewVoteCache()
-tokenCache := redis.NewUserTokenCache()
+// Step 2: 创建 Repository 实例（数据访问聚合层）
+repositoriesUOW := database.NewRepositories(gormDB)
+cacheRepos := cache.NewRepositories(rdb)
 
 // Step 3: 创建 Service 实例（实现接口）
 services := service.NewServices(
     repositoriesUOW,
-    voteCache,
-    voteCache,
-    tokenCache,
+    cacheRepos,
     cfg,
 )
 
@@ -206,6 +205,7 @@ http_server.Run(r, cfg.App.Port)
 ```
 
 **关键点**：
+- **Unit of Work (repositoriesUOW)**：实现了仓储的聚合。在 `internal/dao/mysql/repositories.go` 中，我们定义了 `NewRepositories` 函数，它将 `*gorm.DB` 注入到各个具体的 Repository（User, Post, Community）中。这使得我们在 Service 层可以方便地通过 `uow` 对象访问不同的数据操作，并能够轻松支持跨仓储的数据库事务。
 - Step 3 中的 services 实现了 Service 接口
 - Step 4 中将接口实现注入到 Handler
 - Handler 只知道接口，不知道具体实现
@@ -239,7 +239,7 @@ import (
     "bluebell/internal/backfront"
     domainService "bluebell/internal/domain/serviceinterface"
     "bluebell/internal/dto/request"
-    myvalidator "bluebell/internal/infrastructure/validator"
+    myvalidator "bluebell/internal/infrastructure/validate"
     "bluebell/pkg/errorx"
     "strings"
 
@@ -253,7 +253,7 @@ type userHandlerStruct struct {
 }
 
 // ✅ 构造函数
-func NewUserHandler(userService domainService.UserService) *userHandlerStruct {
+func newUserHandler(userService domainService.UserService) *userHandlerStruct {
     if userService == nil {
         panic("userService cannot be nil")
     }
@@ -373,7 +373,7 @@ func TestUserHandler_SignUp_Success(t *testing.T) {
     mockService.On("SignUp", mock.Anything, mock.Anything).Return(nil)
     
     // 通过构造函数注入 Mock
-    handler := NewUserHandler(mockService)
+    handler := newUserHandler(mockService)
     
     // Act & Assert
     assert.NotNil(t, handler)
@@ -387,7 +387,7 @@ func TestUserHandler_SignUp_UserExists(t *testing.T) {
     mockService.On("SignUp", mock.Anything, mock.Anything).
         Return(errorx.ErrUserExist)
     
-    handler := NewUserHandler(mockService)
+    handler := newUserHandler(mockService)
     
     // Act & Assert
     // 测试逻辑...
@@ -399,7 +399,7 @@ func TestUserHandler_Login_Success(t *testing.T) {
     mockService.On("Login", mock.Anything, mock.Anything).
         Return("access_token", "refresh_token", nil)
     
-    handler := NewUserHandler(mockService)
+    handler := newUserHandler(mockService)
     
     // 测试逻辑...
 }
@@ -511,7 +511,7 @@ type userHandler struct {
 }
 
 // ✅ 通过构造函数注入依赖
-func NewUserHandler(userService domain.service.UserService) *userHandler { }
+func newUserHandler(userService domain.service.UserService) *userHandler { }
 ```
 
 ## 🔄 工厂方法
@@ -587,7 +587,7 @@ type userServiceStruct struct {
 ### 2. 构造函数中进行 nil 检查
 ```go
 // ✅ 防御性编程
-func NewUserHandler(userService domain.service.UserService) *userHandler {
+func newUserHandler(userService domain.service.UserService) *userHandler {
     if userService == nil {
         panic("userService cannot be nil")
     }

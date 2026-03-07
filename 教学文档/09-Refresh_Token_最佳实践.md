@@ -434,15 +434,15 @@ Logic.RefreshToken(aToken, rToken)
 在 `controller/user.go` 中新增 Handler。
 
 ```go
-package controller
+package handler
 
 import (
 	"bluebell/internal/backfront"
 	"bluebell/internal/dto/request"
-	myvalidator "bluebell/internal/infrastructure/validator"
-	"bluebell/logic"
+	myvalidator "bluebell/internal/infrastructure/validate"
+	"bluebell/logic" // 注意：在之后的重构中，这里会被改为依赖注入的方式 (Service)
 	"bluebell/pkg/errorx"
-	"strings"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -452,23 +452,17 @@ import (
 func RefreshTokenHandler(c *gin.Context) {
 	var p request.RefreshTokenRequest
 	if err := c.ShouldBind(&p); err != nil {
-		errs, ok := err.(validator.ValidationErrors)
-		if !ok {
-			backfront.HandleError(c, errorx.ErrInvalidParam)
+		var errs validator.ValidationErrors
+		if errors.As(err, &errs) {
+			backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, myvalidator.RemoveTopStruct(errs.Translate(myvalidator.Trans)))
 			return
 		}
-		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, myvalidator.RemoveTopStruct(errs.Translate(myvalidator.Trans)))
+		backfront.HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
 
-	parts := strings.SplitN(p.AccessToken, " ", 2)
-	if !(len(parts) == 2 && parts[0] == "Bearer") {
-		backfront.HandleErrorWithMsg(c, errorx.CodeInvalidToken, "Token格式错误")
-		return
-	}
-	aToken := parts[1]
-
-	newAToken, newRToken, err := logic.RefreshToken(aToken, p.RefreshToken)
+	// Token解析逻辑已下沉至下层 (Logic/Service) 处理
+	newAToken, newRToken, err := logic.RefreshToken(c.Request.Context(), &p)
 	if err != nil {
 		backfront.HandleError(c, err)
 		return

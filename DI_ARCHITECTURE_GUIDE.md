@@ -72,14 +72,23 @@
 ### Step 1: 创建底层依赖（Repository 层）
 
 ```go
-// 基础设施：数据库连接
-gormDB, err := mysql.Init(cfg)
-redisClient := redis.Init(cfg)
+// 基础设施：初始化 MySQL（返回 local 变量）
+gormDB, err := database.Init(cfg)
+if err != nil {
+    zap.L().Fatal("Init MySQL failed", zap.Error(err))
+}
+defer database.Close(gormDB)
 
-// 创建 Repository 实例
-repositoriesUOW := mysql.NewRepositories(gormDB)  // 包含 UserRepo、PostRepo 等
-voteCache := redis.NewVoteCache()
-tokenCache := redis.NewUserTokenCache()
+// 基础设施：初始化 Redis（返回 local 变量）
+rdb, err := cache.Init(cfg)
+if err != nil {
+    zap.L().Fatal("Init Redis failed", zap.Error(err))
+}
+defer cache.Close(rdb)
+
+// 创建 Repository 实例（注入底层连接）
+repositoriesUOW := database.NewRepositories(gormDB) 
+cacheRepos := cache.NewRepositories(rdb) 
 ```
 
 ### Step 2: 创建 Service 层
@@ -87,10 +96,8 @@ tokenCache := redis.NewUserTokenCache()
 ```go
 // Service 层依赖 Repository 接口
 services := service.NewServices(
-    repositoriesUOW,     // UnitOfWork（包含所有 Repository）
-    voteCache,           // VoteCacheRepository
-    voteCache,           // PostCacheRepository
-    tokenCache,          // UserTokenCacheRepository
+    repositoriesUOW,     // MySQL 仓储聚合 (UnitOfWork)
+    cacheRepos,          // Redis 仓储聚合
     cfg,                 // 配置
 )
 

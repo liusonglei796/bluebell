@@ -13,7 +13,7 @@ type Post struct {
 	CommunityID int64      `gorm:"column:community_id"`
 	PostTitle   string     `gorm:"column:post_title;not null;type:text"`
 	Author      *User      `gorm:"foreignKey:AuthorID;references:UserID"`
-	Community   *Community `gorm:"foreignKey:CommunityID;references:CommunityID"`
+	Community   *Community `gorm:"foreignKey:CommunityID;references:ID"`
 	Content     string     `gorm:"column:content;type:text;not null"`
 	Status      int8       `gorm:"column:status"`
 }
