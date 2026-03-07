@@ -10,6 +10,12 @@ import (
 // 性能考虑：生产环境使用 10 可以平衡安全性和性能
 const bcryptCost = 10
 
+// 用户角色常量
+const (
+	RoleUser  = 1 // 普通用户
+	RoleAdmin = 2 // 管理员
+)
+
 // User 用户模型
 // 为什么：对应数据库中的 user 表结构，使用 GORM ORM 映射
 
@@ -18,6 +24,7 @@ type User struct {
 	UserID   int64  `gorm:"column:user_id"`
 	UserName string `gorm:"column:user_name;size:64;not null"`
 	Passwd   string `gorm:"column:passwd;size:255;not null"`
+	Role     int    `gorm:"column:role;default:1;not null"`
 }
 
 // TableName 自定义表名

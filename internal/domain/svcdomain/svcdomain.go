@@ -2,10 +2,10 @@ package svcdomain
 
 import (
 	// DTO
-	"bluebell/internal/dto/request/post"
-	"bluebell/internal/dto/request/user"
-	"bluebell/internal/dto/response/community"
-	"bluebell/internal/dto/response/post"
+	postreq "bluebell/internal/dto/request/post"
+	userreq "bluebell/internal/dto/request/user"
+	communityResp "bluebell/internal/dto/response/community"
+	postResp "bluebell/internal/dto/response/post"
 
 	"context"
 )
@@ -18,6 +18,8 @@ type CommunityService interface {
 	GetCommunityList(ctx context.Context) ([]*communityResp.Response, error)
 	// GetCommunityDetail 根据社区ID获取社区详情
 	GetCommunityDetail(ctx context.Context, communityID int64) (*communityResp.Response, error)
+	// CreateCommunity 创建社区（仅管理员）
+	CreateCommunity(ctx context.Context, name, introduction string, userID int64) error
 }
 
 // ========== Post Service 接口 ==========

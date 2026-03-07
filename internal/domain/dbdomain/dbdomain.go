@@ -17,6 +17,7 @@ type PostRepository interface {
 type CommunityRepository interface {
 	GetCommunityList(ctx context.Context) ([]*model.Community, error)
 	GetCommunityDetailByID(ctx context.Context, id int64) (*model.Community, error)
+	CreateCommunity(ctx context.Context, community *model.Community) error
 }
 
 // UserRepository 定义了关于用户数据的访问接口
@@ -26,4 +27,5 @@ type UserRepository interface {
 	VerifyUser(ctx context.Context, user *model.User) error
 	CheckUserExistsByID(ctx context.Context, uid int64) (*model.User, error)
 	GetUsersByIDs(ctx context.Context, ids []int64) ([]*model.User, error)
+	GetUserRoleByID(ctx context.Context, uid int64) (int, error)
 }

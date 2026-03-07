@@ -25,11 +25,15 @@ import (
 // communityServiceStruct 社区业务逻辑服务
 type communityServiceStruct struct {
 	communityRepo dbdomain.CommunityRepository
+	userRepo      dbdomain.UserRepository
 }
 
 // NewCommunityService 创建社区服务实例
-func NewCommunityService(communityRepo dbdomain.CommunityRepository) svcdomain.CommunityService {
-	return &communityServiceStruct{communityRepo: communityRepo}
+func NewCommunityService(communityRepo dbdomain.CommunityRepository, userRepo dbdomain.UserRepository) svcdomain.CommunityService {
+	return &communityServiceStruct{
+		communityRepo: communityRepo,
+		userRepo:      userRepo,
+	}
 }
 
 // toResponse 将 model.Community 转换为 communityResponse.Response
@@ -71,4 +75,33 @@ func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int6
 	}
 
 	return toResponse(data), nil
+}
+
+// CreateCommunity 创建社区（仅管理员）
+func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, introduction string, userID int64) error {
+	// 1. 校验用户角色是否为管理员
+	role, err := s.userRepo.GetUserRoleByID(ctx, userID)
+	if err != nil {
+		zap.L().Error("userRepo.GetUserRoleByID failed",
+			zap.Int64("user_id", userID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+	if role != model.RoleAdmin {
+		return errorx.ErrForbidden
+	}
+
+	// 2. 创建社区
+	community := &model.Community{
+		CommunityName: name,
+		Introduction:  introduction,
+	}
+	if err := s.communityRepo.CreateCommunity(ctx, community); err != nil {
+		zap.L().Error("communityRepo.CreateCommunity failed",
+			zap.String("community_name", name),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+
+	return nil
 }

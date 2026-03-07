@@ -33,7 +33,7 @@ func NewServices(
 ) *Services {
 	return &Services{
 		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache),
-		Community: communitysvc.NewCommunityService(dbRepos.Community),
+		Community: communitysvc.NewCommunityService(dbRepos.Community, dbRepos.User),
 		User:      usersvc.NewUserService(dbRepos.User, cacheRepos.TokenCache, cfg),
 	}
 }

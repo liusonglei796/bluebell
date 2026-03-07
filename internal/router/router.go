@@ -63,6 +63,7 @@ func NewRouter(
 		// 社区相关
 		authGroup.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
 		authGroup.GET("/community/:id", hp.CommunityHandler.GetCommunityDetailHandler)
+		authGroup.POST("/community", hp.CommunityHandler.CreateCommunityHandler)
 
 		// 帖子相关
 		authGroup.POST("/post", hp.PostHandler.CreatePostHandler)

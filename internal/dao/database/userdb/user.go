@@ -93,3 +93,16 @@ func (r *userRepoStruct) GetUsersByIDs(ctx context.Context, ids []int64) (users 
 	}
 	return users, nil
 }
+
+// GetUserRoleByID 根据用户ID查询用户角色
+func (r *userRepoStruct) GetUserRoleByID(ctx context.Context, uid int64) (int, error) {
+	user := &model.User{}
+	err := r.db.WithContext(ctx).Select("role").Where("user_id = ?", uid).First(user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return 0, errorx.ErrUserNotExist
+		}
+		return 0, errorx.Wrap(err, errorx.CodeDBError, "查询用户角色失败")
+	}
+	return user.Role, nil
+}

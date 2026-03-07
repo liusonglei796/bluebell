@@ -10,7 +10,7 @@ import (
 	"bluebell/internal/domain/svcdomain"
 
 	// DTO 请求
-	"bluebell/internal/dto/request/community"
+	communityreq "bluebell/internal/dto/request/community"
 
 	// 基础设施 - 参数校验
 	"bluebell/internal/infrastructure/translate"
@@ -69,4 +69,33 @@ func (h *Handler) GetCommunityDetailHandler(c *gin.Context) {
 		return
 	}
 	backfront.ResponseSuccess(c, data)
+}
+
+// CreateCommunityHandler 创建社区（仅管理员）
+func (h *Handler) CreateCommunityHandler(c *gin.Context) {
+	userID, exist := c.Get("UserIDKey")
+	if !exist {
+		backfront.HandleError(c, errorx.ErrNeedLogin)
+		return
+	}
+
+	p := &communityreq.CreateCommunityRequest{}
+	if err := c.ShouldBindJSON(p); err != nil {
+		var errs validator.ValidationErrors
+		if errors.As(err, &errs) {
+			translatedErrs := errs.Translate(translate.Trans)
+			backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam,
+				translate.RemoveTopStruct(translatedErrs))
+			return
+		}
+		backfront.HandleError(c, errorx.ErrInvalidParam)
+		return
+	}
+
+	if err := h.communityService.CreateCommunity(c.Request.Context(), p.Name, p.Introduction, userID.(int64)); err != nil {
+		backfront.HandleError(c, err)
+		return
+	}
+
+	backfront.ResponseSuccess(c, nil)
 }

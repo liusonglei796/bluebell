@@ -48,3 +48,12 @@ func (r *communityRepoStruct) GetCommunityDetailByID(ctx context.Context, id int
 	}
 	return community, nil
 }
+
+// CreateCommunity 创建新社区
+func (r *communityRepoStruct) CreateCommunity(ctx context.Context, community *model.Community) error {
+	err := r.db.WithContext(ctx).Create(community).Error
+	if err != nil {
+		return errorx.Wrap(err, errorx.CodeDBError, "创建社区失败")
+	}
+	return nil
+}
