@@ -63,6 +63,7 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 		&model.Community{},
 		&model.Post{},
 		&model.Vote{},
+		&model.Remark{},
 	)
 	if err != nil {
 		return nil, fmt.Errorf("auto migrate failed: %w", err)

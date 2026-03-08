@@ -121,9 +121,9 @@ func (h *Handler) GetPostDetailHandler(c *gin.Context) {
 func (h *Handler) GetPostListHandler(c *gin.Context) {
 	// 给予系统合理的默认设定值
 	p := &postreq.PostListRequest{
-		Page:  1,                  // 默认第一页
-		Size:  10,                 // 默认一页10条
-		Order: postreq.OrderTime,  // 默认按时间倒序
+		Page:  1,                 // 默认第一页
+		Size:  10,                // 默认一页10条
+		Order: postreq.OrderTime, // 默认按时间倒序
 	}
 
 	if err := c.ShouldBindQuery(p); err != nil {
@@ -235,4 +235,58 @@ func (h *Handler) PostVoteHandler(c *gin.Context) {
 	}
 
 	backfront.ResponseSuccess(c, nil)
+}
+
+// PostRemarkHandler 处理发表评论请求
+func (h *Handler) PostRemarkHandler(c *gin.Context) {
+	// 1. 获取当前用户 ID
+	userID, exist := c.Get("UserIDKey")
+	if !exist {
+		backfront.HandleError(c, errorx.ErrNeedLogin)
+		return
+	}
+
+	// 2. 绑定参数
+	req := &postreq.RemarkRequest{}
+	if err := c.ShouldBindJSON(req); err != nil {
+		var errs validator.ValidationErrors
+		if errors.As(err, &errs) {
+			translatedErrs := errs.Translate(translate.Trans)
+			backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam,
+				translate.RemoveTopStruct(translatedErrs))
+			return
+		}
+		backfront.HandleError(c, errorx.ErrInvalidParam)
+		return
+	}
+
+	// 3. 执行业务
+	if err := h.postService.RemarkPost(c.Request.Context(), req, userID.(int64)); err != nil {
+		backfront.HandleError(c, err)
+		return
+	}
+
+	// 4. 响应
+	backfront.ResponseSuccess(c, nil)
+}
+
+// GetPostRemarksHandler 获取帖子评论列表
+func (h *Handler) GetPostRemarksHandler(c *gin.Context) {
+	// 1. 获取参数
+	postIDStr := c.Param("id")
+	postID, err := strconv.ParseInt(postIDStr, 10, 64)
+	if err != nil {
+		backfront.HandleError(c, errorx.ErrInvalidParam)
+		return
+	}
+
+	// 2. 业务处理
+	remarks, err := h.postService.GetPostRemarks(c.Request.Context(), postID)
+	if err != nil {
+		backfront.HandleError(c, err)
+		return
+	}
+
+	// 3. 响应
+	backfront.ResponseSuccess(c, remarks)
 }

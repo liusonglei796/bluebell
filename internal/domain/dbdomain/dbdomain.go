@@ -34,3 +34,9 @@ type UserRepository interface {
 type VoteRepository interface {
 	SaveVote(ctx context.Context, userID, postID int64, direction int8) error
 }
+
+// RemarkRepository 定义了关于评论数据的访问接口
+type RemarkRepository interface {
+	CreateRemark(ctx context.Context, remark *model.Remark) error
+	GetRemarksByPostID(ctx context.Context, postID int64) ([]*model.Remark, error)
+}

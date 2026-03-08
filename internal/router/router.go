@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -27,6 +28,7 @@ func NewRouter(
 	r := gin.New()
 
 	fillInterval, err := time.ParseDuration(cfg.RateLimit.FillInterval)
+	_ = fillInterval
 	if err != nil {
 		return nil, errorx.Wrap(err, errorx.CodeConfigError, "parse rate limit fill interval failed")
 	}
@@ -39,13 +41,14 @@ func NewRouter(
 	r.Use(
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
-		middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity),
+		// middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity),
 		middleware.TimeoutMiddleware(timeout),
 	)
 
-	// Swagger (仅在非生产环境)
+	// Swagger & PProf (仅在非生产环境)
 	if mode != gin.ReleaseMode {
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		pprof.Register(r) // 注册 pprof 路由
 	}
 
 	// 路由组
@@ -70,9 +73,11 @@ func NewRouter(
 		// 帖子相关
 		authGroup.POST("/post", hp.PostHandler.CreatePostHandler)
 		authGroup.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
+		authGroup.GET("/post/:id/remarks", hp.PostHandler.GetPostRemarksHandler)
 		authGroup.DELETE("/post/:id", hp.PostHandler.DeletePostHandler)
 		authGroup.GET("/posts", hp.PostHandler.GetPostListHandler)
 		authGroup.POST("/vote", hp.PostHandler.PostVoteHandler)
+		authGroup.POST("remark", hp.PostHandler.PostRemarkHandler)
 	}
 
 	// 404

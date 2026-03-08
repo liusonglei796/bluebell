@@ -52,7 +52,7 @@ type timeoutConfig struct {
 	Timeout string `mapstructure:"timeout"`
 }
 
-type snowflakeConfig struct {
+type SnowflakeConfig struct {
 	StartTime time.Time `mapstructure:"start_time"`
 	MachineID int64     `mapstructure:"machine_id"`
 }
@@ -70,7 +70,7 @@ type Config struct {
 	Mysql     *mysqlConfig     `mapstructure:"mysql"`
 	Redis     *redisConfig     `mapstructure:"redis"`
 	Log       *logConfig       `mapstructure:"log"`
-	Snowflake *snowflakeConfig `mapstructure:"snowflake"`
+	Snowflake *SnowflakeConfig `mapstructure:"snowflake"`
 	RateLimit *rateLimitConfig `mapstructure:"ratelimit"`
 	JWT       *jwtConfig       `mapstructure:"jwt"`
 	Timeout   *timeoutConfig   `mapstructure:"timeout"`

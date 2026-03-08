@@ -19,12 +19,14 @@ type Repositories struct {
 	Community dbdomain.CommunityRepository
 	User      dbdomain.UserRepository
 	Vote      dbdomain.VoteRepository
+	Remark    dbdomain.RemarkRepository
 }
 
 // NewRepositories 创建 Repositories 实例
 func NewRepositories(db *gorm.DB) *Repositories {
 	return &Repositories{
 		Post:      postdb.NewPostRepo(db),
+		Remark:    postdb.NewRemarkRepo(db),
 		Community: communitydb.NewCommunityRepo(db),
 		User:      userdb.NewUserRepo(db),
 		Vote:      votedb.NewVoteRepo(db),

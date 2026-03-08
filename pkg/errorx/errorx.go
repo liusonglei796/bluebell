@@ -104,6 +104,7 @@ const (
 	CodeConfigError       = 1015 // 配置错误
 	CodeInfraError        = 1016 // 基础设施初始化错误
 	CodeRequestTimeout    = 1017 // 请求超时
+	CodeNotLogin          = 1018 // 未登录
 )
 
 // 预定义常用错误实例
@@ -123,6 +124,7 @@ var (
 	ErrConfigInit        = New(CodeConfigError, "配置初始化失败")
 	ErrInfraInit         = New(CodeInfraError, "基础设施初始化失败")
 	ErrRequestTimeout    = New(CodeRequestTimeout, "请求超时")
+	ErrNotLogin          = New(CodeNotLogin, "用户未登录")
 )
 
 /*User{}.TableName()（GORM 模型读取属性）： GORM 内部经常操作切片 []User 的值对象来进行反射。为了防止 GORM 反射不到表名，必须用值接收者。

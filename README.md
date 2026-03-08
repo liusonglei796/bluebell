@@ -162,6 +162,8 @@ http://localhost:8081/swagger/index.html
 - ✅ MySQL database with GORM ORM
 - ✅ Rate limiting
 - ✅ Docker support with multi-stage builds
+- ✅ Post Remark (Comment) functionality
+- ✅ Optimized remark listing with GORM preloading
 - ✅ Automated database migrations
 
 ## Contributing

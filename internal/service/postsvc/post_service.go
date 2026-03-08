@@ -9,8 +9,8 @@ import (
 	"bluebell/internal/domain/svcdomain"
 
 	// DTO
-	"bluebell/internal/dto/request/post"
-	"bluebell/internal/dto/response/post"
+	postreq "bluebell/internal/dto/request/post"
+	postResp "bluebell/internal/dto/response/post"
 
 	// 基础设施
 	"bluebell/internal/infrastructure/snowflake"
@@ -29,9 +29,10 @@ import (
 
 // postServiceStruct 帖子业务逻辑服务
 type postServiceStruct struct {
-	postRepo  dbdomain.PostRepository
-	postCache cachedomain.PostRepository
-	voteRepo  dbdomain.VoteRepository
+	postRepo   dbdomain.PostRepository
+	postCache  cachedomain.PostRepository
+	voteRepo   dbdomain.VoteRepository
+	remarkRepo dbdomain.RemarkRepository
 }
 
 // NewPostService 创建帖子服务实例
@@ -39,11 +40,13 @@ func NewPostService(
 	postRepo dbdomain.PostRepository,
 	postCache cachedomain.PostRepository,
 	voteRepo dbdomain.VoteRepository,
+	remarkRepo dbdomain.RemarkRepository,
 ) svcdomain.PostService {
 	return &postServiceStruct{
-		postRepo:  postRepo,
-		postCache: postCache,
-		voteRepo:  voteRepo,
+		postRepo:   postRepo,
+		postCache:  postCache,
+		voteRepo:   voteRepo,
+		remarkRepo: remarkRepo,
 	}
 }
 
@@ -315,4 +318,64 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 	}()
 
 	return nil
+}
+func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) error {
+	// 1. 校验帖子是否存在
+	post, err := s.postRepo.GetPostByID(ctx, req.PostID)
+	if err != nil {
+		zap.L().Error("remarkPost: postRepo.GetPostByID failed",
+			zap.Int64("post_id", req.PostID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+	if post == nil || post.PostID == "" {
+		return errorx.ErrNotFound
+	}
+
+	// 2. 构建评论模型
+	remark := &model.Remark{
+		PostID:   req.PostID,
+		Content:  req.Content,
+		AuthorID: userID,
+	}
+
+	// 3. 保存到数据库
+	if err := s.remarkRepo.CreateRemark(ctx, remark); err != nil {
+		zap.L().Error("remarkPost: remarkRepo.CreateRemark failed",
+			zap.Int64("post_id", req.PostID),
+			zap.Int64("author_id", userID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+
+	return nil
+}
+
+// GetPostRemarks 获取帖子评论列表
+func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error) {
+	// 1. 获取原始评论列表
+	remarks, err := s.remarkRepo.GetRemarksByPostID(ctx, postID)
+	if err != nil {
+		zap.L().Error("getPostRemarks: remarkRepo.GetRemarksByPostID failed",
+			zap.Int64("post_id", postID),
+			zap.Error(err))
+		return nil, errorx.ErrServerBusy
+	}
+
+	// 2. 转换为 DTO
+	resp := make([]*postResp.RemarkDetail, 0, len(remarks))
+	for _, r := range remarks {
+		authorName := "已注销用户"
+		if r.Author != nil {
+			authorName = r.Author.UserName
+		}
+		resp = append(resp, &postResp.RemarkDetail{
+			ID:         r.ID,
+			Content:    r.Content,
+			AuthorName: authorName,
+			CreateTime: r.CreatedAt,
+		})
+	}
+
+	return resp, nil
 }

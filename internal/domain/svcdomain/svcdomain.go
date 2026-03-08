@@ -43,6 +43,10 @@ type PostService interface {
 
 	// VoteForPost 为帖子投票
 	VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error
+	//发表评论
+	RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) error
+	// GetPostRemarks 获取帖子评论列表
+	GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error)
 }
 
 // ========== User Service 接口 ==========

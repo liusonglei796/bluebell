@@ -25,3 +25,7 @@ const (
 	OrderTime  = "time"
 	OrderScore = "score"
 )
+type RemarkRequest struct {
+	PostID    int64  `json:"post_id" binding:"required"`
+	Content   string `json:"content" binding:"required"`
+}
