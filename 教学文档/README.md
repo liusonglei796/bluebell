@@ -171,10 +171,10 @@
 ## 📝 更新记录
 
 ### 最新更新
-- **2026 年 03 月**：实现 Unit of Work 模式，统一管理 MySQL Repository 并支持事务注入（NewRepositories）
-- **2026 年 03 月**：DAO/Service 层错误处理统一使用 errorx（errorx.Wrap + errorx.GetCode）
-- **2026 年 03 月**：Handler 层结构优化（私有化）、新增全局请求超时配置、限流解析错误处理优化
-- **2024 年**：添加第 19 章 - Handler 层依赖注入与构造函数模式
+- **2026 年 03 月 08 日**：实装 **单点登录（SSO）与互踢机制** (第 10 章)，基于 Redis 实现多端登录自动踢出；全面集成 **Swagger** (第 11 章) 自动生成交互式接口文档。
+- **2026 年 03 月 07 日**：实现 Unit of Work 模式，统一管理 MySQL Repository 并支持事务注入（NewRepositories）；DAO/Service 层错误处理统一使用 errorx。
+- **2026 年 03 月**：Handler 层结构优化（私有化）、新增全局请求超时配置、限流解析错误处理优化。
+- **2024 年**：添加第 19 章 - Handler 层依赖注入与构造函数模式。
 
 ### 历史更新
 - 第 01-18 章：原有教学文档

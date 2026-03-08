@@ -11,8 +11,8 @@ import (
 	"bluebell/internal/domain/svcdomain"
 
 	// DTO
-	"bluebell/internal/dto/request/post"
-	"bluebell/internal/dto/response/post"
+	postreq "bluebell/internal/dto/request/post"
+	postResp "bluebell/internal/dto/response/post"
 
 	// 基础设施 - 参数校验
 	"bluebell/internal/infrastructure/translate"
@@ -42,6 +42,15 @@ func New(postService svcdomain.PostService) *Handler {
 }
 
 // CreatePostHandler 创建帖子
+// @Summary 创建帖子
+// @Description 创建一个新的帖子
+// @Tags 帖子相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param object body postreq.CreatePostRequest true "帖子参数"
+// @Success 200 {object} backfront.ResponseData
+// @Router /post [post]
 func (h *Handler) CreatePostHandler(c *gin.Context) {
 	userID, exist := c.Get("UserIDKey")
 	if !exist {
@@ -71,6 +80,15 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 }
 
 // GetPostDetailHandler 获取帖子详情
+// @Summary 获取帖子详情
+// @Description 根据ID获取帖子详细信息
+// @Tags 帖子相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param id path int true "帖子ID"
+// @Success 200 {object} backfront.ResponseData{data=postResp.DetailResponse}
+// @Router /post/{id} [get]
 func (h *Handler) GetPostDetailHandler(c *gin.Context) {
 	postIDStr := c.Param("id")
 	postID, err := strconv.ParseInt(postIDStr, 10, 64)
@@ -88,6 +106,18 @@ func (h *Handler) GetPostDetailHandler(c *gin.Context) {
 }
 
 // GetPostListHandler 获取帖子列表
+// @Summary 获取帖子列表
+// @Description 分页获取帖子列表，可按时间或分数排序
+// @Tags 帖子相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param page query int false "页码"
+// @Param size query int false "每页数量"
+// @Param order query string false "排序方式 (time/score)"
+// @Param community_id query int false "社区ID"
+// @Success 200 {object} backfront.ResponseData{data=[]postResp.DetailResponse}
+// @Router /posts [get]
 func (h *Handler) GetPostListHandler(c *gin.Context) {
 	// 给予系统合理的默认设定值
 	p := &postreq.PostListRequest{
@@ -138,6 +168,15 @@ func (h *Handler) GetPostListHandler(c *gin.Context) {
 }
 
 // DeletePostHandler 删除帖子
+// @Summary 删除帖子
+// @Description 根据ID删除帖子（软删除）
+// @Tags 帖子相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param id path int true "帖子ID"
+// @Success 200 {object} backfront.ResponseData
+// @Router /post/{id} [delete]
 func (h *Handler) DeletePostHandler(c *gin.Context) {
 	userID, exist := c.Get("UserIDKey")
 	if !exist {
@@ -161,6 +200,15 @@ func (h *Handler) DeletePostHandler(c *gin.Context) {
 }
 
 // PostVoteHandler 处理帖子投票请求
+// @Summary 帖子投票
+// @Description 为帖子点赞或踩
+// @Tags 帖子相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param object body postreq.VoteRequest true "投票参数"
+// @Success 200 {object} backfront.ResponseData
+// @Router /vote [post]
 func (h *Handler) PostVoteHandler(c *gin.Context) {
 	p := &postreq.VoteRequest{}
 	if err := c.ShouldBindJSON(p); err != nil {

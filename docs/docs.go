@@ -22,12 +22,7 @@ const docTemplate = `{
     "paths": {
         "/community": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "获取所有社区的列表信息",
+                "description": "获取所有社区的列表",
                 "consumes": [
                     "application/json"
                 ],
@@ -53,7 +48,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/controller.ResponseData"
+                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
@@ -61,7 +56,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.CommunityDetail"
+                                                "$ref": "#/definitions/bluebell_internal_dto_response_community.Response"
                                             }
                                         }
                                     }
@@ -70,16 +65,50 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "创建一个新的社区（仅管理员）",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "社区相关"
+                ],
+                "summary": "创建社区",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer 用户令牌",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "社区参数",
+                        "name": "object",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bluebell_internal_dto_request_community.CreateCommunityRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                        }
+                    }
+                }
             }
         },
         "/community/{id}": {
             "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "根据社区ID获取社区的详细信息",
+                "description": "根据社区ID获取社区详细信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -92,17 +121,17 @@ const docTemplate = `{
                 "summary": "获取社区详情",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "社区ID",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
                         "type": "string",
                         "description": "Bearer 用户令牌",
                         "name": "Authorization",
                         "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "社区ID",
+                        "name": "id",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -112,29 +141,51 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/controller.ResponseData"
+                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.CommunityDetail"
+                                            "$ref": "#/definitions/bluebell_internal_dto_response_community.Response"
                                         }
                                     }
                                 }
                             ]
                         }
-                    },
-                    "400": {
-                        "description": "Bad Request",
+                    }
+                }
+            }
+        },
+        "/login": {
+            "post": {
+                "description": "用户登录并获取令牌",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户相关"
+                ],
+                "summary": "用户登录",
+                "parameters": [
+                    {
+                        "description": "登录参数",
+                        "name": "object",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.ResponseData"
+                            "$ref": "#/definitions/bluebell_internal_dto_request_user.LoginRequest"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.ResponseData"
+                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                         }
                     }
                 }
@@ -142,7 +193,7 @@ const docTemplate = `{
         },
         "/post": {
             "post": {
-                "description": "创建帖子接口",
+                "description": "创建一个新的帖子",
                 "consumes": [
                     "application/json"
                 ],
@@ -162,12 +213,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "创建帖子参数",
+                        "description": "帖子参数",
                         "name": "object",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.CreatePostRequest"
+                            "$ref": "#/definitions/bluebell_internal_dto_request_post.CreatePostRequest"
                         }
                     }
                 ],
@@ -175,7 +226,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.ResponseData"
+                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                         }
                     }
                 }
@@ -183,7 +234,7 @@ const docTemplate = `{
         },
         "/post/{id}": {
             "get": {
-                "description": "获取帖子详情接口",
+                "description": "根据ID获取帖子详细信息",
                 "consumes": [
                     "application/json"
                 ],
@@ -203,7 +254,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
+                        "type": "integer",
                         "description": "帖子ID",
                         "name": "id",
                         "in": "path",
@@ -216,13 +267,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/controller.ResponseData"
+                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/response.PostDetailResponse"
+                                            "$ref": "#/definitions/bluebell_internal_dto_response_post.DetailResponse"
                                         }
                                     }
                                 }
@@ -230,11 +281,9 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/posts2": {
-            "get": {
-                "description": "升级版分页获取帖子列表接口，支持按社区和排序规则查询",
+            },
+            "delete": {
+                "description": "根据ID删除帖子（软删除）",
                 "consumes": [
                     "application/json"
                 ],
@@ -244,7 +293,7 @@ const docTemplate = `{
                 "tags": [
                     "帖子相关"
                 ],
-                "summary": "获取帖子列表(新版)",
+                "summary": "删除帖子",
                 "parameters": [
                     {
                         "type": "string",
@@ -254,13 +303,67 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "获取帖子列表参数",
-                        "name": "object",
-                        "in": "body",
-                        "required": true,
+                        "type": "integer",
+                        "description": "帖子ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/request.PostListRequest"
+                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                         }
+                    }
+                }
+            }
+        },
+        "/posts": {
+            "get": {
+                "description": "分页获取帖子列表，可按时间或分数排序",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "帖子相关"
+                ],
+                "summary": "获取帖子列表",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer 用户令牌",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "页码",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "每页数量",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "排序方式 (time/score)",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "社区ID",
+                        "name": "community_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -269,7 +372,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/controller.ResponseData"
+                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
@@ -277,7 +380,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/response.PostDetailResponse"
+                                                "$ref": "#/definitions/bluebell_internal_dto_response_post.DetailResponse"
                                             }
                                         }
                                     }
@@ -288,9 +391,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/refresh_token": {
+            "post": {
+                "description": "使用刷新令牌获取新的访问令牌",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用户相关"
+                ],
+                "summary": "刷新令牌",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Bearer 用户令牌",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "刷新令牌",
+                        "name": "refresh_token",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                        }
+                    }
+                }
+            }
+        },
         "/signup": {
             "post": {
-                "description": "用户注册接口",
+                "description": "注册新用户",
                 "consumes": [
                     "application/json"
                 ],
@@ -308,7 +450,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.SignUpRequest"
+                            "$ref": "#/definitions/bluebell_internal_dto_request_user.SignUpRequest"
                         }
                     }
                 ],
@@ -316,7 +458,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.ResponseData"
+                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                         }
                     }
                 }
@@ -324,7 +466,7 @@ const docTemplate = `{
         },
         "/vote": {
             "post": {
-                "description": "为帖子投票，不允许重复投票",
+                "description": "为帖子点赞或踩",
                 "consumes": [
                     "application/json"
                 ],
@@ -332,7 +474,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "投票相关"
+                    "帖子相关"
                 ],
                 "summary": "帖子投票",
                 "parameters": [
@@ -349,7 +491,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/request.VoteRequest"
+                            "$ref": "#/definitions/bluebell_internal_dto_request_post.VoteRequest"
                         }
                     }
                 ],
@@ -357,7 +499,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.ResponseData"
+                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
                         }
                     }
                 }
@@ -365,7 +507,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "controller.ResponseData": {
+        "bluebell_internal_backfront.ResponseData": {
             "type": "object",
             "properties": {
                 "code": {
@@ -380,17 +522,13 @@ const docTemplate = `{
                 }
             }
         },
-        "models.CommunityDetail": {
+        "bluebell_internal_dto_request_community.CreateCommunityRequest": {
             "type": "object",
+            "required": [
+                "introduction",
+                "name"
+            ],
             "properties": {
-                "create_time": {
-                    "type": "string"
-                },
-                "id": {
-                    "description": "gorm:\"column:community_id;primaryKey\" 指定数据库列名为 community_id 并作为主键",
-                    "type": "string",
-                    "example": "0"
-                },
                 "introduction": {
                     "type": "string"
                 },
@@ -399,20 +537,7 @@ const docTemplate = `{
                 }
             }
         },
-        "models.User": {
-            "type": "object",
-            "properties": {
-                "user_id": {
-                    "description": "gorm:\"column:user_id;primaryKey\" 指定列名和主键",
-                    "type": "string",
-                    "example": "0"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "request.CreatePostRequest": {
+        "bluebell_internal_dto_request_post.CreatePostRequest": {
             "type": "object",
             "required": [
                 "community_id",
@@ -420,10 +545,6 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
-                "author_id": {
-                    "description": "从 Token 获取，不需要前端传",
-                    "type": "integer"
-                },
                 "community_id": {
                     "type": "integer"
                 },
@@ -435,46 +556,7 @@ const docTemplate = `{
                 }
             }
         },
-        "request.PostListRequest": {
-            "type": "object",
-            "properties": {
-                "community_id": {
-                    "description": "新增的字段，用于区分是否按社区查询\n'form:\"community_id\"' 标签允许 Gin 从 URL 查询参数中绑定\n(例如: /api/v1/posts?community_id=1)",
-                    "type": "integer"
-                },
-                "order": {
-                    "type": "string"
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "size": {
-                    "type": "integer"
-                }
-            }
-        },
-        "request.SignUpRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "re_password",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "re_password": {
-                    "description": "re_password 用于确认密码，业务逻辑中会校验两次密码是否一致",
-                    "type": "string"
-                },
-                "username": {
-                    "description": "binding:\"required\" 表示该字段必填，如果为空 Gin 会报错",
-                    "type": "string"
-                }
-            }
-        },
-        "request.VoteRequest": {
+        "bluebell_internal_dto_request_post.VoteRequest": {
             "type": "object",
             "required": [
                 "direction",
@@ -494,55 +576,83 @@ const docTemplate = `{
                 }
             }
         },
-        "response.PostDetailResponse": {
+        "bluebell_internal_dto_request_user.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "bluebell_internal_dto_request_user.SignUpRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "re_password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "re_password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "bluebell_internal_dto_response_community.Response": {
             "type": "object",
             "properties": {
-                "author": {
-                    "description": "GORM 关联字段 (用于 Preload 预加载，解决 N+1 问题)\n为什么添加：使用 GORM 的 Preload 功能可以自动批量查询关联数据\ngorm:\"-\" 表示不映射到数据库字段，只用于内存中的关联",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.User"
-                        }
-                    ]
+                "create_time": {
+                    "type": "string"
                 },
+                "id": {
+                    "type": "string"
+                },
+                "introduction": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "bluebell_internal_dto_response_post.DetailResponse": {
+            "type": "object",
+            "properties": {
                 "author_id": {
-                    "type": "integer"
+                    "type": "string"
                 },
                 "author_name": {
                     "description": "作者名称",
                     "type": "string"
                 },
-                "community": {
-                    "$ref": "#/definitions/models.CommunityDetail"
-                },
                 "community_id": {
                     "type": "integer"
-                },
-                "communitydetail": {
-                    "description": "内嵌社区详情",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/models.CommunityDetail"
-                        }
-                    ]
                 },
                 "content": {
                     "type": "string"
                 },
                 "create_time": {
-                    "description": "Time 类型",
                     "type": "string"
                 },
                 "id": {
-                    "description": "8 字节字段 (int64)",
-                    "type": "integer"
+                    "type": "string"
                 },
                 "status": {
-                    "description": "4 字节字段 (int32)",
                     "type": "integer"
                 },
                 "title": {
-                    "description": "16 字节字段 (string)",
                     "type": "string"
                 },
                 "vote_num": {

@@ -16,13 +16,13 @@
 
 ### 1. 帖子排序 (Post Sorting)
 系统维护了两个全局 ZSet 用于帖子排序：
-- **`bluebell:post:time`**: 所有的帖子 ID 都会加入此集合，Score 为发布时的 Unix 时间戳。用于实现“最新发布”列表。
-- **`bluebell:post:score`**: 初始 Score 为发布时间戳。其实时分数会随着用户投票而更新。用于实现“热门”列表。
+- **`bluebell:post:time`**: 所有的帖子 ID 都会加入此集合，Score 为发布时的 Unix 时间戳，Member 为 **帖子 ID**。用于实现“最新发布”列表。
+- **`bluebell:post:score`**: 初始 Score 为发布时间戳，Member 为 **帖子 ID**。其实时分数会随着用户投票而更新。用于实现“热门”列表。
 
 ### 2. 社区帖子排序 (Community Post Sorting)
 为了支持按社区筛选帖子，每个社区都有独立的两个 ZSet，逻辑与全局排序一致：
-- **`bluebell:community:post:time:{communityID}`**: 集合 Key 中的 ID 是 **社区 ID**。
-- **`bluebell:community:post:score:{communityID}`**: 集合 Key 中的 ID 是 **社区 ID**。
+- **`bluebell:community:post:time:{communityID}`**: 集合 Key 中的 ID 是 **社区 ID**，Member 为 **帖子 ID**。
+- **`bluebell:community:post:score:{communityID}`**: 集合 Key 中的 ID 是 **社区 ID**，Member 为 **帖子 ID**。
 
 ### 3. 投票记录 (Vote Records)
 为了防止用户重复投票以及计算分数，每个帖子都有一个对应的 ZSet：

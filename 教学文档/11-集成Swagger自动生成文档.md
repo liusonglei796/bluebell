@@ -58,10 +58,12 @@
 // LoginHandler 处理用户登录请求
 // @Summary 用户登录
 // @Tags 用户相关
-// @Param object body models.ParamLogin true "登录参数"
-// @Success 200 {object} _ResponseLogin
+// @Accept json
+// @Produce json
+// @Param object body userreq.LoginRequest true "登录参数"
+// @Success 200 {object} backfront.ResponseData{data=userresp.LoginResponse}
 // @Router /login [post]
-func LoginHandler(c *gin.Context) {
+func (h *Handler) LoginHandler(c *gin.Context) {
     // ...
 }
 ```
@@ -132,13 +134,13 @@ export PATH=$PATH:$(go env GOPATH)/bin
 ### 2.2 工作原理
 
 ```
-1. 编写注释 → controller/*.go
+1. 编写注释 → internal/handler/*/*.go
         ↓
 2. swag init → 扫描代码生成 docs/
         ↓
 3. import _ "bluebell/docs" → 注册文档数据到内存
         ↓
-4. r.GET("/swagger/*any", ...) → 启动 Web UI
+4. r.GET("/swagger/*any", ...) → 启动 Web UI (在 router/router.go 中)
         ↓
 5. 浏览器访问 http://localhost:8080/swagger/index.html
 ```
@@ -469,10 +471,10 @@ func LoginHandler(c *gin.Context) {
 
 ### 6.1 运行 swag init
 
-在项目根目录下执行:
+在项目根目录下执行 (由于 `main.go` 在 `cmd` 目录下,且使用了内部依赖,建议使用以下命令):
 
 ```bash
-swag init
+swag init -g cmd/bluebell/main.go --parseDependency --parseInternal
 ```
 
 **输出:**
@@ -573,34 +575,16 @@ func init() {
 
 ### 7.2 注册 Swagger UI 路由
 
-在 `SetupRouter` 函数中:
+在 `internal/router/router.go` 中:
 
 ```go
-func SetupRouter(mode string) *gin.Engine {
-	if mode == gin.ReleaseMode {
-		gin.SetMode(gin.ReleaseMode)
-	}
-
-	r := gin.New()
-	r.Use(logger.GinLogger(), logger.GinRecovery(true))
-
+func NewRouter(mode string, hp *handler.Provider, cfg *config.Config, tokenCache cachedomain.UserTokenCacheRepository) (*gin.Engine, error) {
+    // ...
 	// ========== Swagger 文档路由 ==========
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	// ========== API 路由组 ==========
-	v1 := r.Group("/api/v1")
-	// 公开路由
-	v1.POST("/signup", controller.SignUpHandler)
-	v1.POST("/login", controller.LoginHandler)
-
-	// 需认证路由
-	v1.Use(middlewares.JWTAuthMiddleware())
-	{
-		v1.POST("/post", controller.CreatePostHandler)
-		// ...
+	if mode != gin.ReleaseMode {
+		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	}
-
-	return r
+    // ...
 }
 ```
 

@@ -9,8 +9,8 @@ import (
 	// 领域层 - Service 接口
 	"bluebell/internal/domain/svcdomain"
 
-	// DTO 请求
 	communityreq "bluebell/internal/dto/request/community"
+	communityResp "bluebell/internal/dto/response/community"
 
 	// 基础设施 - 参数校验
 	"bluebell/internal/infrastructure/translate"
@@ -21,6 +21,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
+
+var _ = communityResp.Response{} // 取消编译器对未使用导包的检查，保留给 Swagger 使用
 
 // Handler 社区相关处理器
 type Handler struct {
@@ -39,6 +41,14 @@ func New(communityService svcdomain.CommunityService) *Handler {
 }
 
 // GetCommunityListHandler 获取社区列表
+// @Summary 获取社区列表
+// @Description 获取所有社区的列表
+// @Tags 社区相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Success 200 {object} backfront.ResponseData{data=[]communityResp.Response}
+// @Router /community [get]
 func (h *Handler) GetCommunityListHandler(c *gin.Context) {
 	data, err := h.communityService.GetCommunityList(c.Request.Context())
 	if err != nil {
@@ -49,6 +59,15 @@ func (h *Handler) GetCommunityListHandler(c *gin.Context) {
 }
 
 // GetCommunityDetailHandler 获取社区详情
+// @Summary 获取社区详情
+// @Description 根据社区ID获取社区详细信息
+// @Tags 社区相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param id path int true "社区ID"
+// @Success 200 {object} backfront.ResponseData{data=communityResp.Response}
+// @Router /community/{id} [get]
 func (h *Handler) GetCommunityDetailHandler(c *gin.Context) {
 	p := &communityreq.CommunityDetailRequest{}
 	if err := c.ShouldBindUri(p); err != nil {
@@ -72,6 +91,15 @@ func (h *Handler) GetCommunityDetailHandler(c *gin.Context) {
 }
 
 // CreateCommunityHandler 创建社区（仅管理员）
+// @Summary 创建社区
+// @Description 创建一个新的社区（仅管理员）
+// @Tags 社区相关
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer 用户令牌"
+// @Param object body communityreq.CreateCommunityRequest true "社区参数"
+// @Success 200 {object} backfront.ResponseData
+// @Router /community [post]
 func (h *Handler) CreateCommunityHandler(c *gin.Context) {
 	userID, exist := c.Get("UserIDKey")
 	if !exist {

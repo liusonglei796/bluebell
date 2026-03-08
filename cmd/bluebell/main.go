@@ -102,7 +102,7 @@ func main() {
 	)
 
 	// 4) 路由层：初始化路由，注入 Handler
-	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg)
+	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg, cacheRepos.TokenCache)
 	if err != nil {
 		zap.L().Fatal("init router failed", zap.Error(err))
 	}

@@ -2,6 +2,7 @@ package router
 
 import (
 	"bluebell/internal/config"
+	"bluebell/internal/domain/cachedomain"
 	"bluebell/internal/handler"
 	"bluebell/internal/middleware"
 	"bluebell/pkg/errorx"
@@ -20,6 +21,7 @@ func NewRouter(
 	mode string,
 	hp *handler.Provider,
 	cfg *config.Config,
+	tokenCache cachedomain.UserTokenCacheRepository,
 ) (*gin.Engine, error) {
 
 	r := gin.New()
@@ -58,7 +60,7 @@ func NewRouter(
 
 	// 认证路由（需要 JWT 认证）
 	authGroup := apiV1.Group("")
-	authGroup.Use(middleware.JWTAuthMiddleware(cfg))
+	authGroup.Use(middleware.JWTAuthMiddleware(cfg, tokenCache))
 	{
 		// 社区相关
 		authGroup.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
