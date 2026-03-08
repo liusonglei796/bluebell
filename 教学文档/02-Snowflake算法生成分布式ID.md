@@ -140,11 +140,18 @@ package snowflake
 import (
 	"bluebell/internal/config"
 	"bluebell/pkg/errorx"
+	"sync"
+	"time"
 
 	sf "github.com/bwmarrin/snowflake"
+	"go.uber.org/zap"
 )
 
-var node *sf.Node
+var (
+	node          *sf.Node
+	mu            sync.Mutex
+	lastTimestamp int64 // 上次生成 ID 的毫秒时间戳
+)
 
 // Init 初始化雪花算法节点
 func Init(cfg *config.Config) (err error) {
@@ -156,16 +163,49 @@ func Init(cfg *config.Config) (err error) {
 	return
 }
 
-// GetID 生成 ID
-func GetID() int64 {
+// GenID 生成 ID（带时钟回拨保护）
+func GenID() int64 {
+	mu.Lock()
+	defer mu.Unlock()
+
+	now := time.Now().UnixMilli()
+
+	// 核心防御逻辑：检查当前时间是否小于上次生成 ID 的时间
+	if now < lastTimestamp {
+		offset := lastTimestamp - now
+		zap.L().Warn("clock backwards detected", zap.Int64("offset_ms", offset))
+
+		// 策略 1：如果是小范围回拨（如 10ms 内），尝试休眠等待时钟追赶
+		if offset <= 10 {
+			time.Sleep(time.Duration(offset+1) * time.Millisecond)
+			now = time.Now().UnixMilli()
+		}
+
+		// 策略 2：如果休眠后依然回拨，或者回拨幅度过大，直接报错/抛出异常
+		if now < lastTimestamp {
+			zap.L().Fatal("clock moved backwards too far, cannot generate ID",
+				zap.Int64("last_timestamp", lastTimestamp),
+				zap.Int64("current_now", now))
+		}
+	}
+
+	lastTimestamp = now
 	return node.Generate().Int64()
 }
-
-// GenID 生成 ID 的别名函数
-func GenID() int64 {
-	return GetID()
-}
 ```
+
+---
+
+## 5. 进阶课题：应对时钟回拨 (Clock Backwards)
+
+Snowflake 算法强依赖系统时间。在 Docker 或 K8s 容器化部署中，如果宿主机发生 NTP 时间校准，时钟可能会发生回退，导致生成的 ID 重复。
+
+我们在代码中通过以下方式应对：
+
+1. **自旋等待 (Spin Wait)**：对于 10ms 以内的微小回拨，让程序 `time.Sleep` 几毫秒，等时钟追赶上来。
+2. **强制熔断 (Fail Fast)**：对于超过 10ms 的大范围回拨，为了绝对保证数据一致性，直接通过 `zap.L().Fatal` 拒绝服务。
+
+> **面试 Tip**: “我的策略是：宁可暂时不可用，也绝不生成重复 ID。”
 
 ### 4.4 配置文件
 

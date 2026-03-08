@@ -5,6 +5,7 @@ import (
 	"bluebell/internal/dao/database/communitydb"
 	"bluebell/internal/dao/database/postdb"
 	"bluebell/internal/dao/database/userdb"
+	"bluebell/internal/dao/database/votedb"
 
 	// 领域层 - Repository 接口
 	"bluebell/internal/domain/dbdomain"
@@ -17,6 +18,7 @@ type Repositories struct {
 	Post      dbdomain.PostRepository
 	Community dbdomain.CommunityRepository
 	User      dbdomain.UserRepository
+	Vote      dbdomain.VoteRepository
 }
 
 // NewRepositories 创建 Repositories 实例
@@ -25,5 +27,6 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		Post:      postdb.NewPostRepo(db),
 		Community: communitydb.NewCommunityRepo(db),
 		User:      userdb.NewUserRepo(db),
+		Vote:      votedb.NewVoteRepo(db),
 	}
 }

@@ -29,3 +29,8 @@ type UserRepository interface {
 	GetUsersByIDs(ctx context.Context, ids []int64) ([]*model.User, error)
 	GetUserRoleByID(ctx context.Context, uid int64) (int, error)
 }
+
+// VoteRepository 定义了关于投票数据的访问接口
+type VoteRepository interface {
+	SaveVote(ctx context.Context, userID, postID int64, direction int8) error
+}
