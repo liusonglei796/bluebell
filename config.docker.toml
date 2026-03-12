@@ -5,7 +5,7 @@ mode = "release"
 
 
 [snowflake]
-start_time = "2026-03-06T00:00:00Z"
+start_time = 1775539200000
 machine_id = 1
 
 [log]
@@ -34,6 +34,9 @@ pool_size = 100
 [ratelimit]
 fill_interval = "10ms"
 capacity = 200
+
+[timeout]
+timeout = "10s"
 
 [jwt]
 secret = "bluebell_secret_key_change_in_prod"

@@ -59,6 +59,9 @@ func NewRouter(
 		apiV1.POST("/signup", hp.UserHandler.SignUpHandler)
 		apiV1.POST("/login", hp.UserHandler.LoginHandler)
 		apiV1.POST("/refresh_token", hp.UserHandler.RefreshTokenHandler)
+
+		// 社区相关（公开接口）
+		apiV1.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
 	}
 
 	// 认证路由（需要 JWT 认证）
@@ -66,7 +69,6 @@ func NewRouter(
 	authGroup.Use(middleware.JWTAuthMiddleware(cfg, tokenCache))
 	{
 		// 社区相关
-		authGroup.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
 		authGroup.GET("/community/:id", hp.CommunityHandler.GetCommunityDetailHandler)
 		authGroup.POST("/community", hp.CommunityHandler.CreateCommunityHandler)
 

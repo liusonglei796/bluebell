@@ -19,8 +19,8 @@ var (
 
 // Init 初始化雪花算法节点
 func Init(cfg *config.Config) (err error) {
-	// 设置 Epoch
-	sf.Epoch = cfg.Snowflake.StartTime.UnixNano() / 1000000
+	// 设置 Epoch（直接使用毫秒时间戳）
+	sf.Epoch = cfg.Snowflake.StartTime
 
 	// 创建节点
 	node, err = sf.NewNode(cfg.Snowflake.MachineID)
