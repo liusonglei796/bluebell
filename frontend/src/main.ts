@@ -8,7 +8,7 @@ import { useAuthStore } from './store/auth'
 const app = createApp(App)
 const pinia = createPinia()
 
-app.config.errorHandler = (err, vm, info) => {
+app.config.errorHandler = (err, _vm, info) => {
   console.error('Vue Error:', err, info)
 }
 
