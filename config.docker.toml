@@ -9,7 +9,7 @@ start_time = "2026-03-06T00:00:00Z"
 machine_id = 1
 
 [log]
-level = "info"
+level = "warn"
 file_name = "bluebell.log"
 max_size = 100
 max_backups = 7

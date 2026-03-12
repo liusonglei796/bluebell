@@ -52,7 +52,7 @@ func NewRouter(
 	}
 
 	// 路由组
-	apiV1 := r.Group("")
+	apiV1 := r.Group("/api/v1")
 
 	// 公共路由（用户认证相关）
 	{
