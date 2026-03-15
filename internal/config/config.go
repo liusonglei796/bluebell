@@ -28,7 +28,7 @@ type mysqlConfig struct {
 	Host         string `mapstructure:"host"`
 	Port         int    `mapstructure:"port"`
 	User         string `mapstructure:"user"`
-	Password     string `mapstructure:"password"`
+	Password     string `mapstructure:"passwd"`
 	DbName       string `mapstructure:"db_name"`
 	MaxOpenConns int    `mapstructure:"max_open_conns"`
 	MaxIdleConns int    `mapstructure:"max_idle_conns"`
