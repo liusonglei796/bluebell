@@ -24,7 +24,7 @@ func Init(cfg *config.Config) (*redis.Client, error) {
 		DB:       redisCfg.DB,
 		PoolSize: redisCfg.PoolSize,
 	})
-	
+
 	pingCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := rdb.Ping(pingCtx).Err(); err != nil {

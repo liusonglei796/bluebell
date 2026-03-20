@@ -131,34 +131,28 @@ type userHandlerStruct struct {
 
 ## 🏗️ DI 容器设计
 
-创建一个 **DI 容器**（HandlerProvider），统一管理所有 Handler 实例：
+创建一个 **DI 容器**（Provider），统一管理所有 Handler 实例：
 
 ```go
-// ✅ HandlerProvider 作为 DI 容器
-type HandlerProvider struct {
-    UserHandler      *userHandlerStruct
-    PostHandler      *postHandlerStruct
-    CommunityHandler *communityHandlerStruct
-    VoteHandler      *voteHandlerStruct
+// ✅ Provider 作为 DI 容器
+type Provider struct {
+	UserHandler      *user_handler.Handler
+	PostHandler      *post_handler.Handler
+	CommunityHandler *community_handler.Handler
 }
 
 // ✅ 完整的装配函数
-func NewHandlerProvider(
-    userService domain.serviceinterface.UserService,
-    postService domain.serviceinterface.PostService,
-    communityService domain.serviceinterface.CommunityService,
-    voteService domain.serviceinterface.VoteService,
-) *HandlerProvider {
-    return &HandlerProvider{
-        UserHandler:      newUserHandler(userService),
-        PostHandler:      newPostHandler(postService),
-        CommunityHandler: newCommunityHandler(communityService),
-        VoteHandler:      newVoteHandler(voteService),
-    }
+func NewProvider(
+	userService svcdomain.UserService,
+	postService svcdomain.PostService,
+	communityService svcdomain.CommunityService,
+) *Provider {
+	return &Provider{
+		UserHandler:      user_handler.New(userService),
+		PostHandler:      post_handler.New(postService),
+		CommunityHandler: community_handler.New(communityService),
+	}
 }
-
-// ✅ 为了兼容现有代码，保留别名
-type Handlers = HandlerProvider
 ```
 
 **DI 容器的作用**：
@@ -190,22 +184,21 @@ services := service.NewServices(
 )
 
 // Step 4: 创建 Handler 实例（DI 注入接口）
-handlerProvider := handler.NewHandlerProvider(
+handlerProvider := handler.NewProvider(
     services.User,      // ← 注入 UserService 接口
     services.Post,      // ← 注入 PostService 接口
     services.Community, // ← 注入 CommunityService 接口
-    services.Vote,      // ← 注入 VoteService 接口
 )
 
 // Step 5: 注册路由（使用 Handler）
-r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg)
+r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg, cacheRepos.TokenCache)
 
 // Step 6: 启动服务
 http_server.Run(r, cfg.App.Port)
 ```
 
 **关键点**：
-- **Unit of Work (repositoriesUOW)**：实现了仓储的聚合。在 `internal/dao/mysql/repositories.go` 中，我们定义了 `NewRepositories` 函数，它将 `*gorm.DB` 注入到各个具体的 Repository（User, Post, Community）中。这使得我们在 Service 层可以方便地通过 `uow` 对象访问不同的数据操作，并能够轻松支持跨仓储的数据库事务。
+- **Unit of Work (repositoriesUOW)**：实现了仓储的聚合。在 `internal/dao/database/repositories.go` 中，我们定义了 `NewRepositories` 函数，它将 `*gorm.DB` 注入到各个具体的 Repository（User, Post, Community）中。这使得我们在 Service 层可以方便地通过 `uow` 对象访问不同的数据操作，并能够轻松支持跨仓储的数据库事务。
 - Step 3 中的 services 实现了 Service 接口
 - Step 4 中将接口实现注入到 Handler
 - Handler 只知道接口，不知道具体实现
@@ -216,112 +209,124 @@ http_server.Run(r, cfg.App.Port)
 
 ```
 internal/handler/
-├── handler.go              ← HandlerProvider（DI 容器）
-├── factory.go              ← 工厂函数
-├── user_handler.go         ← UserHandler 实现
-├── post_handler.go         ← PostHandler 实现
-├── community_handler.go    ← CommunityHandler 实现
-└── vote_handler.go         ← VoteHandler 实现
+├── handler.go              ← Provider（DI 容器）
+├── user_handler/
+│   └── handler.go          ← UserHandler 实现
+├── post_handler/
+│   └── handler.go          ← PostHandler 实现
+└── community_handler/
+    └── handler.go          ← CommunityHandler 实现
 
-internal/domain/serviceinterface/
-├── user_service.go         ← UserService 接口
-├── post_service.go         ← PostService 接口
-├── community_service.go    ← CommunityService 接口
-└── vote_service.go         ← VoteService 接口
+internal/domain/svcdomain/
+└── svcdomain.go            ← Service 接口定义
+
+internal/domain/dbdomain/
+└── dbdomain.go             ← Repository 接口定义
+
+internal/domain/cachedomain/
+└── cachedomain.go          ← Cache 接口定义
 ```
 
 ### UserHandler 实现示例
 
 ```go
-package handler
+package user_handler
 
 import (
-    "bluebell/internal/backfront"
-    domainService "bluebell/internal/domain/serviceinterface"
-    "bluebell/internal/dto/request"
-    myvalidator "bluebell/internal/infrastructure/validate"
-    "bluebell/pkg/errorx"
-    "strings"
+	// 通用响应
+	"bluebell/internal/backfront"
 
-    "github.com/gin-gonic/gin"
-    "github.com/go-playground/validator/v10"
+	// 领域层 - Service 接口
+	"bluebell/internal/domain/svcdomain"
+
+	// DTO
+	userreq "bluebell/internal/dto/request/user"
+
+	// 基础设施 - 参数校验
+	"bluebell/internal/infrastructure/translate"
+
+	// 错误处理
+	"bluebell/pkg/errorx"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
-// ✅ userHandlerStruct 结构体
-type userHandlerStruct struct {
-    userService domainService.UserService  // 依赖接口
+// ✅ Handler 结构体
+type Handler struct {
+	userService svcdomain.UserService
 }
 
 // ✅ 构造函数
-func newUserHandler(userService domainService.UserService) *userHandlerStruct {
-    if userService == nil {
-        panic("userService cannot be nil")
-    }
-    return &userHandlerStruct{
-        userService: userService,
-    }
+func New(userService svcdomain.UserService) *Handler {
+	if userService == nil {
+		panic("userService cannot be nil")
+	}
+	return &Handler{
+		userService: userService,
+	}
 }
 
 // ✅ Handler 方法 (SignUpHandler)
-func (h *userHandlerStruct) SignUpHandler(c *gin.Context) {
-    p := &request.SignUpRequest{}
-    // 1. 尝试绑定 JSON 数据到结构体
-    if err := c.ShouldBindJSON(p); err != nil {
-        // 2. 判断是否为参数验证错误 (ValidationErrors)
-        var errs validator.ValidationErrors
-        if errors.As(err, &errs) {
-            // 如果是验证错误，进行翻译并去除结构体名前缀
-            translatedErrs := errs.Translate(myvalidator.Trans)
-            backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam,
-                myvalidator.RemoveTopStruct(translatedErrs))
-            return
-        }
+func (h *Handler) SignUpHandler(c *gin.Context) {
+	p := &userreq.SignUpRequest{}
+	// 1. 尝试绑定 JSON 数据到结构体
+	if err := c.ShouldBindJSON(p); err != nil {
+		// 2. 判断是否为参数验证错误 (ValidationErrors)
+		var errs validator.ValidationErrors
+		if errors.As(err, &errs) {
+			// 如果是验证错误，进行翻译并去除结构体名前缀
+			translatedErrs := errs.Translate(translate.Trans)
+			backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam,
+				translate.RemoveTopStruct(translatedErrs))
+			return
+		}
 
-        // 3. 如果是其他类型的错误（如 JSON 格式不正确），返回通用参数错误
-        backfront.HandleError(c, errorx.ErrInvalidParam)
-        return
-    }
+		// 3. 如果是其他类型的错误（如 JSON 格式不正确），返回通用参数错误
+		backfront.HandleError(c, errorx.ErrInvalidParam)
+		return
+	}
 
-    // 4. 调用 Service 层处理业务逻辑
-    if err := h.userService.SignUp(c.Request.Context(), p); err != nil {
-        backfront.HandleError(c, err)
-        return
-    }
+	// 4. 调用 Service 层处理业务逻辑
+	if err := h.userService.SignUp(c.Request.Context(), p); err != nil {
+		backfront.HandleError(c, err)
+		return
+	}
 
-    // 5. 业务处理成功
-    backfront.ResponseSuccess(c, nil)
+	// 5. 业务处理成功
+	backfront.ResponseSuccess(c, nil)
 }
 
 // ✅ LoginHandler
-func (h *userHandlerStruct) LoginHandler(c *gin.Context) {
-    p := &request.LoginRequest{}
-    // 1. 尝试绑定 JSON 数据到结构体
-    if err := c.ShouldBindJSON(p); err != nil {
-        // 2. 判断是否为参数验证错误
-        var errs validator.ValidationErrors
-        if errors.As(err, &errs) {
-            translatedErrs := errs.Translate(myvalidator.Trans)
-            backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, 
-                myvalidator.RemoveTopStruct(translatedErrs))
-            return
-        }
-        // 3. 其他类型的错误
-        backfront.HandleError(c, errorx.ErrInvalidParam)
-        return
-    }
+func (h *Handler) LoginHandler(c *gin.Context) {
+	p := &userreq.LoginRequest{}
+	// 1. 尝试绑定 JSON 数据到结构体
+	if err := c.ShouldBindJSON(p); err != nil {
+		// 2. 判断是否为参数验证错误
+		var errs validator.ValidationErrors
+		if errors.As(err, &errs) {
+			translatedErrs := errs.Translate(translate.Trans)
+			backfront.HandleErrorWithMsg(c, errorx.CodeInvalidParam, 
+				translate.RemoveTopStruct(translatedErrs))
+			return
+		}
+		// 3. 其他类型的错误
+		backfront.HandleError(c, errorx.ErrInvalidParam)
+		return
+	}
 
-    // 4. 通过注入的接口调用 Service 方法
-    aToken, rToken, err := h.userService.Login(c.Request.Context(), p)
-    if err != nil {
-        backfront.HandleError(c, err)
-        return
-    }
+	// 4. 通过注入的接口调用 Service 方法
+	aToken, rToken, err := h.userService.Login(c.Request.Context(), p)
+	if err != nil {
+		backfront.HandleError(c, err)
+		return
+	}
 
-    // 5. 业务处理成功
-    backfront.ResponseSuccess(c, map[string]string{
-        "access_token":  aToken,
-        "refresh_token": rToken,
-    })
+	// 5. 业务处理成功
+	backfront.ResponseSuccess(c, map[string]string{
+		"access_token":  aToken,
+		"refresh_token": rToken,
+	})
 }
 
 // ... 其他 Handler 方法
@@ -418,40 +423,51 @@ func TestUserHandler_Login_Success(t *testing.T) {
 package router
 
 import (
+    "bluebell/internal/config"
+    "bluebell/internal/domain/cachedomain"
     "bluebell/internal/handler"
+    "bluebell/internal/middleware"
     "github.com/gin-gonic/gin"
 )
 
-func NewRouter(mode string, hp *handler.HandlerProvider, cfg *config.Config) (*gin.Engine, error) {
+func NewRouter(
+    mode string,
+    hp *handler.Provider,
+    cfg *config.Config,
+    tokenCache cachedomain.UserTokenCacheRepository,
+) (*gin.Engine, error) {
     r := gin.New()
 
     // ... 中间件配置 ...
 
     apiV1 := r.Group("/api/v1")
 
-    // ✅ 公共路由
+    // ✅ 公共路由（用户认证相关）
     {
         apiV1.POST("/signup", hp.UserHandler.SignUpHandler)
         apiV1.POST("/login", hp.UserHandler.LoginHandler)
         apiV1.POST("/refresh_token", hp.UserHandler.RefreshTokenHandler)
+
+        // 社区相关（公开接口）
+        apiV1.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
     }
 
-    // ✅ 认证路由
+    // ✅ 认证路由（需要 JWT 认证）
     authGroup := apiV1.Group("")
-    authGroup.Use(middleware.JWTAuthMiddleware(cfg))
+    authGroup.Use(middleware.JWTAuthMiddleware(cfg, tokenCache))
     {
         // 社区相关
-        authGroup.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
         authGroup.GET("/community/:id", hp.CommunityHandler.GetCommunityDetailHandler)
+        authGroup.POST("/community", hp.CommunityHandler.CreateCommunityHandler)
 
         // 帖子相关
         authGroup.POST("/post", hp.PostHandler.CreatePostHandler)
         authGroup.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
+        authGroup.GET("/post/:id/remarks", hp.PostHandler.GetPostRemarksHandler)
         authGroup.DELETE("/post/:id", hp.PostHandler.DeletePostHandler)
         authGroup.GET("/posts", hp.PostHandler.GetPostListHandler)
-
-        // 投票相关
-        authGroup.POST("/vote", hp.VoteHandler.PostVoteHandler)
+        authGroup.POST("/vote", hp.PostHandler.PostVoteHandler)
+        authGroup.POST("/remark", hp.PostHandler.PostRemarkHandler)
     }
 
     return r, nil
@@ -466,9 +482,8 @@ func NewRouter(mode string, hp *handler.HandlerProvider, cfg *config.Config) (*g
 ```go
 // ✅ 每个 Handler 只处理一类业务
 - userHandler：用户相关（注册、登录、刷新 Token）
-- postHandler：帖子相关（创建、获取、删除）
-- communityHandler：社区相关（列表、详情）
-- voteHandler：投票相关
+- postHandler：帖子相关（创建、获取、删除、投票、评论）
+- communityHandler：社区相关（列表、详情、创建）
 ```
 
 ### O - Open/Closed（开闭原则）
@@ -492,26 +507,26 @@ func NewRouter(mode string, hp *handler.HandlerProvider, cfg *config.Config) (*g
 ```go
 // ✅ 细粒度的接口定义
 type UserService interface {
-    SignUp(ctx context.Context, p *request.SignUpRequest) error
-    Login(ctx context.Context, p *request.LoginRequest) (string, string, error)
-    RefreshToken(ctx context.Context, accessToken, refreshToken string) (string, string, error)
+    SignUp(ctx context.Context, p *userreq.SignUpRequest) error
+    Login(ctx context.Context, p *userreq.LoginRequest) (string, string, error)
+    RefreshToken(ctx context.Context, p *userreq.RefreshTokenRequest) (string, string, error)
 }
 
 // ✅ Handler 只依赖必需的接口
-type userHandler struct {
-    userService UserService  // 只依赖 UserService
+type Handler struct {
+    userService svcdomain.UserService  // 只依赖 UserService
 }
 ```
 
 ### D - Dependency Inversion（依赖反转）
 ```go
 // ✅ Handler 依赖抽象（接口）而非具体（实现）
-type userHandler struct {
-    userService domain.service.UserService  // 接口
+type Handler struct {
+    userService svcdomain.UserService  // 接口
 }
 
 // ✅ 通过构造函数注入依赖
-func newUserHandler(userService domain.service.UserService) *userHandler { }
+func New(userService svcdomain.UserService) *Handler { }
 ```
 
 ## 🔄 工厂方法
@@ -566,46 +581,46 @@ handlerProvider := handler.NewHandlerProvider(
 ### 1. 始终使用接口
 ```go
 // ✅ 好做法
-type userHandlerStruct struct {
-    userService domain.serviceinterface.UserService  // 接口
+type Handler struct {
+    userService svcdomain.UserService  // 接口
 }
 
 // ❌ 错误做法
-type userHandlerStruct struct {
-    userService *user.userServiceStruct  // 具体实现（虽然是私有的，但在 handler 层也不应直接依赖实现包的结构体）
+type Handler struct {
+    userService *usersvc.userServiceStruct  // 具体实现（虽然是私有的，但在 handler 层也不应直接依赖实现包的结构体）
 }
 ```
 
 ### 2. Service 层也应遵循私有化规范
 ```go
-// ✅ 在 internal/service/user/user_service.go 中
+// ✅ 在 internal/service/usersvc/user_service.go 中
 type userServiceStruct struct {
-    userRepo repointerface.UserRepository
+    userRepo dbdomain.UserRepository
 }
 ```
 
 ### 2. 构造函数中进行 nil 检查
 ```go
 // ✅ 防御性编程
-func newUserHandler(userService domain.service.UserService) *userHandler {
+func New(userService svcdomain.UserService) *Handler {
     if userService == nil {
         panic("userService cannot be nil")
     }
-    return &userHandler{userService: userService}
+    return &Handler{userService: userService}
 }
 ```
 
 ### 3. 单一职责
 ```go
 // ✅ 每个 Handler 只做一件事
-type userHandler struct {
-    userService domain.service.UserService  // 只依赖 UserService
+type Handler struct {
+    userService svcdomain.UserService  // 只依赖 UserService
 }
 
 // ❌ 不要混合职责
 type Handler struct {
-    userService domain.serviceinterface.UserService
-    postService domain.serviceinterface.PostService
+    userService svcdomain.UserService
+    postService svcdomain.PostService
     // ... 混合了多个职责
 }
 ```
@@ -613,24 +628,23 @@ type Handler struct {
 ### 4. 依赖从顶层注入
 ```go
 // ✅ 在 main.go 中完成所有 DI
-handlerProvider := handler.NewHandlerProvider(...)
+handlerProvider := handler.NewProvider(...)
 
 // ❌ 不要在中间层创建依赖
 func (h *Handler) SomeMethod() {
-    service := service.NewUserService(...)  // 不要这样做
+    service := usersvc.NewUserService(...)  // 不要这样做
 }
 ```
 
 ## 🔗 相关资源
 
-### 文档链接
-- [QUICK_START.md](../QUICK_START.md) - 快速开始
-- [HANDLER_DI_SUMMARY.md](../HANDLER_DI_SUMMARY.md) - 改造总结
-- [DI_ARCHITECTURE_GUIDE.md](../DI_ARCHITECTURE_GUIDE.md) - 完整架构
-
 ### 代码位置
 - Handler 容器：`internal/handler/handler.go`
-- Service 接口：`internal/domain/service/`
+- User Handler：`internal/handler/user_handler/handler.go`
+- Post Handler：`internal/handler/post_handler/handler.go`
+- Community Handler：`internal/handler/community_handler/handler.go`
+- Service 接口：`internal/domain/svcdomain/svcdomain.go`
+- Repository 接口：`internal/domain/dbdomain/dbdomain.go`
 - 路由配置：`internal/router/router.go`
 - 主程序：`cmd/bluebell/main.go`
 
@@ -663,11 +677,11 @@ func (h *Handler) SomeMethod() {
 ## 🎯 练习
 
 1. 为 PostHandler 编写单元测试（使用 Mock）
-2. 添加新的 Handler（如 CommentHandler）
-3. 使用函数选项模式为 HandlerProvider 添加中间件支持
+2. 添加新的 Handler（如 RemarkHandler）
+3. 使用函数选项模式为 Provider 添加中间件支持
 
 ---
 
-**下一章**：[20-高性能架构设计与性能优化](./20-高性能架构设计与性能优化.md)
+**下一章**：[21-评论功能实现](./21-评论功能实现.md)
 
 **本章完成！** 🎉
