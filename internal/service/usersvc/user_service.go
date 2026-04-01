@@ -132,7 +132,7 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 	// aToken := parts[1] // aToken 暂时没有使用，但可以在此验证或者做其他逻辑
 
 	// 2. 解析 Refresh Token 获取 UserID
-	userID, err := jwt.ParseToken(s.jwtCfg, p.RefreshToken)
+	userID, err := jwt.ParseToken(s.jwtCfg, p.RefreshToken, jwt.RefreshTokenType)
 	if err != nil {
 		return "", "", errorx.ErrInvalidToken
 	}

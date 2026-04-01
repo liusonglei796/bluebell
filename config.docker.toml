@@ -42,3 +42,7 @@ timeout = "10s"
 secret = "bluebell_secret_key_change_in_prod"
 access_expiry = "120m"
 refresh_expiry = "168h"
+[ModelScope]
+api_key = ""
+url = ""
+Model = ""

@@ -32,7 +32,7 @@ func JWTAuthMiddleware(cfg *config.Config, tokenRepo cachedomain.UserTokenCacheR
 		tokenStr := parts[1]
 
 		// 3. 解析并校验 aToken
-		userID, err := jwt.ParseToken(cfg, tokenStr)
+		userID, err := jwt.ParseToken(cfg, tokenStr, jwt.AccessTokenType)
 		if err != nil {
 			backfront.HandleError(c, errorx.ErrInvalidToken)
 			c.Abort()
