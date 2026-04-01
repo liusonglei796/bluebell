@@ -35,35 +35,25 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 
 	// 根据环境配置 GORM Logger
 	// - debug: Info 级别，打印所有 SQL（开发环境）
-	// - test: Warn 级别，200ms 慢查询阈值（测试环境）
-	// - release: Warn 级别，1s 慢查询阈值（生产环境）
-	var logLevel logger.LogLevel
-	var slowThreshold time.Duration
+	// - test/release: Silent 级别，不打印任何 SQL（生产环境）
+	var gormLogger logger.Interface
 
-	switch cfg.App.Mode {
-	case "debug":
-		logLevel = logger.Info
-		slowThreshold = 0 // 开发环境不设阈值，全打印
-	case "test":
-		logLevel = logger.Warn
-		slowThreshold = 200 * time.Millisecond
-	default: // release / production
-		logLevel = logger.Warn
-		slowThreshold = time.Second
+	if cfg.App.Mode == "debug" {
+		gormLogger = logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold:             0,
+				LogLevel:                  logger.Info,
+				IgnoreRecordNotFoundError: true,
+				Colorful:                  true,
+			},
+		)
+	} else {
+		gormLogger = logger.Default.LogMode(logger.Silent)
 	}
 
-	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags),
-		logger.Config{
-			SlowThreshold:             slowThreshold,
-			LogLevel:                  logLevel,
-			IgnoreRecordNotFoundError: true, // 忽略 ErrRecordNotFound，避免日志污染
-			Colorful:                  true,
-		},
-	)
-
 	gormConfig := &gorm.Config{
-		Logger:                                   newLogger,
+		Logger:                                   gormLogger,
 		DisableForeignKeyConstraintWhenMigrating: true,
 		PrepareStmt:                              true,
 	}

@@ -11,14 +11,17 @@ import (
 
 // Repositories 聚合所有缓存仓储实例
 type Repositories struct {
-	PostCache  cachedomain.PostRepository
-	TokenCache cachedomain.UserTokenCacheRepository
+	PostCache         cachedomain.PostRepository
+	TokenCache        cachedomain.UserTokenCacheRepository
+	HotScoreRefresher *postcache.HotScoreRefresher
 }
 
 // NewRepositories 创建缓存仓储聚合实例
 func NewRepositories(rdb *redis.Client) *Repositories {
+	postCache, refresher := postcache.NewCacheWithRefresher(rdb, nil)
 	return &Repositories{
-		PostCache:  postcache.NewCache(rdb),
-		TokenCache: usercache.NewUserTokenCache(rdb),
+		PostCache:         postCache,
+		TokenCache:        usercache.NewUserTokenCache(rdb),
+		HotScoreRefresher: refresher,
 	}
 }

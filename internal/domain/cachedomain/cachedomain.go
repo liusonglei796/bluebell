@@ -18,6 +18,10 @@ type PostRepository interface {
 	VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error
 	// GetPostsVoteData 批量获取多个帖子的投票数（赞成票数）
 	GetPostsVoteData(ctx context.Context, ids []string) ([]int64, error)
+	// GetTopPostIDsWithScores 获取排行榜数据（Top N 帖子ID及其分数）
+	GetTopPostIDsWithScores(ctx context.Context, size int64) (ids []string, scores []float64, err error)
+	// GetCommunityTopPostIDsWithScores 获取社区排行榜数据
+	GetCommunityTopPostIDsWithScores(ctx context.Context, communityID, size int64) (ids []string, scores []float64, err error)
 }
 
 // UserTokenCacheRepository 用户Token缓存仓储接口

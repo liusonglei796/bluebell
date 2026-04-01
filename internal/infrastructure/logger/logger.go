@@ -19,8 +19,8 @@ func Init(cfg *config.Config, mode string) (err error) {
 		consolecore := zapcore.NewCore(zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig()), os.Stdout, zapcore.DebugLevel)
 		core = zapcore.NewTee(filecore, consolecore)
 	} else {
-		var level zapcore.Level
-		level.UnmarshalText([]byte(cfg.Log.Level))
+		// 强制 Error 级别，仅输出到文件（不输出到控制台）
+		level := zapcore.ErrorLevel
 		core = zapcore.NewCore(zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()), writeSyncer, level)
 	}
 	logger := zap.New(core, zap.AddCaller())

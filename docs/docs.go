@@ -48,7 +48,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                                    "$ref": "#/definitions/backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
@@ -56,7 +56,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/bluebell_internal_dto_response_community.Response"
+                                                "$ref": "#/definitions/communityResp.Response"
                                             }
                                         }
                                     }
@@ -92,7 +92,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_dto_request_community.CreateCommunityRequest"
+                            "$ref": "#/definitions/communityreq.CreateCommunityRequest"
                         }
                     }
                 ],
@@ -100,7 +100,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                            "$ref": "#/definitions/backfront.ResponseData"
                         }
                     }
                 }
@@ -141,13 +141,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                                    "$ref": "#/definitions/backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/bluebell_internal_dto_response_community.Response"
+                                            "$ref": "#/definitions/communityResp.Response"
                                         }
                                     }
                                 }
@@ -177,7 +177,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_dto_request_user.LoginRequest"
+                            "$ref": "#/definitions/userreq.LoginRequest"
                         }
                     }
                 ],
@@ -185,7 +185,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                            "$ref": "#/definitions/backfront.ResponseData"
                         }
                     }
                 }
@@ -218,7 +218,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_dto_request_post.CreatePostRequest"
+                            "$ref": "#/definitions/postreq.CreatePostRequest"
                         }
                     }
                 ],
@@ -226,7 +226,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                            "$ref": "#/definitions/backfront.ResponseData"
                         }
                     }
                 }
@@ -267,13 +267,13 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                                    "$ref": "#/definitions/backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/bluebell_internal_dto_response_post.DetailResponse"
+                                            "$ref": "#/definitions/postResp.DetailResponse"
                                         }
                                     }
                                 }
@@ -314,7 +314,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                            "$ref": "#/definitions/backfront.ResponseData"
                         }
                     }
                 }
@@ -372,7 +372,7 @@ const docTemplate = `{
                         "schema": {
                             "allOf": [
                                 {
-                                    "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                                    "$ref": "#/definitions/backfront.ResponseData"
                                 },
                                 {
                                     "type": "object",
@@ -380,7 +380,7 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/bluebell_internal_dto_response_post.DetailResponse"
+                                                "$ref": "#/definitions/postResp.DetailResponse"
                                             }
                                         }
                                     }
@@ -424,7 +424,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                            "$ref": "#/definitions/backfront.ResponseData"
                         }
                     }
                 }
@@ -450,7 +450,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_dto_request_user.SignUpRequest"
+                            "$ref": "#/definitions/userreq.SignUpRequest"
                         }
                     }
                 ],
@@ -458,7 +458,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                            "$ref": "#/definitions/backfront.ResponseData"
                         }
                     }
                 }
@@ -491,7 +491,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_dto_request_post.VoteRequest"
+                            "$ref": "#/definitions/postreq.VoteRequest"
                         }
                     }
                 ],
@@ -499,7 +499,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/bluebell_internal_backfront.ResponseData"
+                            "$ref": "#/definitions/backfront.ResponseData"
                         }
                     }
                 }
@@ -507,7 +507,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "bluebell_internal_backfront.ResponseData": {
+        "backfront.ResponseData": {
             "type": "object",
             "properties": {
                 "code": {
@@ -522,95 +522,7 @@ const docTemplate = `{
                 }
             }
         },
-        "bluebell_internal_dto_request_community.CreateCommunityRequest": {
-            "type": "object",
-            "required": [
-                "introduction",
-                "name"
-            ],
-            "properties": {
-                "introduction": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                }
-            }
-        },
-        "bluebell_internal_dto_request_post.CreatePostRequest": {
-            "type": "object",
-            "required": [
-                "community_id",
-                "content",
-                "title"
-            ],
-            "properties": {
-                "community_id": {
-                    "type": "integer"
-                },
-                "content": {
-                    "type": "string"
-                },
-                "title": {
-                    "type": "string"
-                }
-            }
-        },
-        "bluebell_internal_dto_request_post.VoteRequest": {
-            "type": "object",
-            "required": [
-                "direction",
-                "post_id"
-            ],
-            "properties": {
-                "direction": {
-                    "type": "integer",
-                    "enum": [
-                        1,
-                        0,
-                        -1
-                    ]
-                },
-                "post_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "bluebell_internal_dto_request_user.LoginRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "bluebell_internal_dto_request_user.SignUpRequest": {
-            "type": "object",
-            "required": [
-                "password",
-                "re_password",
-                "username"
-            ],
-            "properties": {
-                "password": {
-                    "type": "string"
-                },
-                "re_password": {
-                    "type": "string"
-                },
-                "username": {
-                    "type": "string"
-                }
-            }
-        },
-        "bluebell_internal_dto_response_community.Response": {
+        "communityResp.Response": {
             "type": "object",
             "properties": {
                 "create_time": {
@@ -627,7 +539,22 @@ const docTemplate = `{
                 }
             }
         },
-        "bluebell_internal_dto_response_post.DetailResponse": {
+        "communityreq.CreateCommunityRequest": {
+            "type": "object",
+            "required": [
+                "introduction",
+                "name"
+            ],
+            "properties": {
+                "introduction": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "postResp.DetailResponse": {
             "type": "object",
             "properties": {
                 "author_id": {
@@ -658,6 +585,79 @@ const docTemplate = `{
                 "vote_num": {
                     "description": "投票数（赞成票数）",
                     "type": "integer"
+                }
+            }
+        },
+        "postreq.CreatePostRequest": {
+            "type": "object",
+            "required": [
+                "community_id",
+                "content",
+                "title"
+            ],
+            "properties": {
+                "community_id": {
+                    "type": "integer"
+                },
+                "content": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "postreq.VoteRequest": {
+            "type": "object",
+            "required": [
+                "direction",
+                "post_id"
+            ],
+            "properties": {
+                "direction": {
+                    "type": "integer",
+                    "enum": [
+                        1,
+                        0,
+                        -1
+                    ]
+                },
+                "post_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "userreq.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "userreq.SignUpRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "re_password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "re_password": {
+                    "type": "string"
+                },
+                "username": {
+                    "type": "string"
                 }
             }
         }

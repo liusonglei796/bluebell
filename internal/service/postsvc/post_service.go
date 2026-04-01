@@ -286,6 +286,7 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 		return errorx.ErrNotFound
 	}
 
+	// Redis 模式：先写 Redis，再同步 MySQL
 	err = s.postCache.VoteForPost(
 		ctx,
 		strconv.FormatInt(userID, 10),
@@ -302,20 +303,17 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 		return errorx.ErrServerBusy
 	}
 
-	// 异步落盘到 MySQL
-	// 为什么：不影响投票接口的响应性能 (2-5ms)，保证最终一致性
-	go func() {
-		// 注意：这里的 ctx 是请求级别的，协程中建议使用 context.Background() 或从 ctx 衍生一个不带取消的子 context
-		// 简单起见，这里直接调用，实际生产环境建议使用消息队列或更完善的协程池
-		err := s.voteRepo.SaveVote(context.Background(), userID, p.PostID, p.Direction)
-		if err != nil {
-			zap.L().Error("async save vote to mysql failed",
-				zap.Int64("user_id", userID),
-				zap.Int64("post_id", p.PostID),
-				zap.Error(err),
-			)
-		}
-	}()
+	// 同步落盘到 MySQL
+	// 修复：移除异步 goroutine 避免高并发下 goroutine 泄漏
+	err = s.voteRepo.SaveVote(ctx, userID, p.PostID, p.Direction)
+	if err != nil {
+		zap.L().Error("save vote to mysql failed",
+			zap.Int64("user_id", userID),
+			zap.Int64("post_id", p.PostID),
+			zap.Error(err),
+		)
+		return errorx.ErrServerBusy
+	}
 
 	return nil
 }

@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  bluebell_internal_backfront.ResponseData:
+  backfront.ResponseData:
     properties:
       code:
         description: 业务响应状态码
@@ -10,67 +10,7 @@ definitions:
       msg:
         description: 提示信息
     type: object
-  bluebell_internal_dto_request_community.CreateCommunityRequest:
-    properties:
-      introduction:
-        type: string
-      name:
-        type: string
-    required:
-    - introduction
-    - name
-    type: object
-  bluebell_internal_dto_request_post.CreatePostRequest:
-    properties:
-      community_id:
-        type: integer
-      content:
-        type: string
-      title:
-        type: string
-    required:
-    - community_id
-    - content
-    - title
-    type: object
-  bluebell_internal_dto_request_post.VoteRequest:
-    properties:
-      direction:
-        enum:
-        - 1
-        - 0
-        - -1
-        type: integer
-      post_id:
-        type: integer
-    required:
-    - direction
-    - post_id
-    type: object
-  bluebell_internal_dto_request_user.LoginRequest:
-    properties:
-      password:
-        type: string
-      username:
-        type: string
-    required:
-    - password
-    - username
-    type: object
-  bluebell_internal_dto_request_user.SignUpRequest:
-    properties:
-      password:
-        type: string
-      re_password:
-        type: string
-      username:
-        type: string
-    required:
-    - password
-    - re_password
-    - username
-    type: object
-  bluebell_internal_dto_response_community.Response:
+  communityResp.Response:
     properties:
       create_time:
         type: string
@@ -81,7 +21,17 @@ definitions:
       name:
         type: string
     type: object
-  bluebell_internal_dto_response_post.DetailResponse:
+  communityreq.CreateCommunityRequest:
+    properties:
+      introduction:
+        type: string
+      name:
+        type: string
+    required:
+    - introduction
+    - name
+    type: object
+  postResp.DetailResponse:
     properties:
       author_id:
         type: string
@@ -103,6 +53,56 @@ definitions:
       vote_num:
         description: 投票数（赞成票数）
         type: integer
+    type: object
+  postreq.CreatePostRequest:
+    properties:
+      community_id:
+        type: integer
+      content:
+        type: string
+      title:
+        type: string
+    required:
+    - community_id
+    - content
+    - title
+    type: object
+  postreq.VoteRequest:
+    properties:
+      direction:
+        enum:
+        - 1
+        - 0
+        - -1
+        type: integer
+      post_id:
+        type: integer
+    required:
+    - direction
+    - post_id
+    type: object
+  userreq.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  userreq.SignUpRequest:
+    properties:
+      password:
+        type: string
+      re_password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - re_password
+    - username
     type: object
 host: 127.0.0.1:8080
 info:
@@ -133,11 +133,11 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            - $ref: '#/definitions/backfront.ResponseData'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/bluebell_internal_dto_response_community.Response'
+                    $ref: '#/definitions/communityResp.Response'
                   type: array
               type: object
       summary: 获取社区列表
@@ -158,14 +158,14 @@ paths:
         name: object
         required: true
         schema:
-          $ref: '#/definitions/bluebell_internal_dto_request_community.CreateCommunityRequest'
+          $ref: '#/definitions/communityreq.CreateCommunityRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            $ref: '#/definitions/backfront.ResponseData'
       summary: 创建社区
       tags:
       - 社区相关
@@ -192,10 +192,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            - $ref: '#/definitions/backfront.ResponseData'
             - properties:
                 data:
-                  $ref: '#/definitions/bluebell_internal_dto_response_community.Response'
+                  $ref: '#/definitions/communityResp.Response'
               type: object
       summary: 获取社区详情
       tags:
@@ -211,14 +211,14 @@ paths:
         name: object
         required: true
         schema:
-          $ref: '#/definitions/bluebell_internal_dto_request_user.LoginRequest'
+          $ref: '#/definitions/userreq.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            $ref: '#/definitions/backfront.ResponseData'
       summary: 用户登录
       tags:
       - 用户相关
@@ -238,14 +238,14 @@ paths:
         name: object
         required: true
         schema:
-          $ref: '#/definitions/bluebell_internal_dto_request_post.CreatePostRequest'
+          $ref: '#/definitions/postreq.CreatePostRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            $ref: '#/definitions/backfront.ResponseData'
       summary: 创建帖子
       tags:
       - 帖子相关
@@ -271,7 +271,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            $ref: '#/definitions/backfront.ResponseData'
       summary: 删除帖子
       tags:
       - 帖子相关
@@ -297,10 +297,10 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            - $ref: '#/definitions/backfront.ResponseData'
             - properties:
                 data:
-                  $ref: '#/definitions/bluebell_internal_dto_response_post.DetailResponse'
+                  $ref: '#/definitions/postResp.DetailResponse'
               type: object
       summary: 获取帖子详情
       tags:
@@ -339,11 +339,11 @@ paths:
           description: OK
           schema:
             allOf:
-            - $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            - $ref: '#/definitions/backfront.ResponseData'
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/bluebell_internal_dto_response_post.DetailResponse'
+                    $ref: '#/definitions/postResp.DetailResponse'
                   type: array
               type: object
       summary: 获取帖子列表
@@ -371,7 +371,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            $ref: '#/definitions/backfront.ResponseData'
       summary: 刷新令牌
       tags:
       - 用户相关
@@ -386,14 +386,14 @@ paths:
         name: object
         required: true
         schema:
-          $ref: '#/definitions/bluebell_internal_dto_request_user.SignUpRequest'
+          $ref: '#/definitions/userreq.SignUpRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            $ref: '#/definitions/backfront.ResponseData'
       summary: 用户注册
       tags:
       - 用户相关
@@ -413,14 +413,14 @@ paths:
         name: object
         required: true
         schema:
-          $ref: '#/definitions/bluebell_internal_dto_request_post.VoteRequest'
+          $ref: '#/definitions/postreq.VoteRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/bluebell_internal_backfront.ResponseData'
+            $ref: '#/definitions/backfront.ResponseData'
       summary: 帖子投票
       tags:
       - 帖子相关

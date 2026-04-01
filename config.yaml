@@ -1,0 +1,50 @@
+app:
+  name: "bluebell"
+  port: 8080
+  mode: "debug"
+
+snowflake:
+  start_time: 1775539200000
+  machine_id: 1
+
+log:
+  level: "debug"
+  file_name: "bluebell.log"
+  max_size: 100
+  max_backups: 7
+  max_age: 30
+
+mysql:
+  host: "localhost"
+  port: 3307
+  passwd: "15939087780Ll@"
+  db_name: "bluebell"
+  user: "root"
+  max_open_conns: 200
+  max_idle_conns: 30
+
+redis:
+  host: "localhost"
+  port: 6380
+  password: ""
+  db_name: 1
+  pool_size: 100
+
+ratelimit:
+  fill_interval: "10ms"
+  capacity: 200
+
+timeout:
+  timeout: "30s"
+
+jwt:
+  secret: "bluebell_secret_key_change_in_prod"
+  access_expiry: "120m"
+  refresh_expiry: "168h"
+
+Modelscope:
+  api_key: ""
+  url: ""
+  model: ""
+
+

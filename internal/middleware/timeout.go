@@ -3,34 +3,24 @@ package middleware
 import (
 	"bluebell/internal/backfront"
 	"bluebell/pkg/errorx"
-	"context"
 	"time"
 
+	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 )
 
-func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
-		defer cancel()
-		c.Request = c.Request.WithContext(ctx)
-		ch := make(chan struct{})
-		go func() {
-			c.Next()
-			close(ch)
-		}()
-		select {
-		case <-ch:
-			return
-		case <-c.Request.Context().Done():
-			if c.Request.Context().Err() == context.DeadlineExceeded {
-				backfront.HandleError(c, errorx.ErrServerBusy)
-				c.Abort()
-			}
-			return
-		}
-	}
+func TimeoutMiddleware(timeoutDuration time.Duration) gin.HandlerFunc {
+	return timeout.New(
+		timeout.WithTimeout(timeoutDuration),
+		timeout.WithResponse(customTimeoutResponse),
+	)
 }
 
+// customTimeoutResponse 自定义超时响应
+func customTimeoutResponse(c *gin.Context) {
+	backfront.HandleError(c, errorx.ErrServerBusy)
+}
 
-
+// GinLogger 日志中间件（确保 Recovery 在 timeout 之后执行）
+// 注意：gin-contrib/timeout 内部包含 panic 恢复逻辑
+// 如果需要全局 Recovery，应放在 timeout 中间件之前

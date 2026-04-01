@@ -43,15 +43,8 @@ func main() {
 		return
 	}
 
-	// 设置 Gin 运行模式
-	switch cfg.App.Mode {
-	case "debug":
-		gin.SetMode(gin.DebugMode)
-	case "test":
-		gin.SetMode(gin.TestMode)
-	default:
-		gin.SetMode(gin.ReleaseMode)
-	}
+	// 设置 Gin 运行模式 — 强制 ReleaseMode（禁用调试日志和 Gin 默认日志）
+	gin.SetMode(gin.ReleaseMode)
 
 	// 2. 初始化日志
 	if err := logger.Init(cfg, cfg.App.Mode); err != nil {
@@ -91,6 +84,10 @@ func main() {
 	repositoriesUOW := database.NewRepositories(gormDB)
 	cacheRepos := cache.NewRepositories(rdb)
 
+	// 启动 Gravity 热度分数定时刷新任务
+	cacheRepos.HotScoreRefresher.Start()
+	defer cacheRepos.HotScoreRefresher.Stop()
+
 	// 2) 业务逻辑层：创建 Service 实例
 	services := service.NewServices(repositoriesUOW, cacheRepos, cfg)
 
@@ -99,6 +96,7 @@ func main() {
 		services.User,      // 注入 UserService 接口
 		services.Post,      // 注入 PostService 接口
 		services.Community, // 注入 CommunityService 接口
+		services.AI,        // 注入 AiSerive 接口
 	)
 
 	// 4) 路由层：初始化路由，注入 Handler

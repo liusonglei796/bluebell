@@ -7,6 +7,7 @@ import (
 	"bluebell/internal/domain/svcdomain"
 
 	// Handler 层 - HTTP 处理器
+	"bluebell/internal/handler/ai_handler"
 	"bluebell/internal/handler/community_handler"
 	"bluebell/internal/handler/post_handler"
 	"bluebell/internal/handler/user_handler"
@@ -20,6 +21,7 @@ type Provider struct {
 	UserHandler      *user_handler.Handler
 	PostHandler      *post_handler.Handler
 	CommunityHandler *community_handler.Handler
+	AIHandler        *ai_handler.Handler
 }
 
 // NewProvider 创建 Provider 实例
@@ -28,10 +30,12 @@ func NewProvider(
 	userService svcdomain.UserService,
 	postService svcdomain.PostService,
 	communityService svcdomain.CommunityService,
+	aiService svcdomain.AiSerive,
 ) *Provider {
 	return &Provider{
 		UserHandler:      user_handler.New(userService),
 		PostHandler:      post_handler.New(postService),
 		CommunityHandler: community_handler.New(communityService),
+		AIHandler:        ai_handler.New(aiService),
 	}
 }

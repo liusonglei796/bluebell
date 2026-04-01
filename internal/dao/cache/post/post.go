@@ -1,30 +1,33 @@
 package postcache
 
 import (
-	"context"
-	"strconv"
-	"time"
-
 	"bluebell/internal/domain/cachedomain"
 	"bluebell/pkg/errorx"
+	"context"
 	"github.com/redis/go-redis/v9"
+	"math"
+	"strconv"
+	"time"
 )
 
-// Redis Keys 相关常量
-const (
-	keyPrefix              = "bluebell:"
-	keyPostTimeZSet        = "post:time"   // bluebell:post:time - 所有帖子按时间排序
-	keyPostScoreZSet       = "post:score"  // bluebell:post:score - 所有帖子按分数排序
-	keyPostVotedZSetPrefix = "post:voted:" // bluebell:post:voted:{postID} - 帖子的投票记录
+// ========== Redis Keys 常量 ==========
 
-	// 社区维度的帖子排序 Key
+const (
+	keyPrefix                   = "bluebell:"
+	keyPostTimeZSet             = "post:time"   // bluebell:post:time - 所有帖子按时间排序
+	keyPostScoreZSet            = "post:score"  // bluebell:post:score - 所有帖子按分数排序
+	keyPostVotedZSetPrefix      = "post:voted:" // bluebell:post:voted:{postID} - 帖子的投票记录
+	keyPostMetaPrefix           = "post:meta:"  // bluebell:post:meta:{postID} - 帖子元数据 Hash
 	keyCommunityPostTimePrefix  = "community:post:time:"
 	keyCommunityPostScorePrefix = "community:post:score:"
-
 	// 投票相关常量
 	oneWeekInSeconds = 7 * 24 * 3600 // 一周的秒数，超过一周的帖子不允许投票
-	scorePerVote     = 432           // 每一票的分数权重: 86400秒/天 ÷ 200票 = 432分/票
+	// Gravity 算法衰减因子（Reddit/Hacker News 标准值）
+	// [防御] 值越大衰减越快，1.8 是 HN 验证过的经验值
+	gravity = 1.8
 )
+
+// ========== cacheStruct ==========
 
 // cacheStruct 帖子缓存仓储实现
 // 实现 PostRepository（含帖子排序、分页与投票）
@@ -37,6 +40,13 @@ func NewCache(rdb *redis.Client) cachedomain.PostRepository {
 	return &cacheStruct{rdb: rdb}
 }
 
+// NewCacheWithRefresher 创建 cacheStruct 实例和热度刷新器
+func NewCacheWithRefresher(rdb *redis.Client, config *HotScoreRefresherConfig) (cachedomain.PostRepository, *HotScoreRefresher) {
+	c := &cacheStruct{rdb: rdb}
+	refresher := NewHotScoreRefresher(rdb, c, config)
+	return c, refresher
+}
+
 func redisKey(key string) string {
 	return keyPrefix + key
 }
@@ -45,7 +55,7 @@ func timeNow() int64 {
 	return time.Now().Unix()
 }
 
-// ========= PostRepository 实现 =========
+// ========== PostRepository 实现 ==========
 
 // CreatePost 创建帖子时初始化 Redis 数据
 func (c *cacheStruct) CreatePost(ctx context.Context, postID, communityID int64) error {
@@ -72,6 +82,14 @@ func (c *cacheStruct) CreatePost(ctx context.Context, postID, communityID int64)
 	pipeline.ZAdd(ctx, redisKey(keyCommunityPostScorePrefix+communityIDStr), redis.Z{
 		Score:  timestamp,
 		Member: postIDStr,
+	})
+
+	// 初始化帖子元数据 Hash（用于 Gravity 算法）
+	// [防御] HSet 幂等，vote_up/vote_down 初始化为 0 避免后续 HIncrBy 行为不一致
+	pipeline.HSet(ctx, redisKey(keyPostMetaPrefix+postIDStr), map[string]interface{}{
+		"create_time": strconv.FormatInt(timeNow(), 10),
+		"vote_up":     0,
+		"vote_down":   0,
 	})
 
 	_, err := pipeline.Exec(ctx)
@@ -127,6 +145,7 @@ func (c *cacheStruct) GetCommunityPostIDsInOrder(ctx context.Context, communityI
 }
 
 // VoteForPost 为帖子投票
+// 使用 Gravity 算法：更新 Hash 中的投票计数，重新计算热度分数并覆盖 ZSet
 func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error {
 	// 1. 判断投票时间限制
 	postTime := c.rdb.ZScore(ctx, redisKey(keyPostTimeZSet), postID).Val()
@@ -139,14 +158,39 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 	if value == oldValue {
 		return errorx.ErrVoteRepeated
 	}
-	// 4. 计算分数变化
-	scoreDiff := (value - oldValue) * scorePerVote
-	// 5. 使用 Redis Pipeline 保证原子性
+
+	// 4. 计算 vote_up / vote_down 的增量
+	// direction: 1=赞成, 0=取消, -1=反对
+	var voteUpDelta, voteDownDelta int64
+	switch {
+	case oldValue == 0 && value == 1:
+		voteUpDelta = 1
+	case oldValue == 0 && value == -1:
+		voteDownDelta = 1
+	case oldValue == 1 && value == 0:
+		voteUpDelta = -1
+	case oldValue == 1 && value == -1:
+		voteUpDelta = -1
+		voteDownDelta = 1
+	case oldValue == -1 && value == 0:
+		voteDownDelta = -1
+	case oldValue == -1 && value == 1:
+		voteDownDelta = -1
+		voteUpDelta = 1
+	}
+
+	// 5. 更新 Hash 中的投票计数
+	if err := c.updatePostVoteCount(ctx, postID, voteUpDelta, voteDownDelta); err != nil {
+		return errorx.Wrapf(err, errorx.CodeCacheError, "update post vote count failed (post_id: %s)", postID)
+	}
+
+	// 6. 重新计算 Gravity 分数并更新 ZSet
+	if err := c.batchRefreshGravityScores(ctx, []string{postID}); err != nil {
+		return errorx.Wrapf(err, errorx.CodeCacheError, "refresh gravity score failed (post_id: %s)", postID)
+	}
+
+	// 7. 更新投票记录
 	pipeline := c.rdb.TxPipeline()
-	// 更新两类帖子的 ZSET
-	pipeline.ZIncrBy(ctx, redisKey(keyPostScoreZSet), scoreDiff, postID)
-	pipeline.ZIncrBy(ctx, redisKey(keyCommunityPostScorePrefix+communityID), scoreDiff, postID)
-	// 更新个人用户对该帖子的投票记录
 	if value == 0 {
 		pipeline.ZRem(ctx, redisKey(keyPostVotedZSetPrefix+postID), userID)
 	} else {
@@ -155,32 +199,163 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 			Member: userID,
 		})
 	}
-
 	_, err := pipeline.Exec(ctx)
 	if err != nil {
 		return errorx.Wrapf(err, errorx.CodeCacheError, "vote pipeline exec failed (post_id: %s, user_id: %s)", postID, userID)
 	}
+
 	return nil
 }
 
 // GetPostsVoteData 批量获取多个帖子的投票数（赞成票数）
 func (c *cacheStruct) GetPostsVoteData(ctx context.Context, ids []string) (data []int64, err error) {
-	pipeline := c.rdb.Pipeline()
+	return c.getPostVoteCounts(ctx, ids)
+}
 
-	for _, id := range ids {
-		key := redisKey(keyPostVotedZSetPrefix + id)
-		pipeline.ZCount(ctx, key, "1", "1")
-	}
+// GetTopPostIDsWithScores 获取全站排行榜数据（Top N 帖子ID及其分数）
+func (c *cacheStruct) GetTopPostIDsWithScores(ctx context.Context, size int64) (ids []string, scores []float64, err error) {
+	key := redisKey(keyPostScoreZSet)
 
-	cmders, err := pipeline.Exec(ctx)
+	results, err := c.rdb.ZRevRangeWithScores(ctx, key, 0, size-1).Result()
 	if err != nil {
-		return nil, errorx.Wrapf(err, errorx.CodeCacheError, "get posts vote data pipeline exec failed (count: %d)", len(ids))
+		return nil, nil, errorx.Wrapf(err, errorx.CodeCacheError, "get top posts with scores failed (size: %d)", size)
 	}
 
-	data = make([]int64, 0, len(cmders))
-	for _, cmder := range cmders {
-		v := cmder.(*redis.IntCmd).Val()
-		data = append(data, v)
+	ids = make([]string, 0, len(results))
+	scores = make([]float64, 0, len(results))
+
+	for _, z := range results {
+		ids = append(ids, z.Member.(string))
+		scores = append(scores, z.Score)
 	}
-	return
+
+	return ids, scores, nil
+}
+
+// GetCommunityTopPostIDsWithScores 获取社区排行榜数据（Top N 帖子ID及其分数）
+func (c *cacheStruct) GetCommunityTopPostIDsWithScores(ctx context.Context, communityID, size int64) (ids []string, scores []float64, err error) {
+	key := redisKey(keyCommunityPostScorePrefix + strconv.FormatInt(communityID, 10))
+
+	results, err := c.rdb.ZRevRangeWithScores(ctx, key, 0, size-1).Result()
+	if err != nil {
+		return nil, nil, errorx.Wrapf(err, errorx.CodeCacheError, "get community top posts with scores failed (community_id: %d, size: %d)", communityID, size)
+	}
+
+	ids = make([]string, 0, len(results))
+	scores = make([]float64, 0, len(results))
+
+	for _, z := range results {
+		ids = append(ids, z.Member.(string))
+		scores = append(scores, z.Score)
+	}
+
+	return ids, scores, nil
+}
+
+// ========== Gravity 算法 ==========
+
+// CalculateGravityScore 使用 Gravity 算法计算帖子热度分数
+// 公式: score = (votes - 1) / (hours_since_submission + 2)^gravity
+// votes = voteUp - voteDown（净投票数）
+func CalculateGravityScore(voteUp, voteDown int64, createTime time.Time) float64 {
+	// [防御] 转 float64 再做除法，避免 int 整除丢失精度
+	votes := float64(voteUp - voteDown)
+
+	// [防御] 净票数为 0 或负数时直接返回 0
+	if votes <= 0 {
+		return 0
+	}
+
+	hoursSinceSubmission := time.Since(createTime).Hours()
+
+	// [防御] 防止服务器时钟回拨导致负数，负数会导致分母 < 2^1.8 分数异常膨胀
+	if hoursSinceSubmission < 0 {
+		hoursSinceSubmission = 0
+	}
+
+	// [防御] +2 防止新帖 hours=0 时分母为 0，同时给新帖基础曝光窗口
+	denominator := math.Pow(hoursSinceSubmission+2, gravity)
+
+	// [防御] votes-1 是 HN 的设计：第一票不算分
+	return (votes - 1) / denominator
+}
+
+// ========== Hash 元数据操作 ==========
+
+// updatePostVoteCount 更新帖子投票计数（增量更新）
+func (c *cacheStruct) updatePostVoteCount(ctx context.Context, postID string, voteUpDelta, voteDownDelta int64) error {
+	key := redisKey(keyPostMetaPrefix + postID)
+	pipe := c.rdb.Pipeline()
+
+	// [防御] 只在 delta != 0 时才发命令，减少 Pipeline 命令数量
+	if voteUpDelta != 0 {
+		pipe.HIncrBy(ctx, key, "vote_up", voteUpDelta)
+	}
+	if voteDownDelta != 0 {
+		pipe.HIncrBy(ctx, key, "vote_down", voteDownDelta)
+	}
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+// getPostVoteCounts 批量获取帖子投票数
+func (c *cacheStruct) getPostVoteCounts(ctx context.Context, postIDs []string) ([]int64, error) {
+	// [防御] 空切片直接返回
+	if len(postIDs) == 0 {
+		return nil, nil
+	}
+
+	pipe := c.rdb.Pipeline()
+	cmds := make([]*redis.MapStringStringCmd, len(postIDs))
+	for i, postID := range postIDs {
+		cmds[i] = pipe.HGetAll(ctx, redisKey(keyPostMetaPrefix+postID))
+	}
+	_, err := pipe.Exec(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	counts := make([]int64, len(postIDs))
+	for i, cmd := range cmds {
+		result, _ := cmd.Result()
+		// [防御] 保证 counts 长度和 postIDs 严格一致，Hash 不存在时 voteUp=0 占位
+		voteUp, _ := strconv.ParseInt(result["vote_up"], 10, 64)
+		counts[i] = voteUp
+	}
+	return counts, nil
+}
+
+// batchRefreshGravityScores 批量刷新帖子的 Gravity 分数到 ZSet
+func (c *cacheStruct) batchRefreshGravityScores(ctx context.Context, postIDs []string) error {
+	// [防御] 空切片直接返回
+	if len(postIDs) == 0 {
+		return nil
+	}
+
+	pipe := c.rdb.Pipeline()
+
+	for _, postID := range postIDs {
+		result, err := c.rdb.HGetAll(ctx, redisKey(keyPostMetaPrefix+postID)).Result()
+		// [防御] 单个帖子失败不影响其他帖子，不能因为一个帖子失败就 abort 整批
+		if err != nil || len(result) == 0 {
+			continue
+		}
+
+		// [防御] ParseInt 忽略 error，格式不对时降级为 0
+		createTimeUnix, _ := strconv.ParseInt(result["create_time"], 10, 64)
+		voteUp, _ := strconv.ParseInt(result["vote_up"], 10, 64)
+		voteDown, _ := strconv.ParseInt(result["vote_down"], 10, 64)
+
+		createTime := time.Unix(createTimeUnix, 0)
+		score := CalculateGravityScore(voteUp, voteDown, createTime)
+
+		pipe.ZAdd(ctx, redisKey(keyPostScoreZSet), redis.Z{
+			Score:  score,
+			Member: postID,
+		})
+	}
+
+	// [防御] Pipeline 即使为空 Exec 也是安全的
+	_, err := pipe.Exec(ctx)
+	return err
 }
