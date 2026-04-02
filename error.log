@@ -1,3 +1,0 @@
-internal\service\post\post_service.go:7:2: package bluebell/internal/infrastructure/snowflake is not in std (C:\Program Files\Go\src\bluebell\internal\infrastructure\snowflake)
-internal\service\user\user_service.go:9:2: package bluebell/pkg/jwt is not in std (C:\Program Files\Go\src\bluebell\pkg\jwt)
-cmd\bluebell\main.go:9:2: package bluebell/internal/infrastructure/logger is not in std (C:\Program Files\Go\src\bluebell\internal\infrastructure\logger)

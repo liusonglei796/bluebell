@@ -2,11 +2,9 @@ package svcdomain
 
 import (
 	// DTO
-	aireq "bluebell/internal/dto/request/ai"
 	postreq "bluebell/internal/dto/request/post"
 	userreq "bluebell/internal/dto/request/user"
 	votereq "bluebell/internal/dto/request/vote"
-	ai_resp "bluebell/internal/dto/response/ai"
 	communityResp "bluebell/internal/dto/response/community"
 	postResp "bluebell/internal/dto/response/post"
 	voteresp "bluebell/internal/dto/response/vote"
@@ -65,9 +63,6 @@ type UserService interface {
 
 	// RefreshToken 使用刷新令牌获取新的访问令牌
 	RefreshToken(ctx context.Context, p *userreq.RefreshTokenRequest) (newAccessToken, newRefreshToken string, err error)
-}
-type AiSerive interface {
-	RemarkSummary(ctx context.Context, p *aireq.RemarkSummaryReq) (ai_resp.RemarkSummaryResp, error)
 }
 
 // ========== Vote Service 接口 ==========

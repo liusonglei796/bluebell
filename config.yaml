@@ -1,7 +1,7 @@
 app:
   name: "bluebell"
   port: 8080
-  mode: "debug"
+  mode: "release"
 
 snowflake:
   start_time: 1775539200000

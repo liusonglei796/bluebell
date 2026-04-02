@@ -17,10 +17,14 @@
 
 # Project specific
 bluebell.log
+*.log
+node_modules/
 .idea/
 .vscode/
 *.swp
 *.bak
+bluebell.exe
+bluebell
 
 # Docker
 bluebell-linux

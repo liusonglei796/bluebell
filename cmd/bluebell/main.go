@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "bluebell/docs" // 导入生成的 Swagger 文档包
+
 	"bluebell/internal/config"
 	"bluebell/internal/dao/cache"
 	"bluebell/internal/dao/database"
@@ -96,7 +96,6 @@ func main() {
 		services.User,      // 注入 UserService 接口
 		services.Post,      // 注入 PostService 接口
 		services.Community, // 注入 CommunityService 接口
-		services.AI,        // 注入 AiSerive 接口
 	)
 
 	// 4) 路由层：初始化路由，注入 Handler

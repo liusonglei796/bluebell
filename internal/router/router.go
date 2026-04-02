@@ -80,8 +80,6 @@ func NewRouter(
 		authGroup.GET("/posts", hp.PostHandler.GetPostListHandler)
 		authGroup.POST("/vote", hp.PostHandler.PostVoteHandler)
 		authGroup.POST("remark", hp.PostHandler.PostRemarkHandler)
-		// ai相关
-		authGroup.POST("/summary", hp.AIHandler.SummaryHandler)
 	}
 
 	// 404

@@ -3,6 +3,7 @@ package config
 import (
 	"bluebell/pkg/errorx"
 	"fmt"
+	"strings"
 	"sync/atomic"
 
 	"github.com/fsnotify/fsnotify"
@@ -61,11 +62,6 @@ type jwtConfig struct {
 	AccessExpiry  string `mapstructure:"access_expiry"`
 	RefreshExpiry string `mapstructure:"refresh_expiry"`
 }
-type modelScopeConfig struct {
-	Api_key string `mapstructure:"api_key"`
-	Url     string `mapstructure:"url"`
-	Modle   string `mapstructure:"model"`
-}
 
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
@@ -78,7 +74,6 @@ type Config struct {
 	RateLimit  *rateLimitConfig  `mapstructure:"ratelimit"`
 	JWT        *jwtConfig        `mapstructure:"jwt"`
 	Timeout    *timeoutConfig    `mapstructure:"timeout"`
-	ModelScope *modelScopeConfig `mapsructure:"Modelscope"`
 }
 
 var atva atomic.Value
@@ -95,11 +90,7 @@ func Get() *Config {
 func Init(filePath string) (*Config, error) {
 	// 允许使用环境变量覆盖配置
 	viper.AutomaticEnv()
-
-	// 绑定环境变量（环境变量优先级高于配置文件）
-	_ = viper.BindEnv("modelscope.api_key", "MODELSCOPE_API_KEY")
-	_ = viper.BindEnv("modelscope.url", "MODELSCOPE_URL")
-	_ = viper.BindEnv("modelscope.model", "MODELSCOPE_MODEL")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
 	viper.SetConfigFile(filePath)
 	err := viper.ReadInConfig()

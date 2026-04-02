@@ -45,8 +45,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
-      - ./config.docker.toml:/app/config.toml
+      - ./config.yaml:/app/config.yaml
     networks:
       - bluebell_net
     restart: always
