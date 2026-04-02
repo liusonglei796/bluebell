@@ -18,10 +18,8 @@ WORKDIR /app
 COPY --from=builder /build/bluebell .
 
 # 复制配置文件
-COPY config.yaml config.yaml
+COPY config.docker.toml config.toml
 
-# 暴露端口
-EXPOSE 8080
 
 # 启动命令
-CMD ["./bluebell", "-conf", "config.yaml"]
+CMD ["./bluebell", "-conf", "config.toml"]

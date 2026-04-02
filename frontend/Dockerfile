@@ -13,15 +13,13 @@ COPY . .
 # 构建生产版本
 RUN npm run build
 
-# 运行阶段
-FROM nginx:alpine
+# 运行阶段 - 仅作为产物提供者
+FROM alpine:latest
 
-# 复制构建产物到 Nginx
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# 复制 Nginx 配置
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# 从构建阶段复制 dist
+COPY --from=builder /app/dist ./dist
 
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# 设置启动命令：将产物拷贝到共享卷目录后退出
+CMD sh -c "cp -r /app/dist/* /usr/share/nginx/html/ && echo 'Frontend assets delivered!'"

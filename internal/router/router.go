@@ -41,6 +41,7 @@ func NewRouter(
 	r.Use(
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
+		middleware.Cors(), // 跨域中间件
 		// middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity),
 		middleware.TimeoutMiddleware(timeout),
 	)
