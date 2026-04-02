@@ -1,0 +1,381 @@
+- generic [active] [ref=e1]:
+  - link "跳转至主内容" [ref=e2] [cursor=pointer]:
+    - /url: "#app"
+  - generic [ref=e8]:
+    - img [ref=e9]
+    - img [ref=e12]
+  - generic [ref=e18]:
+    - generic [ref=e21]:
+      - heading "云服务器 ECS ⇄ 切换至标准版" [level=2] [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e27]: 云服务器 ECS
+          - button "⇄ 切换至标准版" [ref=e30] [cursor=pointer]:
+            - generic [ref=e31]:
+              - generic [ref=e33]: ⇄
+              - generic [ref=e34]: 切换至标准版
+      - list [ref=e36]:
+        - link "实例" [ref=e37] [cursor=pointer]:
+          - /url: /server
+          - listitem [ref=e38]:
+            - generic [ref=e41]: 实例
+        - link "镜像" [ref=e42] [cursor=pointer]:
+          - /url: /image/region
+          - listitem [ref=e43]:
+            - generic [ref=e46]: 镜像
+        - link "安全组" [ref=e47] [cursor=pointer]:
+          - /url: /securityGroup/region
+          - listitem [ref=e48]:
+            - generic [ref=e51]: 安全组
+        - link "弹性网卡" [ref=e52] [cursor=pointer]:
+          - /url: /networkInterfaces/region
+          - listitem [ref=e53]:
+            - generic [ref=e56]: 弹性网卡
+        - link "块存储" [ref=e57] [cursor=pointer]:
+          - /url: /disk
+          - listitem [ref=e58]:
+            - generic [ref=e61]: 块存储
+        - link "快照" [ref=e62] [cursor=pointer]:
+          - /url: /snapshot
+          - listitem [ref=e63]:
+            - generic [ref=e66]: 快照
+        - link "域名 ↗" [ref=e67] [cursor=pointer]:
+          - /url: https://dc.console.aliyun.com/next/index
+          - listitem [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e71]: 域名
+              - generic [ref=e73]: ↗
+        - link "云监控 ↗" [ref=e74] [cursor=pointer]:
+          - /url: https://cms.console.aliyun.com/newOverview
+          - listitem [ref=e75]:
+            - generic [ref=e76]:
+              - generic [ref=e78]: 云监控
+              - generic [ref=e80]: ↗
+        - link "账单管理 ↗" [ref=e81] [cursor=pointer]:
+          - /url: https://usercenter2.aliyun.com/finance/expense-report/expense-detail-by-instance?pipCode=ecs&statisticCycle=DEFAULT_CHANGE_PERIOD
+          - listitem [ref=e82]:
+            - generic [ref=e83]:
+              - generic [ref=e85]: 账单管理
+              - generic [ref=e87]: ↗
+          - separator [ref=e88]
+        - link "全部菜单 〉" [ref=e89] [cursor=pointer]:
+          - listitem [ref=e90]:
+            - generic [ref=e94]:
+              - generic [ref=e95]: 全部菜单
+              - generic [ref=e97]: 〉
+    - generic [ref=e100] [cursor=pointer]: 〈
+    - generic [ref=e102]:
+      - generic [ref=e103]:
+        - navigation [ref=e105]:
+          - list [ref=e106]:
+            - listitem [ref=e107]: 云服务器 ECS/
+            - listitem [ref=e108]: 实例
+        - generic [ref=e112] [cursor=pointer]: 给简捷版打个分
+      - generic [ref=e113]:
+        - heading "实例" [level=3] [ref=e115]
+        - generic [ref=e117]:
+          - button "创建实例" [ref=e120] [cursor=pointer]:
+            - link "创建实例" [ref=e121]:
+              - /url: https://ecs-buy.aliyun.com/wizard#/prepay/cn-heyuan?orderSource=buyWizard-console-list
+          - button "↻" [ref=e123] [cursor=pointer]:
+            - generic [ref=e124]: ↻
+      - generic [ref=e126]:
+        - generic [ref=e127]:
+          - generic [ref=e128] [cursor=pointer]:
+            - generic [ref=e129]: 分享好友使用
+            - img "external-link" [ref=e130]
+          - generic [ref=e131]:
+            - generic [ref=e132]:
+              - img [ref=e133]
+              - generic [ref=e134]: aliyun8178271275
+            - generic [ref=e135]: 当前算力包额度充足，请放心使用。
+          - generic [ref=e137]:
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - generic [ref=e140]: 毕设包剩余额度
+                - link "额度明细 ↗" [ref=e141] [cursor=pointer]:
+                  - /url: https://usercenter2.aliyun.com/resource/spn/detail
+                  - generic [ref=e142]: 额度明细
+                  - generic [ref=e143]: ↗
+              - generic [ref=e144]:
+                - generic [ref=e145]: "669.56"
+                - generic [ref=e146]: / 850元
+              - progressbar [ref=e147]
+              - generic [ref=e151]: 每小时剩余额度 1.14元
+            - generic [ref=e153]:
+              - generic [ref=e154]:
+                - generic [ref=e155]: 本月公网剩余流量
+                - link "流量明细 ↗" [ref=e156] [cursor=pointer]:
+                  - /url: https://cdt.console.aliyun.com
+                  - generic [ref=e157]: 流量明细
+                  - generic [ref=e158]: ↗
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - generic [ref=e161]:
+                    - generic [ref=e162]: "20.0"
+                    - generic [ref=e163]: / 20G
+                  - progressbar [ref=e164]
+                  - generic [ref=e168]:
+                    - img [ref=e169]
+                    - generic [ref=e170]: 中国内地
+                - generic [ref=e171]:
+                  - generic [ref=e172]:
+                    - generic [ref=e173]: "200.0"
+                    - generic [ref=e174]: / 200G
+                  - progressbar [ref=e175]
+                  - generic [ref=e179]:
+                    - img [ref=e180]
+                    - generic [ref=e181]: 非中国内地
+          - generic [ref=e182]:
+            - button "创建算力包可抵扣实例" [disabled] [ref=e183]:
+              - generic: 创建算力包可抵扣实例
+            - generic [ref=e184] [cursor=pointer]: 算力包规则说明
+        - generic [ref=e187]:
+          - tablist [ref=e188]:
+            - tab "iZf8z1iiisdukvmmf0imniZ" [selected] [ref=e192] [cursor=pointer]:
+              - generic [ref=e201]: iZf8z1iiisdukvmmf0imniZ
+          - tabpanel "iZf8z1iiisdukvmmf0imniZ" [ref=e204]:
+            - generic [ref=e207]:
+              - generic [ref=e208]:
+                - generic [ref=e209]:
+                  - text: iZf8z1iiisdukvmmf0imniZ
+                  - generic [ref=e211] [cursor=pointer]: ✎
+                  - generic [ref=e217]:
+                    - generic [ref=e219]: 
+                    - generic [ref=e220]: 运行中
+                - generic [ref=e222]:
+                  - text: i-f8z1iiisdukvmmf0imni
+                  - generic [ref=e225] [cursor=pointer]: ⧉
+              - generic [ref=e227]:
+                - generic [ref=e230]:
+                  - generic [ref=e232]:
+                    - generic [ref=e234]:
+                      - generic [ref=e236]: ⚑
+                      - generic [ref=e238]:
+                        - generic [ref=e239]: 华南2（河源）
+                        - generic [ref=e240]: B
+                    - generic [ref=e244]:
+                      - generic [ref=e245]:
+                        - generic [ref=e247]: ⌖
+                        - generic [ref=e249]:
+                          - generic [ref=e250]: 47.113.144.229
+                          - generic [ref=e251]: 公网
+                      - generic [ref=e254] [cursor=pointer]: ⧉
+                  - generic [ref=e256]:
+                    - generic [ref=e258]:
+                      - generic [ref=e260]: 
+                      - generic [ref=e261]: Alibaba Cloud Linux 3.2104 LTS 64位
+                    - generic [ref=e263]:
+                      - generic [ref=e265]: 
+                      - generic [ref=e268]:
+                        - generic [ref=e270]:
+                          - strong [ref=e271]: "4"
+                          - text: 核（vCPU）
+                        - generic [ref=e273]:
+                          - strong [ref=e274]: "8"
+                          - text: GiB
+                - separator [ref=e277]
+                - generic [ref=e281]:
+                  - generic [ref=e282]:
+                    - generic [ref=e284]: CPU 使用率
+                    - generic [ref=e287] [cursor=pointer]:
+                      - generic [ref=e289]: "2.789"
+                      - generic [ref=e291]: "%"
+                  - generic [ref=e295]:
+                    - generic [ref=e297]: 内存使用率
+                    - generic [ref=e298]:
+                      - generic [ref=e301] [cursor=pointer]:
+                        - text: 安装失败
+                        - generic [ref=e303]: 
+                      - link "去云监控安装插件" [ref=e305] [cursor=pointer]:
+                        - /url: https://cms.console.aliyun.com/hostMonitor/?AliyunHost=true&KeyWord=name,i-f8z1iiisdukvmmf0imni&region=cn-heyuan
+                  - generic [ref=e306]:
+                    - generic [ref=e308]: 云盘使用率
+                    - generic [ref=e309]:
+                      - generic [ref=e312] [cursor=pointer]:
+                        - text: 安装失败
+                        - generic [ref=e314]: 
+                      - link "去云监控安装插件" [ref=e316] [cursor=pointer]:
+                        - /url: https://cms.console.aliyun.com/hostMonitor/?AliyunHost=true&KeyWord=name,i-f8z1iiisdukvmmf0imni&region=cn-heyuan
+                  - generic [ref=e317]:
+                    - generic [ref=e319]:
+                      - generic [ref=e320]: 网络流量
+                      - generic [ref=e323] [cursor=pointer]: 
+                    - generic [ref=e324]:
+                      - generic [ref=e327] [cursor=pointer]:
+                        - text: 安装失败
+                        - generic [ref=e329]: 
+                      - link "去云监控安装插件" [ref=e331] [cursor=pointer]:
+                        - /url: https://cms.console.aliyun.com/hostMonitor/?AliyunHost=true&KeyWord=name,i-f8z1iiisdukvmmf0imni&region=cn-heyuan
+              - generic [ref=e334]:
+                - button "远程连接" [ref=e336] [cursor=pointer]:
+                  - generic [ref=e337]: 远程连接
+                - button "重启" [ref=e339] [cursor=pointer]
+                - button "停止" [ref=e341] [cursor=pointer]
+                - button "重置密码" [ref=e343] [cursor=pointer]
+                - button "资源变配" [ref=e345] [cursor=pointer]
+                - button "全部操作 ∨" [ref=e347] [cursor=pointer]:
+                  - generic [ref=e348]:
+                    - generic [ref=e349]: 全部操作
+                    - generic [ref=e351]: ∨
+        - generic [ref=e354]:
+          - tablist [ref=e355]:
+            - generic [ref=e357]:
+              - tab "基本信息" [selected] [ref=e359] [cursor=pointer]
+              - tab "监控" [ref=e361] [cursor=pointer]
+              - tab "网络与安全组" [ref=e363] [cursor=pointer]
+              - tab "存储与备份" [ref=e365] [cursor=pointer]
+              - tab "健康诊断" [ref=e367] [cursor=pointer]
+              - tab "自动化运维" [ref=e369] [cursor=pointer]
+              - tab "安全防护" [ref=e371] [cursor=pointer]:
+                - generic [ref=e373]: 安全防护
+          - tabpanel "基本信息" [ref=e376]:
+            - generic [ref=e377]:
+              - generic [ref=e379]:
+                - generic [ref=e381]:
+                  - generic [ref=e384]: 实例信息
+                  - generic [ref=e387] [cursor=pointer]: ⚙
+                - table [ref=e391]:
+                  - rowgroup [ref=e392]:
+                    - row "健康状态 付费类型" [ref=e393]:
+                      - columnheader "健康状态" [ref=e394]:
+                        - generic [ref=e396]: 健康状态
+                      - columnheader "付费类型" [ref=e397]:
+                        - generic [ref=e399]: 付费类型
+                    - row "正常 健康诊断 按量 按量付费转包年包月 ↗" [ref=e400]:
+                      - cell "正常 健康诊断" [ref=e401]:
+                        - generic [ref=e404]:
+                          - text: 正常
+                          - button "健康诊断" [ref=e405] [cursor=pointer]:
+                            - generic [ref=e406]: 健康诊断
+                      - cell "按量 按量付费转包年包月 ↗" [ref=e407]:
+                        - generic [ref=e410]:
+                          - text: 按量
+                          - link "按量付费转包年包月 ↗" [ref=e412] [cursor=pointer]:
+                            - generic [ref=e413]:
+                              - generic [ref=e414]: 按量付费转包年包月
+                              - generic [ref=e416]: ↗
+                    - row "自动释放时间 实例规格" [ref=e417]:
+                      - columnheader "自动释放时间" [ref=e418]:
+                        - generic [ref=e420]: 自动释放时间
+                      - columnheader "实例规格" [ref=e421]:
+                        - generic [ref=e423]: 实例规格
+                    - row "- 释放 ecs.e-c1m2.xlarge ↗ ⧉ 更换 购买相同配置" [ref=e424]:
+                      - cell "- 释放" [ref=e425]:
+                        - generic [ref=e429]:
+                          - generic [ref=e430]: "-"
+                          - link "释放" [ref=e432] [cursor=pointer]:
+                            - /url: "@ActionTrigger(@@trigger/ReleaseInstance)"
+                      - cell "ecs.e-c1m2.xlarge ↗ ⧉ 更换 购买相同配置" [ref=e433]:
+                        - generic [ref=e436]:
+                          - generic [ref=e438]:
+                            - link "ecs.e-c1m2.xlarge ↗" [ref=e439] [cursor=pointer]:
+                              - /url: //help.aliyun.com/document_detail/25378.html#e
+                              - text: ecs.e-c1m2.xlarge
+                              - generic [ref=e440]: ↗
+                            - generic [ref=e443] [cursor=pointer]: ⧉
+                          - generic [ref=e444]:
+                            - link "更换" [ref=e446] [cursor=pointer]:
+                              - /url: "@ActionTrigger(@@trigger/api:AlterSpec)"
+                            - separator [ref=e448]
+                            - link "购买相同配置" [ref=e450] [cursor=pointer]:
+                              - /url: "@ActionTrigger(@@trigger/api:BuyAgain)"
+                    - row "CPU & 内存 公网 IP" [ref=e451]:
+                      - columnheader "CPU & 内存" [ref=e452]:
+                        - generic [ref=e454]: CPU & 内存
+                      - columnheader "公网 IP" [ref=e455]:
+                        - generic [ref=e457]: 公网 IP
+                    - row "4 核（vCPU） 8 GiB 更改 CPU 选项 调整配置 47.113.144.229 ⧉ 转换为弹性公网 IP" [ref=e458]:
+                      - cell "4 核（vCPU） 8 GiB 更改 CPU 选项 调整配置" [ref=e459]:
+                        - generic [ref=e462]:
+                          - generic [ref=e465]:
+                            - generic [ref=e467]:
+                              - strong [ref=e468]: "4"
+                              - text: 核（vCPU）
+                            - generic [ref=e470]:
+                              - strong [ref=e471]: "8"
+                              - text: GiB
+                          - generic [ref=e472]:
+                            - link "更改 CPU 选项" [ref=e474]:
+                              - /url: "@ActionTrigger(@@trigger/api:ModifyInstanceAttribute/ChangeCPU)"
+                            - separator [ref=e476]
+                            - link "调整配置" [ref=e478] [cursor=pointer]:
+                              - /url: "@ActionTrigger(@@trigger/api:AlterSpec)"
+                      - cell "47.113.144.229 ⧉ 转换为弹性公网 IP" [ref=e479]:
+                        - generic [ref=e482]:
+                          - generic [ref=e483]:
+                            - text: 47.113.144.229
+                            - generic [ref=e486] [cursor=pointer]: ⧉
+                          - link "转换为弹性公网 IP" [ref=e488] [cursor=pointer]:
+                            - /url: "@ActionTrigger(@@trigger/api:PublicIpToEip)"
+                    - row "主私网 IP 操作系统 " [ref=e489]:
+                      - columnheader "主私网 IP" [ref=e490]:
+                        - generic [ref=e492]: 主私网 IP
+                      - columnheader "操作系统 " [ref=e493]:
+                        - generic [ref=e496]:
+                          - generic [ref=e497]: 操作系统
+                          - generic [ref=e499]: 
+                    - row "172.27.80.151 ⧉ Alibaba Cloud Linux 3.2104 LTS 64位更换" [ref=e500]:
+                      - cell "172.27.80.151 ⧉" [ref=e501]:
+                        - generic [ref=e504]:
+                          - text: 172.27.80.151
+                          - generic [ref=e507] [cursor=pointer]: ⧉
+                      - cell "Alibaba Cloud Linux 3.2104 LTS 64位更换" [ref=e508]:
+                        - generic [ref=e511]:
+                          - text: Alibaba Cloud Linux 3.2104 LTS 64位
+                          - link "更换" [ref=e512] [cursor=pointer]:
+                            - /url: "@ActionTrigger(@@trigger/ChangeOSV2)"
+                    - row "公网带宽 带宽计费方式" [ref=e513]:
+                      - columnheader "公网带宽" [ref=e514]:
+                        - generic [ref=e516]: 公网带宽
+                      - columnheader "带宽计费方式" [ref=e517]:
+                        - generic [ref=e519]: 带宽计费方式
+                    - row "100 Mbps(峰值) 更改带宽 按使用流量" [ref=e520]:
+                      - cell "100 Mbps(峰值) 更改带宽" [ref=e521]:
+                        - generic [ref=e525]:
+                          - generic [ref=e527]: 100 Mbps(峰值)
+                          - link "更改带宽" [ref=e529] [cursor=pointer]:
+                            - /url: "@ActionTrigger(@@trigger/AlterBandwidthSpec)"
+                      - cell "按使用流量" [ref=e530]:
+                        - generic [ref=e535]: 按使用流量
+                    - row "创建时间 系统盘" [ref=e536]:
+                      - columnheader "创建时间" [ref=e537]:
+                        - generic [ref=e539]: 创建时间
+                      - columnheader "系统盘" [ref=e540]:
+                        - generic [ref=e542]: 系统盘
+                    - row "2026年3月16日 10:23:00 d-f8z1iiisdukvmmf341ay ⧉ ESSD Entry 云盘 40 GiB" [ref=e543]:
+                      - cell "2026年3月16日 10:23:00" [ref=e544]:
+                        - generic [ref=e550]: 2026年3月16日 10:23:00
+                      - cell "d-f8z1iiisdukvmmf341ay ⧉ ESSD Entry 云盘 40 GiB" [ref=e551]:
+                        - generic [ref=e554]:
+                          - generic [ref=e555]:
+                            - button "d-f8z1iiisdukvmmf341ay" [ref=e556] [cursor=pointer]:
+                              - generic [ref=e557]: d-f8z1iiisdukvmmf341ay
+                            - generic [ref=e560] [cursor=pointer]: ⧉
+                          - generic [ref=e562]:
+                            - generic [ref=e563]: ESSD Entry 云盘
+                            - generic [ref=e564]: 40 GiB
+              - generic [ref=e565]:
+                - generic [ref=e566]:
+                  - generic [ref=e569]: 事件和提醒
+                  - generic [ref=e572]:
+                    - img [ref=e574]
+                    - generic [ref=e586]: 暂无数据
+                - generic [ref=e587]:
+                  - generic [ref=e589]:
+                    - generic [ref=e590]: 已安装的扩展程序（1)
+                    - button "前往安装扩展程序" [ref=e592] [cursor=pointer]:
+                      - generic [ref=e593]: 前往安装扩展程序
+                  - list [ref=e598]:
+                    - listitem [ref=e599]:
+                      - generic [ref=e600]:
+                        - img [ref=e602]
+                        - generic [ref=e603]:
+                          - heading "Docker社区版" [level=5] [ref=e605]
+                          - generic [ref=e606]:
+                            - generic [ref=e608]: 2026年3月16日 10:26:14 安装
+                            - button "卸载" [ref=e611] [cursor=pointer]:
+                              - generic [ref=e612]: 卸载
+  - iframe [ref=e613]:
+    
+  - iframe [ref=e614]:
+    

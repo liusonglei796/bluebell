@@ -1,0 +1,275 @@
+- generic [ref=e8]:
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - complementary [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - link [ref=e17] [cursor=pointer]:
+              - /url: /
+              - img [ref=e19]
+            - button "2123680589@qq.com's Account" [ref=e283] [cursor=pointer]:
+              - paragraph [ref=e284]: 2123680589@qq.com's Account
+              - img [ref=e286]
+          - navigation [ref=e288]:
+            - generic [ref=e292]:
+              - button "Quick search..." [ref=e294] [cursor=pointer]:
+                - generic [ref=e295]:
+                  - img [ref=e296]
+                  - generic [ref=e298]: Quick search...
+                  - generic [ref=e299]: Ctrl K
+              - generic [ref=e302]:
+                - link "Back to Domains" [ref=e305] [cursor=pointer]:
+                  - /url: /a597e14bd2013a1000c59b5adc282b45/domains/overview
+                  - generic [ref=e306]:
+                    - img [ref=e307]
+                    - generic [ref=e309]: Back to Domains
+                - list [ref=e312]:
+                  - listitem [ref=e313]:
+                    - link "Overview" [ref=e314] [cursor=pointer]:
+                      - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org/
+                      - generic [ref=e315]:
+                        - img [ref=e316]
+                        - generic [ref=e319]: Overview
+                  - listitem [ref=e320]:
+                    - button "Recents" [ref=e321] [cursor=pointer]:
+                      - generic [ref=e322]:
+                        - img [ref=e323]
+                        - generic [ref=e326]: Recents
+                        - img [ref=e327]
+                    - list [ref=e329]:
+                      - listitem [ref=e331]:
+                        - link "Overview Domains" [ref=e332] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/domains/overview
+                          - generic [ref=e333]:
+                            - generic [ref=e334]: Overview
+                            - generic [ref=e336]: Domains
+                        - button "Pin" [ref=e338] [cursor=pointer]:
+                          - generic [ref=e339]:
+                            - img [ref=e340]
+                            - img [ref=e345]
+                      - listitem [ref=e347]:
+                        - link "lay.dpdns.org Domains" [ref=e348] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/lay.dpdns.org
+                          - generic [ref=e349]:
+                            - generic [ref=e350]: lay.dpdns.org
+                            - generic [ref=e352]: Domains
+                        - button "Pin" [ref=e354] [cursor=pointer]:
+                          - generic [ref=e355]:
+                            - img [ref=e356]
+                            - img [ref=e361]
+                      - listitem [ref=e363]:
+                        - link "bluebell.dpdns.org Domains" [ref=e364] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org
+                          - generic [ref=e365]:
+                            - generic [ref=e366]: bluebell.dpdns.org
+                            - generic [ref=e368]: Domains
+                        - button "Pin" [ref=e370] [cursor=pointer]:
+                          - generic [ref=e371]:
+                            - img [ref=e372]
+                            - img [ref=e377]
+                      - listitem [ref=e379]:
+                        - link "Models AI" [ref=e380] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/ai/models
+                          - generic [ref=e381]:
+                            - generic [ref=e382]: Models
+                            - generic [ref=e384]: AI
+                        - button "Pin" [ref=e386] [cursor=pointer]:
+                          - generic [ref=e387]:
+                            - img [ref=e388]
+                            - img [ref=e393]
+                      - listitem [ref=e395]:
+                        - link "Records bluebell.dpdns.org / DNS" [ref=e396] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org/dns/records
+                          - generic [ref=e397]:
+                            - generic [ref=e398]: Records
+                            - generic [ref=e399]:
+                              - generic [ref=e400]: bluebell.dpdns.org
+                              - generic [ref=e401]: /
+                              - generic [ref=e402]: DNS
+                        - button "Pin" [ref=e404] [cursor=pointer]:
+                          - generic [ref=e405]:
+                            - img [ref=e406]
+                            - img [ref=e411]
+                  - listitem [ref=e413]:
+                    - button "Log Explorer" [ref=e414] [cursor=pointer]:
+                      - generic [ref=e415]:
+                        - img [ref=e416]
+                        - generic [ref=e419]: Log Explorer
+                        - img [ref=e420]
+                    - list [ref=e422]:
+                      - listitem [ref=e424]:
+                        - link "Log search" [ref=e425] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org/log-explorer/log-search
+                          - generic [ref=e426]: Log search
+                  - listitem [ref=e427]:
+                    - button "Email" [ref=e428] [cursor=pointer]:
+                      - generic [ref=e429]:
+                        - img [ref=e430]
+                        - generic [ref=e434]: Email
+                        - img [ref=e435]
+                    - list [ref=e437]:
+                      - listitem [ref=e439]:
+                        - link "Email Security" [ref=e440] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org/email/security
+                          - generic [ref=e441]: Email Security
+                  - listitem [ref=e442]:
+                    - link "Web3" [ref=e443] [cursor=pointer]:
+                      - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org/web3
+                      - generic [ref=e444]:
+                        - img [ref=e445]
+                        - generic [ref=e448]: Web3
+                  - listitem [ref=e449]
+                  - listitem [ref=e451]:
+                    - button "Manage account" [ref=e452] [cursor=pointer]:
+                      - generic [ref=e453]:
+                        - img [ref=e454]
+                        - generic [ref=e457]: Manage account
+                        - img [ref=e458]
+                    - list [ref=e460]:
+                      - listitem [ref=e462]:
+                        - link "Members" [ref=e463] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/members
+                          - generic [ref=e464]: Members
+                      - listitem [ref=e465]:
+                        - link "Billing" [ref=e466] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/billing
+                          - generic [ref=e467]: Billing
+                      - listitem [ref=e468]:
+                        - link "Account API tokens" [ref=e469] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/api-tokens
+                          - generic [ref=e470]: Account API tokens
+                      - listitem [ref=e471]:
+                        - link "Audit logs" [ref=e472] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/audit-log
+                          - generic [ref=e473]: Audit logs
+                      - listitem [ref=e474]:
+                        - link "Notifications" [ref=e475] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/notifications
+                          - generic [ref=e476]: Notifications
+                      - listitem [ref=e477]:
+                        - link "Blocked content" [ref=e478] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/blocked-content
+                          - generic [ref=e479]: Blocked content
+                      - listitem [ref=e480]:
+                        - link "Abuse reports Beta" [ref=e481] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/abuse-reports
+                          - generic [ref=e482]: Abuse reports
+                          - generic [ref=e484]: Beta
+                      - listitem [ref=e485]:
+                        - link "Carbon Impact Report" [ref=e486] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/carbon
+                          - generic [ref=e487]: Carbon Impact Report
+                      - listitem [ref=e488]:
+                        - link "Configurations" [ref=e489] [cursor=pointer]:
+                          - /url: /a597e14bd2013a1000c59b5adc282b45/configurations
+                          - generic [ref=e490]: Configurations
+        - button "Collapse sidebar" [expanded] [ref=e58] [cursor=pointer]:
+          - img
+      - generic [ref=e59]:
+        - banner [ref=e60]:
+          - generic [ref=e61]:
+            - button "Ask AI" [ref=e491] [cursor=pointer]:
+              - img [ref=e492]
+              - generic [ref=e494]: Ask AI
+            - button "Support" [ref=e66] [cursor=pointer]:
+              - img [ref=e67]
+              - generic [ref=e69]: Support
+            - button "User menu" [ref=e70] [cursor=pointer]:
+              - img [ref=e71]
+        - contentinfo [ref=e118]:
+          - list [ref=e120]:
+            - listitem [ref=e121]:
+              - link "Support" [ref=e122] [cursor=pointer]:
+                - /url: https://support.cloudflare.com
+            - listitem [ref=e123]:
+              - link "System status" [ref=e124] [cursor=pointer]:
+                - /url: https://www.cloudflarestatus.com
+            - listitem [ref=e125]:
+              - link "Careers" [ref=e126] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/careers/
+            - listitem [ref=e127]:
+              - link "Terms of Use" [ref=e128] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/website-terms/
+            - listitem [ref=e129]:
+              - link "Report Security Issues" [ref=e130] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/disclosure/
+            - listitem [ref=e131]:
+              - link "Privacy Policy" [ref=e132] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/privacypolicy/
+            - listitem [ref=e133]:
+              - button "A blue and white pill with a checkmark and an x, representing privacy choices Your Privacy Choices" [ref=e134] [cursor=pointer]:
+                - img "A blue and white pill with a checkmark and an x, representing privacy choices" [ref=e135]
+                - text: Your Privacy Choices
+            - listitem [ref=e136]:
+              - generic [ref=e137]: © 2026 Cloudflare, Inc.
+    - generic [ref=e497]:
+      - generic [ref=e499]:
+        - button "New conversation" [ref=e502] [cursor=pointer]:
+          - generic [ref=e503]: New conversation
+          - img [ref=e504]
+        - generic [ref=e506]:
+          - button "New chat" [ref=e507] [cursor=pointer]:
+            - img [ref=e508]
+          - button "Expand sidebar" [ref=e510] [cursor=pointer]:
+            - img [ref=e511]
+          - button "Close sidebar" [ref=e513] [cursor=pointer]:
+            - img [ref=e514]
+      - generic [ref=e516]:
+        - generic [ref=e517]:
+          - paragraph [ref=e518]: Need more help?
+          - link "Support" [ref=e519] [cursor=pointer]:
+            - /url: /a597e14bd2013a1000c59b5adc282b45/support
+            - button "Support" [ref=e520]
+        - generic [ref=e522]:
+          - generic [ref=e533]:
+            - heading "Good evening." [level=3] [ref=e534]
+            - paragraph [ref=e535]: What are we doing today?
+          - generic [ref=e536]:
+            - button "Deploy a Worker Help me get started" [ref=e537] [cursor=pointer]:
+              - img [ref=e539]
+              - generic [ref=e541]:
+                - generic [ref=e542]: Deploy a Worker
+                - generic [ref=e543]: Help me get started
+              - img [ref=e545]
+            - button "Transfer a domain Walk me through the process" [ref=e547] [cursor=pointer]:
+              - img [ref=e549]
+              - generic [ref=e551]:
+                - generic [ref=e552]: Transfer a domain
+                - generic [ref=e553]: Walk me through the process
+              - img [ref=e555]
+            - button "Environment variables Add or update secrets" [ref=e557] [cursor=pointer]:
+              - img [ref=e559]
+              - generic [ref=e561]:
+                - generic [ref=e562]: Environment variables
+                - generic [ref=e563]: Add or update secrets
+              - img [ref=e565]
+            - button "Durable Objects Explain how they work" [ref=e567] [cursor=pointer]:
+              - img [ref=e569]
+              - generic [ref=e571]:
+                - generic [ref=e572]: Durable Objects
+                - generic [ref=e573]: Explain how they work
+              - img [ref=e575]
+            - button "Domain settings Show my configuration" [ref=e577] [cursor=pointer]:
+              - img [ref=e579]
+              - generic [ref=e581]:
+                - generic [ref=e582]: Domain settings
+                - generic [ref=e583]: Show my configuration
+              - img [ref=e585]
+        - generic [ref=e587]:
+          - generic [ref=e589]:
+            - paragraph [ref=e590]:
+              - text: Chats are recorded to improve the service and are processed in accordance with our
+              - link "Privacy Policy" [ref=e591] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/privacypolicy/
+              - text: .
+            - button "Close privacy notice" [ref=e592] [cursor=pointer]:
+              - img [ref=e593]
+          - generic [ref=e596]:
+            - textbox "What can we help you with?" [active] [ref=e597]
+            - generic [ref=e598]:
+              - button "Settings" [ref=e599] [cursor=pointer]:
+                - img [ref=e600]
+              - button "Submit" [disabled] [ref=e602]:
+                - img [ref=e603]
+  - generic:
+    - region "Notifications"

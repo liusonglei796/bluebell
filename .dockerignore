@@ -7,3 +7,10 @@ bluebell-linux
 data
 logs
 .DS_Store
+frontend/node_modules
+frontend/dist
+.sisyphus
+.playwright-mcp
+design-system
+docs
+教学文档

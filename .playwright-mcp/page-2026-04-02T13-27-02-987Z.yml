@@ -1,0 +1,104 @@
+- generic [active] [ref=e1]:
+  - link "跳转至主内容" [ref=e2] [cursor=pointer]:
+    - /url: "#app"
+  - generic [ref=e8]:
+    - img [ref=e9]
+    - img [ref=e12]
+  - generic [ref=e18]:
+    - generic [ref=e21]:
+      - heading "云服务器 ECS ⇄ 切换至标准版" [level=2] [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e27]: 云服务器 ECS
+          - button "⇄ 切换至标准版" [ref=e30] [cursor=pointer]:
+            - generic [ref=e31]:
+              - generic [ref=e33]: ⇄
+              - generic [ref=e34]: 切换至标准版
+      - list [ref=e36]:
+        - link "实例" [ref=e37] [cursor=pointer]:
+          - /url: /server
+          - listitem [ref=e38]:
+            - generic [ref=e41]: 实例
+        - link "镜像" [ref=e42] [cursor=pointer]:
+          - /url: /image/region
+          - listitem [ref=e43]:
+            - generic [ref=e46]: 镜像
+        - link "安全组" [ref=e47] [cursor=pointer]:
+          - /url: /securityGroup/region
+          - listitem [ref=e48]:
+            - generic [ref=e51]: 安全组
+        - link "弹性网卡" [ref=e52] [cursor=pointer]:
+          - /url: /networkInterfaces/region
+          - listitem [ref=e53]:
+            - generic [ref=e56]: 弹性网卡
+        - link "块存储" [ref=e57] [cursor=pointer]:
+          - /url: /disk
+          - listitem [ref=e58]:
+            - generic [ref=e61]: 块存储
+        - link "快照" [ref=e62] [cursor=pointer]:
+          - /url: /snapshot
+          - listitem [ref=e63]:
+            - generic [ref=e66]: 快照
+        - link "域名 ↗" [ref=e67] [cursor=pointer]:
+          - /url: https://dc.console.aliyun.com/next/index
+          - listitem [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e71]: 域名
+              - generic [ref=e73]: ↗
+        - link "云监控 ↗" [ref=e74] [cursor=pointer]:
+          - /url: https://cms.console.aliyun.com/newOverview
+          - listitem [ref=e75]:
+            - generic [ref=e76]:
+              - generic [ref=e78]: 云监控
+              - generic [ref=e80]: ↗
+        - link "账单管理 ↗" [ref=e81] [cursor=pointer]:
+          - /url: https://usercenter2.aliyun.com/finance/expense-report/expense-detail-by-instance?pipCode=ecs&statisticCycle=DEFAULT_CHANGE_PERIOD
+          - listitem [ref=e82]:
+            - generic [ref=e83]:
+              - generic [ref=e85]: 账单管理
+              - generic [ref=e87]: ↗
+          - separator [ref=e88]
+        - link "全部菜单 〉" [ref=e89] [cursor=pointer]:
+          - listitem [ref=e90]:
+            - generic [ref=e94]:
+              - generic [ref=e95]: 全部菜单
+              - generic [ref=e97]: 〉
+    - generic [ref=e100] [cursor=pointer]: 〈
+    - generic [ref=e101]:
+      - generic [ref=e103]:
+        - generic [ref=e104]:
+          - navigation [ref=e106]:
+            - list [ref=e107]:
+              - listitem [ref=e108]:
+                - link "云服务器 ECS" [ref=e110] [cursor=pointer]:
+                  - /url: /home
+                - text: /
+              - listitem [ref=e111]: 安全组
+          - generic [ref=e113]:
+            - generic [ref=e115] [cursor=pointer]:
+              - generic [ref=e117]: ⌂
+              - text: 进入欢迎页
+            - generic [ref=e119]:
+              - generic [ref=e120]: 
+              - text: 帮助文档
+        - heading "安全组" [level=3] [ref=e123]
+        - alert [ref=e126]:
+          - generic [ref=e127]: 
+          - list [ref=e130]:
+            - listitem [ref=e131]:
+              - generic [ref=e132]:
+                - text: 注意：根据《中华人民共和国电信条例》及《电信业务经营许可管理办法》，开展递归解析服务需要具备相应的增值电信业务经营许可证，
+                - link "查看详情" [ref=e133] [cursor=pointer]:
+                  - /url: https://help.aliyun.com/zh/ecs/port-53-is-closed-by-default
+          - button "close" [ref=e134] [cursor=pointer]:
+            - img "close" [ref=e135]:
+              - img [ref=e136]
+      - generic [ref=e141]:
+        - heading [level=3] [ref=e142]
+        - list [ref=e143]:
+          - listitem [ref=e144]
+          - listitem [ref=e145]
+          - listitem [ref=e146]
+  - iframe [ref=e147]:
+    
+  - iframe [ref=e148]:
+    

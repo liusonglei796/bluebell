@@ -31,7 +31,8 @@
             </router-link>
           </li>
         </ul>
-        <div v-if="communities.length === 0" class="text-gray-500 text-sm py-2">Loading communities...</div>
+        <div v-if="loadingCommunities" class="text-gray-500 text-sm py-2 italic text-center">Loading communities...</div>
+        <div v-else-if="communities.length === 0" class="text-gray-400 text-sm py-2 text-center">No communities found</div>
       </div>
     </div>
   </div>
@@ -45,6 +46,7 @@ import PostCard from '../components/PostCard.vue';
 const posts = ref<any[]>([]);
 const communities = ref<any[]>([]);
 const loading = ref(true);
+const loadingCommunities = ref(true);
 const order = ref('score');
 
 const fetchPosts = async () => {
@@ -62,6 +64,7 @@ const fetchPosts = async () => {
 };
 
 const fetchCommunities = async () => {
+  loadingCommunities.value = true;
   try {
     const res: any = await request.get('/community');
     if (res.code === 1000) {
@@ -69,6 +72,8 @@ const fetchCommunities = async () => {
     }
   } catch (err) {
     console.error('Failed to fetch communities', err);
+  } finally {
+    loadingCommunities.value = false;
   }
 };
 

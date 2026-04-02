@@ -1,0 +1,717 @@
+- generic [ref=e1]:
+  - link "跳转至主内容" [ref=e2] [cursor=pointer]:
+    - /url: "#app"
+  - generic:
+    - generic:
+      - dialog "展开产品面板":
+        - navigation "产品与服务" [ref=e149]:
+          - generic [ref=e150]:
+            - generic "我的资源" [ref=e151] [cursor=pointer]:
+              - generic [ref=e152]:
+                - generic [ref=e154]: 
+                - generic [ref=e155]: 我的资源
+            - generic "我的收藏" [ref=e156] [cursor=pointer]:
+              - generic [ref=e157]:
+                - generic [ref=e159]: 
+                - generic [ref=e160]: 我的收藏
+            - generic "产品与服务" [ref=e161] [cursor=pointer]:
+              - generic [ref=e162]:
+                - generic [ref=e164]: 
+                - generic [ref=e165]: 产品与服务
+            - generic [ref=e167]:
+              - button "全部" [ref=e168] [cursor=pointer]
+              - button "人工智能与机器学习" [ref=e169] [cursor=pointer]
+              - button "计算" [ref=e170] [cursor=pointer]
+              - button "容器" [ref=e171] [cursor=pointer]
+              - button "存储" [ref=e172] [cursor=pointer]
+              - button "网络与CDN" [ref=e173] [cursor=pointer]
+              - button "安全" [ref=e174] [cursor=pointer]
+              - button "中间件" [ref=e175] [cursor=pointer]
+              - button "数据库" [ref=e176] [cursor=pointer]
+              - button "大数据计算" [ref=e177] [cursor=pointer]
+              - button "媒体服务" [ref=e178] [cursor=pointer]
+              - button "企业服务与云通信" [ref=e179] [cursor=pointer]
+              - button "域名与网站" [ref=e180] [cursor=pointer]
+              - button "终端用户计算" [ref=e181] [cursor=pointer]
+              - button "物联网" [ref=e182] [cursor=pointer]
+              - button "开发工具" [ref=e183] [cursor=pointer]
+              - button "迁移与运维管理" [ref=e184] [cursor=pointer]
+              - button "云市场" [ref=e185] [cursor=pointer]
+              - button "支持与服务" [ref=e186] [cursor=pointer]
+              - button "其他" [ref=e187] [cursor=pointer]
+        - main "我的资源" [ref=e188]:
+          - generic [ref=e189]:
+            - generic [ref=e190]: 我的资源
+            - generic [ref=e192]:
+              - generic [ref=e194]:
+                - generic [ref=e196]: 最近访问
+                - generic [ref=e197]:
+                  - link "云服务器 ECS" [ref=e198] [cursor=pointer]:
+                    - /url: //ecs.console.aliyun.com
+                    - generic [ref=e199]: 云服务器 ECS
+                  - link "域名与网站" [ref=e200] [cursor=pointer]:
+                    - /url: //dc.console.aliyun.com/next/index
+                    - generic [ref=e201]: 域名与网站
+                  - link "访问控制 RAM" [ref=e202] [cursor=pointer]:
+                    - /url: //ram.console.aliyun.com
+                    - generic [ref=e203]: 访问控制 RAM
+                  - link "大模型服务平台百炼" [ref=e204] [cursor=pointer]:
+                    - /url: //bailian.console.aliyun.com
+                    - generic [ref=e205]: 大模型服务平台百炼
+                  - link "短信服务" [ref=e206] [cursor=pointer]:
+                    - /url: //dysms.console.aliyun.com/dysms.htm
+                    - generic [ref=e207]: 短信服务
+                  - link "云监控" [ref=e208] [cursor=pointer]:
+                    - /url: //cloudmonitornext.console.aliyun.com
+                    - generic [ref=e209]: 云监控
+              - generic [ref=e212]:
+                - generic [ref=e213]:
+                  - generic "计算" [ref=e214]:
+                    - img "computing" [ref=e215]
+                    - generic [ref=e216]: 计算
+                  - generic [ref=e218]:
+                    - link "云服务器 ECS forward-line" [ref=e219] [cursor=pointer]:
+                      - /url: //ecs.console.aliyun.com
+                      - generic "云服务器 ECS" [ref=e221]
+                      - img "forward-line" [ref=e224]:
+                        - img [ref=e225]
+                    - generic [ref=e227]:
+                      - link "1 实例" [ref=e228] [cursor=pointer]:
+                        - /url: //ecs.console.aliyun.com/home
+                        - generic [ref=e229]: "1"
+                        - generic [ref=e230]: 实例
+                      - link "1 磁盘" [ref=e231] [cursor=pointer]:
+                        - /url: //ecs.console.aliyun.com/home
+                        - generic [ref=e232]: "1"
+                        - generic [ref=e233]: 磁盘
+                      - link "1 安全组" [ref=e234] [cursor=pointer]:
+                        - /url: //ecs.console.aliyun.com/home
+                        - generic [ref=e235]: "1"
+                        - generic [ref=e236]: 安全组
+                      - link "1 弹性网卡" [ref=e237] [cursor=pointer]:
+                        - /url: //ecs.console.aliyun.com/home
+                        - generic [ref=e238]: "1"
+                        - generic [ref=e239]: 弹性网卡
+                      - link "1 密钥对" [ref=e240] [cursor=pointer]:
+                        - /url: //ecs.console.aliyun.com/home
+                        - generic [ref=e241]: "1"
+                        - generic [ref=e242]: 密钥对
+                - generic [ref=e243]:
+                  - generic "网络与CDN" [ref=e244]:
+                    - img "netcdn" [ref=e245]
+                    - generic [ref=e246]: 网络与CDN
+                  - generic [ref=e247]:
+                    - generic [ref=e248]:
+                      - link "专有网络 VPC forward-line" [ref=e249] [cursor=pointer]:
+                        - /url: //vpc.console.aliyun.com
+                        - generic "专有网络 VPC" [ref=e251]
+                        - img "forward-line" [ref=e254]:
+                          - img [ref=e255]
+                      - generic [ref=e257]:
+                        - link "1 专有网络" [ref=e258] [cursor=pointer]:
+                          - /url: //vpc.console.aliyun.com/overview
+                          - generic [ref=e259]: "1"
+                          - generic [ref=e260]: 专有网络
+                        - link "1 交换机" [ref=e261] [cursor=pointer]:
+                          - /url: //vpc.console.aliyun.com/overview
+                          - generic [ref=e262]: "1"
+                          - generic [ref=e263]: 交换机
+                        - link "1 路由表" [ref=e264] [cursor=pointer]:
+                          - /url: //vpc.console.aliyun.com/overview
+                          - generic [ref=e265]: "1"
+                          - generic [ref=e266]: 路由表
+                    - generic [ref=e267]:
+                      - link "云数据传输 forward-line" [ref=e268] [cursor=pointer]:
+                        - /url: //cdt.console.aliyun.com
+                        - generic "云数据传输" [ref=e270]
+                        - img "forward-line" [ref=e273]:
+                          - img [ref=e274]
+                      - generic [ref=e277] [cursor=pointer]:
+                        - generic [ref=e278]: "-"
+                        - img "help-line" [ref=e280]:
+                          - img [ref=e281]
+                - generic [ref=e283]:
+                  - generic "迁移与运维管理" [ref=e284]:
+                    - img "migrationom" [ref=e285]
+                    - generic [ref=e286]: 迁移与运维管理
+                  - generic [ref=e288]:
+                    - link "访问控制 RAM forward-line" [ref=e289] [cursor=pointer]:
+                      - /url: //ram.console.aliyun.com
+                      - generic "访问控制 RAM" [ref=e291]
+                      - img "forward-line" [ref=e294]:
+                        - img [ref=e295]
+                    - generic [ref=e297]:
+                      - link "1 用户" [ref=e298] [cursor=pointer]:
+                        - /url: //ram.console.aliyun.com/users
+                        - generic [ref=e299]: "1"
+                        - generic [ref=e300]: 用户
+                      - link "4 角色" [ref=e301] [cursor=pointer]:
+                        - /url: //ram.console.aliyun.com/roles
+                        - generic [ref=e302]: "4"
+                        - generic [ref=e303]: 角色
+          - text:                                                                                                                                                                                                                                                   
+          - button "收起产品面板" [ref=e305] [cursor=pointer]:
+            - generic [ref=e306]: 
+        - button "收起产品面板" [ref=e307]
+      - text:        
+      - generic [ref=e308]:
+        - button "展开产品面板" [ref=e310]:
+          - button [ref=e311] [cursor=pointer]
+        - link "前往官网" [ref=e315] [cursor=pointer]:
+          - /url: //www.aliyun.com
+          - generic [ref=e316]:
+            - img [ref=e317]
+            - img [ref=e321]
+        - generic [ref=e325]:
+          - link "前往控制台首页" [ref=e326] [cursor=pointer]:
+            - /url: //home.console.aliyun.com
+            - generic [ref=e327]:
+              - generic [ref=e329]: 
+              - generic [ref=e330]: 工作台
+          - button "账号全部资源" [ref=e333]:
+            - button "账号全部资源" [disabled] [ref=e334]:
+              - generic [ref=e335]:
+                - generic [ref=e337]: 
+                - generic [ref=e338]: 账号全部资源
+                - generic [ref=e340]: 
+          - button "华南2（河源）" [ref=e698]:
+            - button "华南2（河源）" [disabled] [ref=e699]:
+              - generic [ref=e700]:
+                - generic [ref=e702]: 
+                - generic [ref=e703]: 华南2（河源）
+                - generic [ref=e705]: 
+        - generic [ref=e352]:
+          - button [ref=e355]:
+            - generic [ref=e356]:
+              - img [ref=e358]
+              - textbox "搜索..." [ref=e366]
+          - navigation [ref=e367]:
+            - link "文档" [ref=e369] [cursor=pointer]:
+              - /url: //help.aliyun.com/product/25365.html
+            - link [ref=e373] [cursor=pointer]:
+              - /url: //www.aliyun.com/ai-assistant/?options=%7B%22displayMode%22%3A%22side%22%7D
+              - img [ref=e379]
+            - button "费用" [ref=e382]:
+              - link "费用" [ref=e383] [cursor=pointer]:
+                - /url: //usercenter2.aliyun.com
+            - button "备案" [ref=e386]:
+              - link "备案" [ref=e387] [cursor=pointer]:
+                - /url: //beian.aliyun.com
+            - button "工单" [ref=e390]:
+              - link "工单" [ref=e391] [cursor=pointer]:
+                - /url: //smartservice.console.aliyun.com/service/list?entrance=100&product=ecs
+            - button "" [ref=e394]:
+              - button "" [ref=e395] [cursor=pointer]:
+                - generic [ref=e397]: 
+            - button " 25" [ref=e400]:
+              - link " 25" [ref=e401] [cursor=pointer]:
+                - /url: //notifications.console.aliyun.com/#/innerMsg/unread/0
+                - generic [ref=e402]:
+                  - generic [ref=e404]: 
+                  - generic [ref=e405]: "25"
+            - text:      
+            - generic [ref=e410] [cursor=pointer]:
+              - generic [ref=e411]:
+                - generic "aliyun8178271275" [ref=e412]
+                - generic [ref=e413]: 主账号
+              - img "avatar" [ref=e414]
+      - complementary [ref=e415]:
+        - generic [ref=e416]:
+          - button "计算 AI 助手" [ref=e418] [cursor=pointer]:
+            - img [ref=e420]
+          - generic [ref=e421]:
+            - button "快速查询 ECS 资源、文档、API 等信息，一键唤起云资源管理操作。" [ref=e422] [cursor=pointer]:
+              - img [ref=e424]
+            - superscript: "1"
+          - generic [ref=e426]:
+            - button "新手任务引导" [ref=e427] [cursor=pointer]:
+              - img [ref=e429]
+            - superscript
+          - button "异步任务" [ref=e433] [cursor=pointer]:
+            - img "task-line" [ref=e435]
+          - link "帮助文档" [ref=e706] [cursor=pointer]:
+            - /url: //help.aliyun.com/document_detail/271831.html
+            - img [ref=e708]
+        - generic [ref=e452]:
+          - separator [ref=e453]
+          - link "配置清单" [ref=e455] [cursor=pointer]:
+            - /url: //www.aliyun.com/price/cpq/detail?isDefault=true
+            - generic [ref=e456]: 
+          - button "" [ref=e458] [cursor=pointer]:
+            - generic [ref=e459]: 
+          - button "云命令行（Cloud Shell）" [ref=e461] [cursor=pointer]:
+            - generic [ref=e462]: 
+          - button "偏好设置" [ref=e464] [cursor=pointer]:
+            - generic [ref=e465]: 
+          - button "提交您的宝贵建议" [ref=e467] [cursor=pointer]:
+            - generic [ref=e468]: 
+          - button "联系我们" [ref=e472] [cursor=pointer]:
+            - generic [ref=e473]: 
+        - button "隐藏侧边栏" [ref=e475] [cursor=pointer]:
+          - generic [ref=e476]: 
+  - generic [ref=e18]:
+    - generic [ref=e21]:
+      - heading "云服务器 ECS ⇄ 切换至标准版" [level=2] [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e27]: 云服务器 ECS
+          - button "⇄ 切换至标准版" [ref=e30] [cursor=pointer]:
+            - generic [ref=e31]:
+              - generic [ref=e33]: ⇄
+              - generic [ref=e34]: 切换至标准版
+      - list [ref=e36]:
+        - link "实例" [ref=e37] [cursor=pointer]:
+          - /url: /server
+          - listitem [ref=e38]:
+            - generic [ref=e41]: 实例
+        - link "镜像" [ref=e42] [cursor=pointer]:
+          - /url: /image/region
+          - listitem [ref=e43]:
+            - generic [ref=e46]: 镜像
+        - link "安全组" [ref=e47] [cursor=pointer]:
+          - /url: /securityGroup/region
+          - listitem [ref=e48]:
+            - generic [ref=e51]: 安全组
+        - link "弹性网卡" [ref=e52] [cursor=pointer]:
+          - /url: /networkInterfaces/region
+          - listitem [ref=e53]:
+            - generic [ref=e56]: 弹性网卡
+        - link "块存储" [ref=e57] [cursor=pointer]:
+          - /url: /disk
+          - listitem [ref=e58]:
+            - generic [ref=e61]: 块存储
+        - link "快照" [ref=e62] [cursor=pointer]:
+          - /url: /snapshot
+          - listitem [ref=e63]:
+            - generic [ref=e66]: 快照
+        - link "域名 ↗" [ref=e67] [cursor=pointer]:
+          - /url: https://dc.console.aliyun.com/next/index
+          - listitem [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e71]: 域名
+              - generic [ref=e73]: ↗
+        - link "云监控 ↗" [ref=e74] [cursor=pointer]:
+          - /url: https://cms.console.aliyun.com/newOverview
+          - listitem [ref=e75]:
+            - generic [ref=e76]:
+              - generic [ref=e78]: 云监控
+              - generic [ref=e80]: ↗
+        - link "账单管理 ↗" [ref=e81] [cursor=pointer]:
+          - /url: https://usercenter2.aliyun.com/finance/expense-report/expense-detail-by-instance?pipCode=ecs&statisticCycle=DEFAULT_CHANGE_PERIOD
+          - listitem [ref=e82]:
+            - generic [ref=e83]:
+              - generic [ref=e85]: 账单管理
+              - generic [ref=e87]: ↗
+          - separator [ref=e88]
+        - link "全部菜单 〉" [ref=e89] [cursor=pointer]:
+          - listitem [ref=e90]:
+            - generic [ref=e94]:
+              - generic [ref=e95]: 全部菜单
+              - generic [ref=e97]: 〉
+    - generic [ref=e100] [cursor=pointer]: 〈
+    - generic [ref=e711]:
+      - navigation [ref=e714]:
+        - list [ref=e715]:
+          - listitem [ref=e716]:
+            - link "云服务器 ECS" [ref=e718] [cursor=pointer]:
+              - /url: /home
+            - text: /
+          - listitem [ref=e719]:
+            - link "安全组" [ref=e721] [cursor=pointer]:
+              - /url: /securityGroup/region/cn-heyuan
+            - text: /
+          - listitem [ref=e722]: sg-f8z1iiisdukvmmf3qxep
+      - generic [ref=e724]:
+        - generic [ref=e726] [cursor=pointer]: ←
+        - heading "sg-f8z1iiisdukvmmf3qxep" [level=3] [ref=e727]
+      - generic [ref=e729]:
+        - generic [ref=e730]:
+          - tablist [ref=e731]:
+            - generic [ref=e733]:
+              - tab "安全组详情" [selected] [ref=e735] [cursor=pointer]
+              - tab "实例列表" [ref=e737] [cursor=pointer]
+              - tab "辅助网卡" [ref=e739] [cursor=pointer]
+              - tab "快照列表" [ref=e741] [cursor=pointer]
+          - generic:
+            - generic:
+              - tabpanel "安全组详情"
+        - generic [ref=e742]:
+          - generic [ref=e743]:
+            - generic [ref=e745] [cursor=pointer]:
+              - generic [ref=e746]: ∨
+              - text: 基本信息
+            - button "↻" [ref=e749] [cursor=pointer]:
+              - generic [ref=e1401]: ↻
+          - table [ref=e754]:
+            - rowgroup [ref=e755]:
+              - row "安全组 ID 安全组名称 网络" [ref=e756]:
+                - columnheader "安全组 ID" [ref=e757]:
+                  - generic [ref=e759]: 安全组 ID
+                - columnheader "安全组名称" [ref=e760]:
+                  - generic [ref=e762]: 安全组名称
+                - columnheader "网络" [ref=e763]:
+                  - generic [ref=e765]: 网络
+              - row "sg-f8z1iiisdukvmmf3qxep ⧉ sg-f8z1iiisdukvmmf3qxep ✎ vpc-f8zx2yynj5d6myaute5xm ↗ ⧉" [ref=e766]:
+                - cell "sg-f8z1iiisdukvmmf3qxep ⧉" [ref=e767]:
+                  - generic [ref=e771]:
+                    - text: sg-f8z1iiisdukvmmf3qxep
+                    - generic [ref=e774] [cursor=pointer]: ⧉
+                - cell "sg-f8z1iiisdukvmmf3qxep ✎" [ref=e775]:
+                  - generic [ref=e779]:
+                    - generic [ref=e781]: sg-f8z1iiisdukvmmf3qxep
+                    - generic [ref=e783] [cursor=pointer]: ✎
+                - cell "vpc-f8zx2yynj5d6myaute5xm ↗ ⧉" [ref=e784]:
+                  - generic [ref=e788]:
+                    - link "vpc-f8zx2yynj5d6myaute5xm" [ref=e789] [cursor=pointer]:
+                      - /url: https://vpc.console.aliyun.com/vpc/cn-heyuan/vpcs/vpc-f8zx2yynj5d6myaute5xm
+                    - generic [ref=e790]: ↗
+                    - generic [ref=e793] [cursor=pointer]: ⧉
+              - row "组内连通策略 安全组类型 创建时间" [ref=e794]:
+                - columnheader "组内连通策略" [ref=e795]:
+                  - generic [ref=e797]: 组内连通策略
+                - columnheader "安全组类型" [ref=e798]:
+                  - generic [ref=e800]: 安全组类型
+                - columnheader "创建时间" [ref=e801]:
+                  - generic [ref=e803]: 创建时间
+              - row "组内互通 修改组内网络连通策略 普通安全组 2026年3月16日 10:23:16" [ref=e804]:
+                - cell "组内互通 修改组内网络连通策略" [ref=e805]:
+                  - generic [ref=e809]:
+                    - generic [ref=e810]: 组内互通
+                    - link "修改组内网络连通策略" [ref=e812] [cursor=pointer]:
+                      - /url: "@ActionTrigger(@@trigger/sg/api:ModifySecurityGroupPolicy)"
+                - cell "普通安全组" [ref=e813]:
+                  - generic [ref=e816]: 普通安全组
+                - cell "2026年3月16日 10:23:16" [ref=e817]:
+                  - generic [ref=e819]: 2026年3月16日 10:23:16
+              - row "描述 资源组 标签" [ref=e820]:
+                - columnheader "描述" [ref=e821]:
+                  - generic [ref=e823]: 描述
+                - columnheader "资源组" [ref=e824]:
+                  - generic [ref=e826]: 资源组
+                - columnheader "标签" [ref=e827]:
+                  - generic [ref=e829]: 标签
+              - row "System created security group. ✎ - ✎ 未绑定标签 " [ref=e830]:
+                - cell "System created security group. ✎" [ref=e831]:
+                  - generic [ref=e835]:
+                    - generic [ref=e837]: System created security group.
+                    - generic [ref=e839] [cursor=pointer]: ✎
+                - cell "- ✎" [ref=e840]:
+                  - generic [ref=e843]:
+                    - text: "-"
+                    - generic [ref=e844] [cursor=pointer]: ✎
+                - cell "未绑定标签 " [ref=e845]:
+                  - generic [ref=e850]:
+                    - text: 未绑定标签
+                    - generic [ref=e851] [cursor=pointer]: 
+        - generic [ref=e852]:
+          - generic [ref=e853]:
+            - separator [ref=e854]
+            - text: 访问规则（6 条）
+            - button "⬆ 导入安全组规则" [ref=e855] [cursor=pointer]:
+              - generic [ref=e856]: ⬆
+              - link "导入安全组规则" [ref=e857]:
+                - /url: "@ActionTrigger(@@trigger/sg/action:ImportSgRule)"
+            - link "⬇ 导出" [ref=e858] [cursor=pointer]:
+              - generic [ref=e859]: ⬇
+              - text: 导出
+            - generic [ref=e860] [cursor=pointer]:
+              - generic [ref=e861]: 
+              - text: 健康检查
+          - generic [ref=e863]:
+            - generic [ref=e864]:
+              - tablist [ref=e865]:
+                - generic [ref=e867]:
+                  - tab "入方向" [selected] [ref=e869] [cursor=pointer]
+                  - tab "出方向" [ref=e871] [cursor=pointer]
+              - generic:
+                - generic:
+                  - tabpanel "入方向"
+            - generic [ref=e872]:
+              - generic [ref=e877]:
+                - generic [ref=e879]:
+                  - button "增加规则" [ref=e880] [cursor=pointer]:
+                    - link "增加规则" [active] [ref=e881]:
+                      - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)?spm=5176.ecs-console-networkv2_.0.0.6c344df5BbtpH7"
+                  - button "ellipsis" [ref=e882] [cursor=pointer]:
+                    - img "ellipsis" [ref=e883]:
+                      - img [ref=e884]
+                - button "快速添加规则" [ref=e888] [cursor=pointer]
+                - generic [ref=e893]:
+                  - button "自动识别 ▼" [ref=e896] [cursor=pointer]:
+                    - generic [ref=e897]:
+                      - generic [ref=e898]: 自动识别
+                      - generic [ref=e901]: ▼
+                  - combobox "请输入您要搜索的内容" [ref=e903]
+                - generic [ref=e906] [cursor=pointer]:
+                  - generic [ref=e907]:
+                    - combobox [ref=e909]
+                    - generic "不展示合并" [ref=e910]
+                  - generic:
+                    - img:
+                      - img
+                - link "教我配置规则" [ref=e912] [cursor=pointer]:
+                  - /url: //help.aliyun.com/document_detail/25475.html
+              - table [ref=e922]:
+                - rowgroup [ref=e933]:
+                  - row "授权策略  优先级  协议  访问来源  访问目的(本实例)  描述 创建时间 操作" [ref=e934]:
+                    - columnheader [ref=e935]:
+                      - checkbox [ref=e939] [cursor=pointer]
+                    - columnheader "授权策略 " [ref=e941]:
+                      - generic [ref=e942] [cursor=pointer]:
+                        - text: 授权策略
+                        - generic [ref=e944]: 
+                    - columnheader "优先级 " [ref=e945]:
+                      - generic [ref=e946] [cursor=pointer]:
+                        - text: 优先级
+                        - generic [ref=e948]: 
+                    - columnheader "协议 " [ref=e949]:
+                      - generic [ref=e950] [cursor=pointer]:
+                        - text: 协议
+                        - generic [ref=e952]: 
+                    - columnheader "访问来源 " [ref=e953]:
+                      - generic [ref=e954] [cursor=pointer]:
+                        - text: 访问来源
+                        - generic [ref=e956]: 
+                    - columnheader "访问目的(本实例) " [ref=e957]:
+                      - generic [ref=e958] [cursor=pointer]:
+                        - text: 访问目的(本实例)
+                        - generic [ref=e960]: 
+                    - columnheader "描述" [ref=e961]
+                    - columnheader "创建时间" [ref=e962]
+                    - columnheader "操作" [ref=e963]
+                - rowgroup [ref=e964]:
+                  - row " 允许 1 自定义 TCP IPv4  任何位置（0.0.0.0/0） 端口 HTTP(80) 2026年4月2日 21:34:35 编辑 复制 删除" [ref=e1402]:
+                    - cell [ref=e1403]:
+                      - checkbox [ref=e1407] [cursor=pointer]
+                    - cell " 允许" [ref=e1409]:
+                      - generic [ref=e1410]:
+                        - generic [ref=e1411]: 
+                        - text: 允许
+                    - cell "1" [ref=e1412]
+                    - cell "自定义 TCP" [ref=e1413]:
+                      - generic [ref=e1414]: 自定义 TCP
+                    - cell "IPv4  任何位置（0.0.0.0/0）" [ref=e1415]:
+                      - generic [ref=e1419]:
+                        - generic [ref=e1420]: IPv4
+                        - generic [ref=e1423]:
+                          - generic [ref=e1424] [cursor=pointer]: 
+                          - text: 任何位置（0.0.0.0/0）
+                    - cell "端口 HTTP(80)" [ref=e1425]:
+                      - generic [ref=e1429]:
+                        - generic [ref=e1430]: 端口
+                        - generic [ref=e1433] [cursor=pointer]: HTTP(80)
+                    - cell [ref=e1434]
+                    - cell "2026年4月2日 21:34:35" [ref=e1435]
+                    - cell "编辑 复制 删除" [ref=e1436]:
+                      - generic [ref=e1437]:
+                        - link "编辑" [ref=e1438] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+                        - link "复制" [ref=e1439] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+                        - link "删除" [ref=e1440] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+                  - row " 允许 1 自定义 TCP IPv4  任何位置（0.0.0.0/0） 端口 8081/8081 2026年3月17日 19:04:34 编辑 复制 删除" [ref=e965]:
+                    - cell [ref=e966]:
+                      - checkbox [ref=e970] [cursor=pointer]
+                    - cell " 允许" [ref=e972]:
+                      - generic [ref=e973]:
+                        - generic [ref=e974]: 
+                        - text: 允许
+                    - cell "1" [ref=e975]
+                    - cell "自定义 TCP" [ref=e976]:
+                      - generic [ref=e977]: 自定义 TCP
+                    - cell "IPv4  任何位置（0.0.0.0/0）" [ref=e978]:
+                      - generic [ref=e982]:
+                        - generic [ref=e983]: IPv4
+                        - generic [ref=e986]:
+                          - generic [ref=e987] [cursor=pointer]: 
+                          - text: 任何位置（0.0.0.0/0）
+                    - cell "端口 8081/8081" [ref=e988]:
+                      - generic [ref=e992]:
+                        - generic [ref=e993]: 端口
+                        - generic [ref=e995]: 8081/8081
+                    - cell [ref=e996]
+                    - cell "2026年3月17日 19:04:34" [ref=e997]
+                    - cell "编辑 复制 删除" [ref=e998]:
+                      - generic [ref=e999]:
+                        - link "编辑" [ref=e1000] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+                        - link "复制" [ref=e1001] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+                        - link "删除" [ref=e1002] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+                  - row " 允许 1 自定义 TCP IPv4  任何位置（0.0.0.0/0） 端口 5173/5173 2026年3月17日 19:02:27 编辑 复制 删除" [ref=e1003]:
+                    - cell [ref=e1004]:
+                      - checkbox [ref=e1008] [cursor=pointer]
+                    - cell " 允许" [ref=e1010]:
+                      - generic [ref=e1011]:
+                        - generic [ref=e1012]: 
+                        - text: 允许
+                    - cell "1" [ref=e1013]
+                    - cell "自定义 TCP" [ref=e1014]:
+                      - generic [ref=e1015]: 自定义 TCP
+                    - cell "IPv4  任何位置（0.0.0.0/0）" [ref=e1016]:
+                      - generic [ref=e1020]:
+                        - generic [ref=e1021]: IPv4
+                        - generic [ref=e1024]:
+                          - generic [ref=e1025] [cursor=pointer]: 
+                          - text: 任何位置（0.0.0.0/0）
+                    - cell "端口 5173/5173" [ref=e1026]:
+                      - generic [ref=e1030]:
+                        - generic [ref=e1031]: 端口
+                        - generic [ref=e1033]: 5173/5173
+                    - cell [ref=e1034]
+                    - cell "2026年3月17日 19:02:27" [ref=e1035]
+                    - cell "编辑 复制 删除" [ref=e1036]:
+                      - generic [ref=e1037]:
+                        - link "编辑" [ref=e1038] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+                        - link "复制" [ref=e1039] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+                        - link "删除" [ref=e1040] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+                  - row " 允许 100 自定义 TCP IPv4  任何位置（0.0.0.0/0） 端口 RDP(3389) System created rule. 2026年3月16日 10:23:16 编辑 复制 删除" [ref=e1041]:
+                    - cell [ref=e1042]:
+                      - checkbox [ref=e1046] [cursor=pointer]
+                    - cell " 允许" [ref=e1048]:
+                      - generic [ref=e1049]:
+                        - generic [ref=e1050]: 
+                        - text: 允许
+                    - cell "100" [ref=e1051]
+                    - cell "自定义 TCP" [ref=e1052]:
+                      - generic [ref=e1053]: 自定义 TCP
+                    - cell "IPv4  任何位置（0.0.0.0/0）" [ref=e1054]:
+                      - generic [ref=e1058]:
+                        - generic [ref=e1059]: IPv4
+                        - generic [ref=e1062]:
+                          - generic [ref=e1063] [cursor=pointer]: 
+                          - text: 任何位置（0.0.0.0/0）
+                    - cell "端口 RDP(3389)" [ref=e1064]:
+                      - generic [ref=e1068]:
+                        - generic [ref=e1069]: 端口
+                        - generic [ref=e1072] [cursor=pointer]: RDP(3389)
+                    - cell "System created rule." [ref=e1073]:
+                      - generic [ref=e1074]: System created rule.
+                    - cell "2026年3月16日 10:23:16" [ref=e1075]
+                    - cell "编辑 复制 删除" [ref=e1076]:
+                      - generic [ref=e1077]:
+                        - link "编辑" [ref=e1078] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+                        - link "复制" [ref=e1079] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+                        - link "删除" [ref=e1080] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+                  - row " 允许 100 自定义 TCP IPv4  任何位置（0.0.0.0/0） 端口 SSH(22) System created rule. 2026年3月16日 10:23:16 编辑 复制 删除" [ref=e1081]:
+                    - cell [ref=e1082]:
+                      - checkbox [ref=e1086] [cursor=pointer]
+                    - cell " 允许" [ref=e1088]:
+                      - generic [ref=e1089]:
+                        - generic [ref=e1090]: 
+                        - text: 允许
+                    - cell "100" [ref=e1091]
+                    - cell "自定义 TCP" [ref=e1092]:
+                      - generic [ref=e1093]: 自定义 TCP
+                    - cell "IPv4  任何位置（0.0.0.0/0）" [ref=e1094]:
+                      - generic [ref=e1098]:
+                        - generic [ref=e1099]: IPv4
+                        - generic [ref=e1102]:
+                          - generic [ref=e1103] [cursor=pointer]: 
+                          - text: 任何位置（0.0.0.0/0）
+                    - cell "端口 SSH(22)" [ref=e1104]:
+                      - generic [ref=e1108]:
+                        - generic [ref=e1109]: 端口
+                        - generic [ref=e1112] [cursor=pointer]: SSH(22)
+                    - cell "System created rule." [ref=e1113]:
+                      - generic [ref=e1114]: System created rule.
+                    - cell "2026年3月16日 10:23:16" [ref=e1115]
+                    - cell "编辑 复制 删除" [ref=e1116]:
+                      - generic [ref=e1117]:
+                        - link "编辑" [ref=e1118] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+                        - link "复制" [ref=e1119] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+                        - link "删除" [ref=e1120] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+                  - row " 允许 100 所有 ICMP-IPv4 IPv4  任何位置（0.0.0.0/0） 端口 全部 (-1/-1) System created rule. 2026年3月16日 10:23:16 编辑 复制 删除" [ref=e1121]:
+                    - cell [ref=e1122]:
+                      - checkbox [ref=e1126] [cursor=pointer]
+                    - cell " 允许" [ref=e1128]:
+                      - generic [ref=e1129]:
+                        - generic [ref=e1130]: 
+                        - text: 允许
+                    - cell "100" [ref=e1131]
+                    - cell "所有 ICMP-IPv4" [ref=e1132]:
+                      - generic [ref=e1133]: 所有 ICMP-IPv4
+                    - cell "IPv4  任何位置（0.0.0.0/0）" [ref=e1134]:
+                      - generic [ref=e1138]:
+                        - generic [ref=e1139]: IPv4
+                        - generic [ref=e1142]:
+                          - generic [ref=e1143] [cursor=pointer]: 
+                          - text: 任何位置（0.0.0.0/0）
+                    - cell "端口 全部 (-1/-1)" [ref=e1144]:
+                      - generic [ref=e1148]:
+                        - generic [ref=e1149]: 端口
+                        - generic [ref=e1151]: 全部 (-1/-1)
+                    - cell "System created rule." [ref=e1152]:
+                      - generic [ref=e1153]: System created rule.
+                    - cell "2026年3月16日 10:23:16" [ref=e1154]
+                    - cell "编辑 复制 删除" [ref=e1155]:
+                      - generic [ref=e1156]:
+                        - link "编辑" [ref=e1157] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+                        - link "复制" [ref=e1158] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+                        - link "删除" [ref=e1159] [cursor=pointer]:
+                          - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+              - generic [ref=e1164]:
+                - checkbox [ref=e1169] [cursor=pointer]
+                - button "批量删除" [ref=e1173]
+  - iframe [ref=e147]:
+    
+  - iframe [ref=e148]:
+    
+  - iframe [ref=e615]:
+    
+  - iframe [ref=e616]:
+    
+  - generic:
+    - link "编辑" [ref=e1174] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+    - link "复制" [ref=e1175] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+    - link "删除" [ref=e1176] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+  - generic:
+    - link "编辑" [ref=e1177] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+    - link "复制" [ref=e1178] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+    - link "删除" [ref=e1179] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+  - generic:
+    - link "编辑" [ref=e1180] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+    - link "复制" [ref=e1181] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+    - link "删除" [ref=e1182] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+  - generic:
+    - link "编辑" [ref=e1183] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+    - link "复制" [ref=e1184] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+    - link "删除" [ref=e1185] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+  - generic:
+    - link "编辑" [ref=e1186] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+    - link "复制" [ref=e1187] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+    - link "删除" [ref=e1188] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"
+  - generic:
+    - link "编辑" [ref=e1441] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:EditSecurityGroupRule)"
+    - link "复制" [ref=e1442] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:AddSecurityGroupRule)"
+    - link "删除" [ref=e1443] [cursor=pointer]:
+      - /url: "@ActionTrigger(@@trigger/sg/action:RevokeSecurityGroup)"

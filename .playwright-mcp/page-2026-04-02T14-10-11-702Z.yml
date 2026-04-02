@@ -1,0 +1,812 @@
+- generic [ref=e8]:
+  - generic [ref=e12]:
+    - generic [ref=e13]:
+      - complementary [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - link [ref=e17] [cursor=pointer]:
+              - /url: /
+              - img [ref=e19]
+            - button "2123680589@qq.com's Account" [ref=e24] [cursor=pointer]:
+              - paragraph [ref=e25]: 2123680589@qq.com's Account
+              - img [ref=e27]
+          - navigation [ref=e30]:
+            - generic [ref=e34]:
+              - button "快速搜索..." [ref=e36] [cursor=pointer]:
+                - generic [ref=e37]:
+                  - img [ref=e38]
+                  - generic [ref=e40]: 快速搜索...
+                  - generic [ref=e41]: Ctrl K
+              - list [ref=e45]:
+                - listitem [ref=e46]:
+                  - link "帐户主页" [ref=e47] [cursor=pointer]:
+                    - /url: /a597e14bd2013a1000c59b5adc282b45/home
+                    - generic [ref=e48]:
+                      - img [ref=e49]
+                      - generic [ref=e52]: 帐户主页
+                - listitem [ref=e53]:
+                  - button "最近访问" [ref=e54] [cursor=pointer]:
+                    - generic [ref=e55]:
+                      - img [ref=e56]
+                      - generic [ref=e59]: 最近访问
+                      - img [ref=e60]
+                  - list [ref=e62]:
+                    - listitem [ref=e64]:
+                      - link "Zero Trust 保护和连接" [ref=e65] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/zero-trust/landing-page
+                        - generic [ref=e66]:
+                          - generic [ref=e67]: Zero Trust
+                          - generic [ref=e69]: 保护和连接
+                      - button "固定" [ref=e71] [cursor=pointer]:
+                        - generic [ref=e72]:
+                          - img [ref=e73]
+                          - img [ref=e78]
+                    - listitem [ref=e80]:
+                      - link "帐户 API 令牌 管理帐户" [ref=e81] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/api-tokens
+                        - generic [ref=e82]:
+                          - generic [ref=e83]: 帐户 API 令牌
+                          - generic [ref=e85]: 管理帐户
+                      - button "固定" [ref=e87] [cursor=pointer]:
+                        - generic [ref=e88]:
+                          - img [ref=e89]
+                          - img [ref=e94]
+                    - listitem [ref=e96]:
+                      - link "Overview Domains" [ref=e97] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/domains/overview
+                        - generic [ref=e98]:
+                          - generic [ref=e99]: Overview
+                          - generic [ref=e101]: Domains
+                      - button "固定" [ref=e103] [cursor=pointer]:
+                        - generic [ref=e104]:
+                          - img [ref=e105]
+                          - img [ref=e110]
+                    - listitem [ref=e112]:
+                      - link "lay.dpdns.org 域" [ref=e113] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/lay.dpdns.org
+                        - generic [ref=e114]:
+                          - generic [ref=e115]: lay.dpdns.org
+                          - generic [ref=e117]: 域
+                      - button "固定" [ref=e119] [cursor=pointer]:
+                        - generic [ref=e120]:
+                          - img [ref=e121]
+                          - img [ref=e126]
+                    - listitem [ref=e128]:
+                      - link "bluebell.dpdns.org 域" [ref=e129] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org
+                        - generic [ref=e130]:
+                          - generic [ref=e131]: bluebell.dpdns.org
+                          - generic [ref=e133]: 域
+                      - button "固定" [ref=e135] [cursor=pointer]:
+                        - generic [ref=e136]:
+                          - img [ref=e137]
+                          - img [ref=e142]
+                - listitem [ref=e144]:
+                  - button "分析和日志" [ref=e145] [cursor=pointer]:
+                    - generic [ref=e146]:
+                      - img [ref=e147]
+                      - generic [ref=e150]: 分析和日志
+                      - img [ref=e151]
+                  - list [ref=e153]:
+                    - listitem [ref=e155]:
+                      - button "Log Explorer" [ref=e156] [cursor=pointer]:
+                        - generic [ref=e158]: Log Explorer
+                        - img [ref=e159]
+                      - list [ref=e161]:
+                        - listitem [ref=e163]:
+                          - link "日志搜索" [ref=e164] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/log-explorer/log-search
+                            - generic [ref=e165]: 日志搜索
+                    - listitem [ref=e166]:
+                      - link "帐户分析 Beta" [ref=e167] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/analytics
+                        - generic [ref=e168]: 帐户分析
+                        - generic [ref=e170]: Beta
+                    - listitem [ref=e171]:
+                      - link "Web Analytics" [ref=e172] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/web-analytics
+                        - generic [ref=e173]: Web Analytics
+                    - listitem [ref=e174]:
+                      - link "“跟踪” Beta" [ref=e175] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/trace
+                        - generic [ref=e176]: “跟踪”
+                        - generic [ref=e178]: Beta
+                - listitem [ref=e179]:
+                  - button "Domains" [ref=e180] [cursor=pointer]:
+                    - generic [ref=e181]:
+                      - img [ref=e182]
+                      - generic [ref=e184]: Domains
+                      - img [ref=e185]
+                  - list [ref=e187]:
+                    - listitem [ref=e189]:
+                      - link "Overview" [ref=e190] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/domains/overview
+                        - generic [ref=e191]: Overview
+                    - listitem [ref=e192]:
+                      - link "Registrations" [ref=e193] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/domains/registrations
+                        - generic [ref=e194]: Registrations
+                    - listitem [ref=e195]:
+                      - link "Transfers" [ref=e196] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/domains/transfers
+                        - generic [ref=e197]: Transfers
+                - listitem [ref=e198]:
+                  - generic [ref=e200]: 构建
+                - listitem [ref=e201]:
+                  - button "计算" [ref=e202] [cursor=pointer]:
+                    - generic [ref=e203]:
+                      - img [ref=e204]
+                      - generic [ref=e208]: 计算
+                      - img [ref=e209]
+                  - list [ref=e211]:
+                    - listitem [ref=e213]:
+                      - link "Workers 和 Pages" [ref=e214] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers-and-pages
+                        - generic [ref=e215]: Workers 和 Pages
+                    - listitem [ref=e216]:
+                      - link "可观察性" [ref=e217] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/observability
+                        - generic [ref=e218]: 可观察性
+                    - listitem [ref=e219]:
+                      - link "Workers for Platforms" [ref=e220] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers-for-platforms
+                        - generic [ref=e221]: Workers for Platforms
+                    - listitem [ref=e222]:
+                      - link "Containers Beta" [ref=e223] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/containers
+                        - generic [ref=e224]: Containers
+                        - generic [ref=e226]: Beta
+                    - listitem [ref=e227]:
+                      - link "Durable Objects" [ref=e228] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/durable-objects
+                        - generic [ref=e229]: Durable Objects
+                    - listitem [ref=e230]:
+                      - link "Queues" [ref=e231] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/queues
+                        - generic [ref=e232]: Queues
+                    - listitem [ref=e233]:
+                      - link "工作流" [ref=e234] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/workflows
+                        - generic [ref=e235]: 工作流
+                    - listitem [ref=e236]:
+                      - link "浏览器呈现" [ref=e237] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/browser-rendering
+                        - generic [ref=e238]: 浏览器呈现
+                    - listitem [ref=e239]:
+                      - link "VPC Beta" [ref=e240] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/vpc
+                        - generic [ref=e241]: VPC
+                        - generic [ref=e243]: Beta
+                    - listitem [ref=e244]:
+                      - button "电子邮件服务" [ref=e245] [cursor=pointer]:
+                        - generic [ref=e247]: 电子邮件服务
+                        - img [ref=e248]
+                      - list [ref=e250]:
+                        - listitem [ref=e252]:
+                          - link "电子邮件路由" [ref=e253] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/email-service/routing
+                            - generic [ref=e254]: 电子邮件路由
+                        - listitem [ref=e255]:
+                          - link "电子邮件发送 Beta" [ref=e256] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/email-service/sending
+                            - generic [ref=e257]: 电子邮件发送
+                            - generic [ref=e259]: Beta
+                    - listitem [ref=e260]:
+                      - link "Workers 计划" [ref=e261] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/plans
+                        - generic [ref=e262]: Workers 计划
+                - listitem [ref=e263]:
+                  - button "AI" [ref=e264] [cursor=pointer]:
+                    - generic [ref=e265]:
+                      - img [ref=e266]
+                      - generic [ref=e268]: AI
+                      - img [ref=e269]
+                  - list [ref=e271]:
+                    - listitem [ref=e273]:
+                      - link "模型" [ref=e274] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/ai/models
+                        - generic [ref=e275]: 模型
+                    - listitem [ref=e276]:
+                      - link "Workers AI" [ref=e277] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/ai/workers-ai
+                        - generic [ref=e278]: Workers AI
+                    - listitem [ref=e279]:
+                      - link "AI Gateway" [ref=e280] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/ai/ai-gateway
+                        - generic [ref=e281]: AI Gateway
+                    - listitem [ref=e728]:
+                      - link "Vectorize" [ref=e729] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/ai/vectorize
+                        - generic [ref=e730]: Vectorize
+                    - listitem [ref=e282]:
+                      - link "AI 搜索 Beta" [ref=e283] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/ai/ai-search
+                        - generic [ref=e284]: AI 搜索
+                        - generic [ref=e286]: Beta
+                - listitem [ref=e287]:
+                  - button "存储和数据库" [ref=e288] [cursor=pointer]:
+                    - generic [ref=e289]:
+                      - img [ref=e290]
+                      - generic [ref=e293]: 存储和数据库
+                      - img [ref=e294]
+                  - list [ref=e296]:
+                    - listitem [ref=e298]:
+                      - button "R2 对象存储" [ref=e731] [cursor=pointer]:
+                        - generic [ref=e733]: R2 对象存储
+                        - img [ref=e734]
+                      - list [ref=e736]:
+                        - listitem [ref=e738]:
+                          - link "概述" [ref=e739] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/r2/overview
+                            - generic [ref=e740]: 概述
+                        - listitem [ref=e741]:
+                          - link "数据迁移" [ref=e742] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/r2/slurper
+                            - generic [ref=e743]: 数据迁移
+                    - listitem [ref=e301]:
+                      - link "Hyperdrive" [ref=e302] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/hyperdrive
+                        - generic [ref=e303]: Hyperdrive
+                    - listitem [ref=e304]:
+                      - link "Workers KV" [ref=e305] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/kv/namespaces
+                        - generic [ref=e306]: Workers KV
+                    - listitem [ref=e307]:
+                      - link "D1 SQL 数据库" [ref=e308] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/d1
+                        - generic [ref=e309]: D1 SQL 数据库
+                    - listitem [ref=e310]:
+                      - link "Analytics Engine" [ref=e311] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/workers/analytics-engine
+                        - generic [ref=e312]: Analytics Engine
+                    - listitem [ref=e313]:
+                      - button "Pipelines Beta" [ref=e314] [cursor=pointer]:
+                        - generic [ref=e315]:
+                          - generic [ref=e316]: Pipelines
+                          - generic [ref=e318]: Beta
+                        - img [ref=e319]
+                      - list [ref=e321]:
+                        - listitem [ref=e323]:
+                          - link "Pipelines" [ref=e324] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/pipelines/overview
+                            - generic [ref=e325]: Pipelines
+                    - listitem [ref=e326]:
+                      - link "Secrets Store 新" [ref=e327] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/secrets-store
+                        - generic [ref=e328]: Secrets Store
+                        - generic [ref=e330]: 新
+                - listitem [ref=e331]:
+                  - button "媒体" [ref=e332] [cursor=pointer]:
+                    - generic [ref=e333]:
+                      - img [ref=e334]
+                      - generic [ref=e337]: 媒体
+                      - img [ref=e338]
+                  - list [ref=e340]:
+                    - listitem [ref=e342]:
+                      - button "Stream" [ref=e343] [cursor=pointer]:
+                        - generic [ref=e345]: Stream
+                        - img [ref=e346]
+                      - list [ref=e348]:
+                        - listitem [ref=e350]:
+                          - link "计划" [ref=e351] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/stream/plans
+                            - generic [ref=e352]: 计划
+                    - listitem [ref=e353]:
+                      - button "Images" [ref=e354] [cursor=pointer]:
+                        - generic [ref=e356]: Images
+                        - img [ref=e357]
+                      - list [ref=e359]:
+                        - listitem [ref=e361]:
+                          - link "转换" [ref=e362] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/images/transformations
+                            - generic [ref=e363]: 转换
+                        - listitem [ref=e364]:
+                          - link "托管图像" [ref=e365] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/images/hosted
+                            - generic [ref=e366]: 托管图像
+                        - listitem [ref=e367]:
+                          - link "计划" [ref=e368] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/images/plans
+                            - generic [ref=e369]: 计划
+                    - listitem [ref=e370]:
+                      - button "Realtime" [ref=e371] [cursor=pointer]:
+                        - generic [ref=e373]: Realtime
+                        - img [ref=e374]
+                      - list [ref=e376]:
+                        - listitem [ref=e378]:
+                          - link "RealtimeKit Beta" [ref=e379] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/realtime/kit
+                            - generic [ref=e380]: RealtimeKit
+                            - generic [ref=e382]: Beta
+                        - listitem [ref=e383]:
+                          - link "TURN 服务器" [ref=e384] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/realtime/turn
+                            - generic [ref=e385]: TURN 服务器
+                        - listitem [ref=e386]:
+                          - link "无服务器 SFU" [ref=e387] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/realtime/sfu
+                            - generic [ref=e388]: 无服务器 SFU
+                        - listitem [ref=e389]:
+                          - link "MoQ 中继 Alpha" [ref=e390] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/realtime/moq
+                            - generic [ref=e391]: MoQ 中继
+                            - generic [ref=e393]: Alpha
+                - listitem [ref=e394]:
+                  - generic [ref=e396]: 保护和连接
+                - listitem [ref=e397]:
+                  - button "应用程序安全" [ref=e398] [cursor=pointer]:
+                    - generic [ref=e399]:
+                      - img [ref=e400]
+                      - generic [ref=e403]: 应用程序安全
+                      - img [ref=e404]
+                  - list [ref=e406]:
+                    - listitem [ref=e408]:
+                      - link "安全见解" [ref=e409] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/security-center
+                        - generic [ref=e410]: 安全见解
+                    - listitem [ref=e411]:
+                      - link "WAF" [ref=e412] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/application-security/waf
+                        - generic [ref=e413]: WAF
+                    - listitem [ref=e414]:
+                      - link "调查" [ref=e415] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/application-security/investigate
+                        - generic [ref=e416]: 调查
+                    - listitem [ref=e417]:
+                      - link "基础设施" [ref=e418] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/security-center/inventory
+                        - generic [ref=e419]: 基础设施
+                    - listitem [ref=e420]:
+                      - link "Turnstile" [ref=e421] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/turnstile
+                        - generic [ref=e422]: Turnstile
+                - listitem [ref=e423]:
+                  - link "Zero Trust" [ref=e424] [cursor=pointer]:
+                    - /url: https://dash.cloudflare.com/a597e14bd2013a1000c59b5adc282b45/one
+                    - generic [ref=e425]:
+                      - img [ref=e426]
+                      - generic [ref=e429]: Zero Trust
+                - listitem [ref=e430]:
+                  - button "联网" [ref=e431] [cursor=pointer]:
+                    - generic [ref=e432]:
+                      - img [ref=e433]
+                      - generic [ref=e435]: 联网
+                      - img [ref=e436]
+                  - list [ref=e438]:
+                    - listitem [ref=e744]:
+                      - button "见解" [ref=e745] [cursor=pointer]:
+                        - generic [ref=e747]: 见解
+                        - img [ref=e748]
+                      - list [ref=e750]:
+                        - listitem [ref=e752]:
+                          - link "网络流分析" [ref=e753] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/networking-insights/analytics/network-analytics/flow-analytics
+                            - generic [ref=e754]: 网络流分析
+                    - listitem [ref=e440]:
+                      - link "Tunnels 新" [ref=e441] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/tunnels
+                        - generic [ref=e442]: Tunnels
+                        - generic [ref=e444]: 新
+                    - listitem [ref=e445]:
+                      - button "IP 地址" [ref=e446] [cursor=pointer]:
+                        - generic [ref=e448]: IP 地址
+                        - img [ref=e449]
+                      - list [ref=e451]:
+                        - listitem [ref=e453]:
+                          - link "地址空间" [ref=e454] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/ip-addresses/address-space
+                            - generic [ref=e455]: 地址空间
+                        - listitem [ref=e456]:
+                          - link "地址映射" [ref=e457] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/ip-addresses/proxy-ips
+                            - generic [ref=e458]: 地址映射
+                - listitem [ref=e459]:
+                  - button "交付和性能" [ref=e460] [cursor=pointer]:
+                    - generic [ref=e461]:
+                      - img [ref=e462]
+                      - generic [ref=e464]: 交付和性能
+                      - img [ref=e465]
+                  - list [ref=e467]:
+                    - listitem [ref=e469]:
+                      - link "批量重定向" [ref=e470] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/bulk-redirects
+                        - generic [ref=e471]: 批量重定向
+                    - listitem [ref=e472]:
+                      - link "负载平衡" [ref=e473] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/load-balancing
+                        - generic [ref=e474]: 负载平衡
+                    - listitem [ref=e475]:
+                      - button "Web 标记管理" [ref=e476] [cursor=pointer]:
+                        - generic [ref=e478]: Web 标记管理
+                        - img [ref=e479]
+                      - list [ref=e481]:
+                        - listitem [ref=e483]:
+                          - link "标记设置" [ref=e484] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/tag-management/zaraz
+                            - generic [ref=e485]: 标记设置
+                        - listitem [ref=e486]:
+                          - link "同意" [ref=e487] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/tag-management/consent
+                            - generic [ref=e488]: 同意
+                        - listitem [ref=e489]:
+                          - link "历史记录" [ref=e490] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/tag-management/history
+                            - generic [ref=e491]: 历史记录
+                        - listitem [ref=e492]:
+                          - link "监视" [ref=e493] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/tag-management/monitoring
+                            - generic [ref=e494]: 监视
+                        - listitem [ref=e495]:
+                          - link "设置" [ref=e496] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/tag-management/settings
+                            - generic [ref=e497]: 设置
+                        - listitem [ref=e498]:
+                          - link "Zaraz 计划" [ref=e499] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/tag-management/plans
+                            - generic [ref=e500]: Zaraz 计划
+                        - listitem [ref=e501]:
+                          - link "Google 标记网关" [ref=e502] [cursor=pointer]:
+                            - /url: /a597e14bd2013a1000c59b5adc282b45/tag-management/google-tag-gateway
+                            - generic [ref=e503]: Google 标记网关
+                - listitem [ref=e504]
+                - listitem [ref=e506]:
+                  - button "管理帐户" [expanded] [ref=e507] [cursor=pointer]:
+                    - generic [ref=e508]:
+                      - img [ref=e509]
+                      - generic [ref=e512]: 管理帐户
+                      - img [ref=e513]
+                  - list [ref=e517]:
+                    - listitem [ref=e519]:
+                      - link "成员" [ref=e520] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/members
+                        - generic [ref=e521]: 成员
+                    - listitem [ref=e522]:
+                      - link "账单" [ref=e523] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/billing
+                        - generic [ref=e524]: 账单
+                    - listitem [ref=e525]:
+                      - link "帐户 API 令牌" [ref=e526] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/api-tokens
+                        - generic [ref=e527]: 帐户 API 令牌
+                    - listitem [ref=e528]:
+                      - link "审核日志" [ref=e529] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/audit-log
+                        - generic [ref=e530]: 审核日志
+                    - listitem [ref=e531]:
+                      - link "通知" [ref=e532] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/notifications
+                        - generic [ref=e533]: 通知
+                    - listitem [ref=e534]:
+                      - link "阻止的内容" [ref=e535] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/blocked-content
+                        - generic [ref=e536]: 阻止的内容
+                    - listitem [ref=e537]:
+                      - link "滥用报告 Beta" [ref=e538] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/abuse-reports
+                        - generic [ref=e539]: 滥用报告
+                        - generic [ref=e541]: Beta
+                    - listitem [ref=e755]:
+                      - link "碳排放影响报告" [ref=e756] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/carbon
+                        - generic [ref=e757]: 碳排放影响报告
+                    - listitem [ref=e542]:
+                      - link "配置" [ref=e543] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/configurations
+                        - generic [ref=e544]: 配置
+        - button "折叠边栏" [expanded] [ref=e547] [cursor=pointer]:
+          - img
+      - generic [ref=e548]:
+        - banner [ref=e549]:
+          - generic [ref=e550]:
+            - button "Ask AI" [ref=e551] [cursor=pointer]:
+              - img [ref=e552]
+              - generic [ref=e554]: Ask AI
+            - button "支持" [ref=e555] [cursor=pointer]:
+              - img [ref=e556]
+              - generic [ref=e558]: 支持
+            - button "User menu" [ref=e559] [cursor=pointer]:
+              - img [ref=e560]
+        - main [ref=e562]:
+          - generic [ref=e564]:
+            - generic [ref=e566]:
+              - paragraph [ref=e567]:
+                - generic [ref=e569]: 管理帐户
+              - heading "帐户 API 令牌" [level=1] [ref=e571]
+              - paragraph [ref=e572]: 管理帐户 API 令牌。用户 API 令牌可以在“我的配置文件”部分找到。
+              - button "open documentation" [ref=e573] [cursor=pointer]:
+                - button "open documentation" [ref=e574]:
+                  - img [ref=e575]
+                  - text: API 令牌文档
+            - text: 不能保证所有 API 都支持使用帐户 API 令牌。支持的 API 在开发人员文档中列出。
+            - main [ref=e578]:
+              - generic [ref=e772]:
+                - button "返回以查看所有令牌" [ref=e774] [cursor=pointer]:
+                  - img [ref=e775]
+                  - text: 返回以查看所有令牌
+                - generic [ref=e777]:
+                  - generic [ref=e778]:
+                    - heading "创建自定义令牌" [level=4] [ref=e853]
+                    - generic [ref=e854]:
+                      - generic [ref=e855]: 令牌名称
+                      - generic [ref=e856]:
+                        - generic [ref=e857]: 为您的 API 令牌指定描述性名称。
+                        - textbox [ref=e858]: bluebell-tunnel-token
+                  - generic [ref=e859]:
+                    - heading "权限" [level=4] [ref=e860]
+                    - generic [ref=e861]: 为此令牌选择要应用于您的帐户或网站的编辑或读取权限。
+                    - generic [ref=e862]:
+                      - generic [ref=e864]:
+                        - generic [ref=e865]:
+                          - generic [ref=e866]: 资源
+                          - button "资源" [ref=e868] [cursor=pointer]: 帐户
+                        - generic [ref=e870]:
+                          - generic [ref=e871]: 权限
+                          - combobox [expanded] [ref=e872]:
+                            - textbox "权限" [active] [ref=e873]:
+                              - /placeholder: 选择
+                            - button [ref=e874] [cursor=pointer]
+                            - listbox [ref=e926]:
+                              - option "地址映射" [ref=e927] [cursor=pointer]
+                              - option "电子邮件发送" [ref=e928] [cursor=pointer]
+                              - option "电子邮件路由地址" [ref=e929] [cursor=pointer]
+                              - option "防火墙策略" [ref=e930] [cursor=pointer]
+                              - option "防火墙策略数据包捕获" [ref=e931] [cursor=pointer]
+                              - option "访问：标签" [ref=e932] [cursor=pointer]
+                              - option "访问：策略" [ref=e933] [cursor=pointer]
+                              - option "访问：策略测试" [ref=e934] [cursor=pointer]
+                              - option "访问：服务令牌" [ref=e935] [cursor=pointer]
+                              - option "访问：密钥" [ref=e936] [cursor=pointer]
+                              - option "访问：设备态势" [ref=e937] [cursor=pointer]
+                              - option "访问：身份提供商" [ref=e938] [cursor=pointer]
+                              - option "访问：审核日志" [ref=e939] [cursor=pointer]
+                              - option "访问：相互 TLS 证书" [ref=e940] [cursor=pointer]
+                              - option "访问：应用" [ref=e941] [cursor=pointer]
+                              - option "访问：应用和策略" [ref=e942] [cursor=pointer]
+                              - option "访问：用户" [ref=e943] [cursor=pointer]
+                              - option "访问：自定义页面" [ref=e944] [cursor=pointer]
+                              - option "访问：组" [ref=e945] [cursor=pointer]
+                              - option "访问：组织" [ref=e946] [cursor=pointer]
+                              - option "访问：组织、标识提供程序和组" [ref=e947] [cursor=pointer]
+                              - option "访问：SCIM 日志" [ref=e948] [cursor=pointer]
+                              - option "访问：SSH 审核" [ref=e949] [cursor=pointer]
+                              - option "负载平衡：监控器和池" [ref=e950] [cursor=pointer]
+                              - option "负载平衡：帐户负载平衡器" [ref=e951] [cursor=pointer]
+                              - option "规则策略" [ref=e952] [cursor=pointer]
+                              - option "禁用 ESC" [ref=e953] [cursor=pointer]
+                              - option "客户 Waiting Room" [ref=e954] [cursor=pointer]
+                              - option "连接目录" [ref=e955] [cursor=pointer]
+                              - option "浏览器呈现" [ref=e956] [cursor=pointer]
+                              - option "批量 URL 重定向" [ref=e957] [cursor=pointer]
+                              - option "日志" [ref=e958] [cursor=pointer]
+                              - option "通知" [ref=e959] [cursor=pointer]
+                              - option "网络流量" [ref=e960] [cursor=pointer]
+                              - option "信任和安全" [ref=e961] [cursor=pointer]
+                              - option "选择配置" [ref=e962] [cursor=pointer]
+                              - option "应用程序安全性报告" [ref=e963] [cursor=pointer]
+                              - option "允许请求跟踪" [ref=e964] [cursor=pointer]
+                              - option "帐户 WAF" [ref=e965] [cursor=pointer]
+                              - option "帐户：SSL 和证书" [ref=e966] [cursor=pointer]
+                              - option "帐户安全中心见解" [ref=e967] [cursor=pointer]
+                              - option "帐户防火墙访问规则" [ref=e968] [cursor=pointer]
+                              - option "帐户分析" [ref=e969] [cursor=pointer]
+                              - option "帐户规则集" [ref=e970] [cursor=pointer]
+                              - option "帐户筛选器列表" [ref=e971] [cursor=pointer]
+                              - option "帐户设置" [ref=e972] [cursor=pointer]
+                              - option "帐户自定义页面" [ref=e973] [cursor=pointer]
+                              - option "账单" [ref=e974] [cursor=pointer]
+                              - option "中国网络控制" [ref=e975] [cursor=pointer]
+                              - option "注册机构：域" [ref=e976] [cursor=pointer]
+                              - option "转换规则" [ref=e977] [cursor=pointer]
+                              - 'option "Access: Populations" [ref=e978] [cursor=pointer]'
+                              - option "AI 搜索" [ref=e979] [cursor=pointer]
+                              - option "AI Gateway" [ref=e980] [cursor=pointer]
+                              - option "API 令牌" [ref=e981] [cursor=pointer]
+                              - option "API Gateway" [ref=e982] [cursor=pointer]
+                              - option "Cloudchamber" [ref=e983] [cursor=pointer]
+                              - option "Cloudflare Calls" [ref=e984] [cursor=pointer]
+                              - option "Cloudflare CASB" [ref=e985] [cursor=pointer]
+                              - option "Cloudflare CDS 计算帐户" [ref=e986] [cursor=pointer]
+                              - option "Cloudflare DEX" [ref=e987] [cursor=pointer]
+                              - option "Cloudflare Images" [ref=e988] [cursor=pointer]
+                              - option "Cloudflare One 连接器" [ref=e989] [cursor=pointer]
+                              - option "Cloudflare One 连接器：Cloudflared" [ref=e990] [cursor=pointer]
+                              - option "Cloudflare One 连接器：WARP" [ref=e991] [cursor=pointer]
+                              - option "Cloudflare One 网络" [ref=e992] [cursor=pointer]
+                              - option "Cloudflare Pages" [ref=e993] [cursor=pointer]
+                              - option "Cloudflare Tunnel" [ref=e994] [cursor=pointer]
+                              - option "Cloudflare WAN" [ref=e995] [cursor=pointer]
+                              - option "Cloudforce One" [ref=e996] [cursor=pointer]
+                              - option "Constellation" [ref=e997] [cursor=pointer]
+                              - option "Containers" [ref=e998] [cursor=pointer]
+                              - option "D1" [ref=e999] [cursor=pointer]
+                              - option "DDoS 保护" [ref=e1000] [cursor=pointer]
+                              - option "DDoS 僵尸网络源" [ref=e1001] [cursor=pointer]
+                              - option "DNS 防火墙" [ref=e1002] [cursor=pointer]
+                              - option "DNS 设置" [ref=e1003] [cursor=pointer]
+                              - option "DNS 视图" [ref=e1004] [cursor=pointer]
+                              - option "Email Security" [ref=e1005] [cursor=pointer]
+                              - option "HTTP 应用程序" [ref=e1006] [cursor=pointer]
+                              - option "Hyperdrive" [ref=e1007] [cursor=pointer]
+                              - option "Intel" [ref=e1008] [cursor=pointer]
+                              - option "IOT" [ref=e1009] [cursor=pointer]
+                              - option "IP 前缀" [ref=e1010] [cursor=pointer]
+                              - option "IP 前缀：按需 BGP" [ref=e1011] [cursor=pointer]
+                              - option "L3/4 DDoS 托管规则集" [ref=e1012] [cursor=pointer]
+                              - option "Magic Transit" [ref=e1013] [cursor=pointer]
+                              - option "MCP 门户" [ref=e1014] [cursor=pointer]
+                              - option "Page Shield" [ref=e1015] [cursor=pointer]
+                              - option "Pub/Sub" [ref=e1016] [cursor=pointer]
+                              - option "Queues" [ref=e1017] [cursor=pointer]
+                              - option "Radar" [ref=e1018] [cursor=pointer]
+                              - option "Realtime" [ref=e1019] [cursor=pointer]
+                              - option "SCIM 预配" [ref=e1020] [cursor=pointer]
+                              - option "Secrets Store" [ref=e1021] [cursor=pointer]
+                              - option "SSO 连接器" [ref=e1022] [cursor=pointer]
+                              - option "Stream" [ref=e1023] [cursor=pointer]
+                              - option "Turnstile" [ref=e1024] [cursor=pointer]
+                              - option "URL 扫描仪" [ref=e1025] [cursor=pointer]
+                              - option "Vectorize" [ref=e1026] [cursor=pointer]
+                              - option "Workers 代理配置" [ref=e1027] [cursor=pointer]
+                              - option "Workers 构建配置" [ref=e1028] [cursor=pointer]
+                              - option "Workers 管道" [ref=e1029] [cursor=pointer]
+                              - option "Workers 脚本" [ref=e1030] [cursor=pointer]
+                              - option "Workers AI" [ref=e1031] [cursor=pointer]
+                              - option "Workers KV 存储" [ref=e1032] [cursor=pointer]
+                              - option "Workers Observability" [ref=e1033] [cursor=pointer]
+                              - option "Workers R2 存储" [ref=e1034] [cursor=pointer]
+                              - option "Workers R2 数据目录" [ref=e1035] [cursor=pointer]
+                              - option "Workers R2 SQL" [ref=e1036] [cursor=pointer]
+                              - option "Workers Tail" [ref=e1037] [cursor=pointer]
+                              - option "Zero Trust" [ref=e1038] [cursor=pointer]
+                              - option "Zero Trust 弹性" [ref=e1039] [cursor=pointer]
+                              - option "Zero Trust：席位" [ref=e1040] [cursor=pointer]
+                              - option "Zero Trust：PII" [ref=e1041] [cursor=pointer]
+                        - generic [ref=e876]:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: Select...
+                                - combobox "权限级别" [disabled]
+                      - button "添加更多" [ref=e877]:
+                        - img [ref=e878]
+                        - generic [ref=e880]: 添加更多
+                  - generic [ref=e881]:
+                    - heading "客户端 IP 地址筛选" [level=4] [ref=e882]
+                    - generic [ref=e883]: 选择要筛选的 IP 地址或 IP 地址范围。此筛选器限制可以在 Cloudflare 中使用 API 令牌的客户端 IP 地址。默认情况下，此令牌适用于所有地址。
+                    - generic [ref=e884]:
+                      - generic [ref=e885]: 运算符
+                      - generic [ref=e886]: 值
+                    - generic [ref=e887]:
+                      - generic [ref=e889]:
+                        - generic [ref=e891]:
+                          - generic [ref=e892]: 选择要筛选的 IP 地址或 IP 地址范围。此筛选器限制可以在 Cloudflare 中使用 API 令牌的客户端 IP 地址。默认情况下，此令牌适用于所有地址。
+                          - combobox [ref=e893]:
+                            - textbox "选择要筛选的 IP 地址或 IP 地址范围。此筛选器限制可以在 Cloudflare 中使用 API 令牌的客户端 IP 地址。默认情况下，此令牌适用于所有地址。" [ref=e894]:
+                              - /placeholder: 选择
+                            - button [ref=e895] [cursor=pointer]
+                        - generic [ref=e897]:
+                          - generic:
+                            - generic:
+                              - generic:
+                                - generic: 例如，192.168.1.88
+                        - button "使用我的 IP" [disabled]
+                      - button "添加更多" [ref=e898]:
+                        - img [ref=e899]
+                        - generic [ref=e901]: 添加更多
+                  - generic [ref=e902]:
+                    - heading "TTL" [level=4] [ref=e903]
+                    - generic [ref=e904]: 定义此令牌将保持活动状态的时间长度。
+                    - generic [ref=e908]:
+                      - generic [ref=e909]:
+                        - textbox "Start Date" [ref=e910] [cursor=pointer]
+                        - paragraph [ref=e911]: Press the down arrow key to interact with the calendar and select a date. Press the question mark key to get the keyboard shortcuts for changing dates.
+                        - generic [ref=e912]: Start Date
+                      - img [ref=e914]
+                      - generic [ref=e916]:
+                        - textbox "End Date" [ref=e917] [cursor=pointer]
+                        - paragraph [ref=e918]: Press the down arrow key to interact with the calendar and select a date. Press the question mark key to get the keyboard shortcuts for changing dates.
+                        - generic [ref=e919]: End Date
+                  - separator [ref=e920]
+                  - generic [ref=e921]:
+                    - button "取消" [ref=e922] [cursor=pointer]:
+                      - generic [ref=e923]: 取消
+                    - button "继续以显示摘要" [ref=e924] [cursor=pointer]:
+                      - generic [ref=e925]: 继续以显示摘要
+        - contentinfo [ref=e599]:
+          - list [ref=e601]:
+            - listitem [ref=e602]:
+              - link "支持" [ref=e603] [cursor=pointer]:
+                - /url: https://support.cloudflare.com
+            - listitem [ref=e604]:
+              - link "系统状态" [ref=e605] [cursor=pointer]:
+                - /url: https://www.cloudflarestatus.com
+            - listitem [ref=e606]:
+              - link "招贤纳士" [ref=e607] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/careers/
+            - listitem [ref=e608]:
+              - link "使用条款" [ref=e609] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/website-terms/
+            - listitem [ref=e610]:
+              - link "报告安全问题" [ref=e611] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/disclosure/
+            - listitem [ref=e612]:
+              - link "隐私政策" [ref=e613] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/privacypolicy/
+            - listitem [ref=e614]:
+              - button "一个蓝白相间的胶囊形图标，带有对勾和叉号，用于表示隐私选项 您的隐私选择" [ref=e615] [cursor=pointer]:
+                - img "一个蓝白相间的胶囊形图标，带有对勾和叉号，用于表示隐私选项" [ref=e616]
+                - text: 您的隐私选择
+            - listitem [ref=e617]:
+              - generic [ref=e618]: © 2026 Cloudflare, Inc.
+    - generic [ref=e620]:
+      - generic [ref=e622]:
+        - button "New conversation" [ref=e625] [cursor=pointer]:
+          - generic [ref=e626]: New conversation
+          - img [ref=e627]
+        - generic [ref=e629]:
+          - button "New chat" [ref=e630] [cursor=pointer]:
+            - img [ref=e631]
+          - button "Expand sidebar" [ref=e633] [cursor=pointer]:
+            - img [ref=e634]
+          - button "Close sidebar" [ref=e636] [cursor=pointer]:
+            - img [ref=e637]
+      - generic [ref=e639]:
+        - generic [ref=e640]:
+          - paragraph [ref=e641]: Need more help?
+          - link "Support" [ref=e642] [cursor=pointer]:
+            - /url: /a597e14bd2013a1000c59b5adc282b45/support
+            - button "Support" [ref=e643]
+        - generic [ref=e645]:
+          - generic [ref=e656]:
+            - heading "Good evening." [level=3] [ref=e657]
+            - paragraph [ref=e658]: What are we doing today?
+          - generic [ref=e659]:
+            - button "Durable Objects Explain how they work" [ref=e660] [cursor=pointer]:
+              - img [ref=e662]
+              - generic [ref=e664]:
+                - generic [ref=e665]: Durable Objects
+                - generic [ref=e666]: Explain how they work
+              - img [ref=e668]
+            - button "Find my account ID Locate account and zone IDs" [ref=e670] [cursor=pointer]:
+              - img [ref=e672]
+              - generic [ref=e674]:
+                - generic [ref=e675]: Find my account ID
+                - generic [ref=e676]: Locate account and zone IDs
+              - img [ref=e678]
+            - button "Orange vs Gray Cloud What is the difference?" [ref=e680] [cursor=pointer]:
+              - img [ref=e682]
+              - generic [ref=e684]:
+                - generic [ref=e685]: Orange vs Gray Cloud
+                - generic [ref=e686]: What is the difference?
+              - img [ref=e688]
+            - button "Create an API token Set up API access" [ref=e690] [cursor=pointer]:
+              - img [ref=e692]
+              - generic [ref=e694]:
+                - generic [ref=e695]: Create an API token
+                - generic [ref=e696]: Set up API access
+              - img [ref=e698]
+            - button "Domain settings Show my configuration" [ref=e700] [cursor=pointer]:
+              - img [ref=e702]
+              - generic [ref=e704]:
+                - generic [ref=e705]: Domain settings
+                - generic [ref=e706]: Show my configuration
+              - img [ref=e708]
+        - generic [ref=e710]:
+          - generic [ref=e712]:
+            - paragraph [ref=e713]:
+              - text: Chats are recorded to improve the service and are processed in accordance with our
+              - link "Privacy Policy" [ref=e714] [cursor=pointer]:
+                - /url: https://www.cloudflare.com/privacypolicy/
+              - text: .
+            - button "Close privacy notice" [ref=e715] [cursor=pointer]:
+              - img [ref=e716]
+          - generic [ref=e719]:
+            - textbox "What can we help you with?" [ref=e720]
+            - generic [ref=e721]:
+              - button "Settings" [ref=e722] [cursor=pointer]:
+                - img [ref=e723]
+              - button "Submit" [disabled] [ref=e725]:
+                - img [ref=e726]
+  - generic:
+    - region "Notifications"
+  - status [ref=e1042]

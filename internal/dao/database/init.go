@@ -90,9 +90,33 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("auto migrate failed: %w", err)
 	}
 
+	// 6. 数据初始化 (Seed Data)
+	if err := seedData(db); err != nil {
+		zap.L().Error("seed data failed", zap.Error(err))
+	}
+
 	zap.L().Info("init mysql success", zap.String("dsn_host", mysqlCfg.Host))
 
 	return db, nil
+}
+
+// seedData 初始化基础数据
+func seedData(db *gorm.DB) error {
+	var count int64
+	db.Model(&model.Community{}).Count(&count)
+	if count == 0 {
+		communities := []model.Community{
+			{CommunityName: "Go", Introduction: "Golang is the best language!"},
+			{CommunityName: "Vue", Introduction: "Vue.js is a progressive JavaScript framework."},
+			{CommunityName: "LeetCode", Introduction: "Practice coding and prepare for interviews."},
+			{CommunityName: "Life", Introduction: "Everything about life outside of coding."},
+		}
+		if err := db.Create(&communities).Error; err != nil {
+			return err
+		}
+		zap.L().Info("seed communities success")
+	}
+	return nil
 }
 
 // Close 关闭 MySQL 连接

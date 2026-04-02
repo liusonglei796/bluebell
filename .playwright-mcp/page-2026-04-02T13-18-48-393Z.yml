@@ -1,0 +1,158 @@
+- generic [ref=e8]:
+  - generic [ref=e13]:
+    - complementary [ref=e14]:
+      - generic [ref=e15]:
+        - link [ref=e17] [cursor=pointer]:
+          - /url: /
+          - img [ref=e19]
+        - navigation [ref=e23]:
+          - generic [ref=e27]:
+            - button "Quick search..." [ref=e29] [cursor=pointer]:
+              - generic [ref=e30]:
+                - img [ref=e31]
+                - generic [ref=e33]: Quick search...
+                - generic [ref=e34]: Ctrl K
+            - list [ref=e35]:
+              - listitem [ref=e36]:
+                - link "Accounts" [ref=e37] [cursor=pointer]:
+                  - /url: /
+                  - generic [ref=e38]:
+                    - img [ref=e39]
+                    - generic [ref=e42]: Accounts
+              - listitem [ref=e43]:
+                - link "Websites" [active] [ref=e44] [cursor=pointer]:
+                  - /url: /zones
+                  - generic [ref=e45]:
+                    - img [ref=e46]
+                    - generic [ref=e49]: Websites
+              - listitem [ref=e50]:
+                - link "My Profile" [ref=e51] [cursor=pointer]:
+                  - /url: /profile
+                  - generic [ref=e52]:
+                    - img [ref=e53]
+                    - generic [ref=e55]: My Profile
+      - button "Collapse sidebar" [expanded] [ref=e58] [cursor=pointer]:
+        - img
+    - generic [ref=e59]:
+      - banner [ref=e60]:
+        - generic [ref=e61]:
+          - button "Add" [ref=e62] [cursor=pointer]:
+            - img [ref=e63]
+            - generic [ref=e65]: Add
+          - button "Support" [ref=e66] [cursor=pointer]:
+            - img [ref=e67]
+            - generic [ref=e69]: Support
+          - button "User menu" [ref=e70] [cursor=pointer]:
+            - img [ref=e71]
+      - main [ref=e138]:
+        - generic [ref=e139]:
+          - generic [ref=e142]:
+            - generic [ref=e143]: 2123680589@qq.com
+            - heading "Websites" [level=1] [ref=e144]
+            - paragraph [ref=e145]: Select a domain to configure and monitor how Cloudflare processes its web traffic.
+          - main [ref=e146]:
+            - generic [ref=e148]:
+              - img [ref=e150]
+              - textbox "Search by domain name…" [ref=e152]
+            - generic [ref=e153]:
+              - table [ref=e155]:
+                - rowgroup [ref=e156]:
+                  - row "Domain Status Unique visitors Account Plan" [ref=e157]:
+                    - columnheader "Domain" [ref=e158] [cursor=pointer]:
+                      - generic [ref=e159]:
+                        - text: Domain
+                        - img [ref=e160]
+                    - columnheader "Status" [ref=e162] [cursor=pointer]:
+                      - button "Status" [ref=e163]:
+                        - generic [ref=e165]: Status
+                    - columnheader "Unique visitors" [ref=e166]:
+                      - button "Unique visitors" [ref=e167]:
+                        - generic [ref=e169]: Unique visitors
+                    - columnheader "Account" [ref=e170]:
+                      - generic [ref=e171]: Account
+                    - columnheader "Plan" [ref=e172] [cursor=pointer]:
+                      - generic [ref=e173]: Plan
+                    - columnheader [ref=e174] [cursor=pointer]
+                - rowgroup [ref=e175]:
+                  - row "bluebell.dpdns.org Active 2123680589@qq.com's Account Free" [ref=e176]:
+                    - cell "bluebell.dpdns.org" [ref=e177]:
+                      - link "bluebell.dpdns.org" [ref=e179] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org
+                        - generic [ref=e183]: bluebell.dpdns.org
+                    - cell "Active" [ref=e184]:
+                      - link "Active" [ref=e187] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/bluebell.dpdns.org
+                        - button "Active" [ref=e188]:
+                          - generic [ref=e190]:
+                            - img [ref=e191]
+                            - generic [ref=e193]: Active
+                    - cell [ref=e194]
+                    - cell "2123680589@qq.com's Account" [ref=e199]:
+                      - generic [ref=e201]: 2123680589@qq.com's Account
+                    - cell "Free" [ref=e202]:
+                      - generic [ref=e204]: Free
+                    - cell [ref=e205]:
+                      - button [ref=e207] [cursor=pointer]:
+                        - img [ref=e208]
+                  - row "lay.dpdns.org Active 2123680589@qq.com's Account Free" [ref=e210]:
+                    - cell "lay.dpdns.org" [ref=e211]:
+                      - link "lay.dpdns.org" [ref=e213] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/lay.dpdns.org
+                        - generic [ref=e217]: lay.dpdns.org
+                    - cell "Active" [ref=e218]:
+                      - link "Active" [ref=e221] [cursor=pointer]:
+                        - /url: /a597e14bd2013a1000c59b5adc282b45/lay.dpdns.org
+                        - button "Active" [ref=e222]:
+                          - generic [ref=e224]:
+                            - img [ref=e225]
+                            - generic [ref=e227]: Active
+                    - cell [ref=e228]
+                    - cell "2123680589@qq.com's Account" [ref=e233]:
+                      - generic [ref=e235]: 2123680589@qq.com's Account
+                    - cell "Free" [ref=e236]:
+                      - generic [ref=e238]: Free
+                    - cell [ref=e239]:
+                      - button [ref=e241] [cursor=pointer]:
+                        - img [ref=e242]
+              - generic [ref=e245]:
+                - generic [ref=e246]: Showing 1-2 of 2
+                - generic [ref=e248]:
+                  - button "First page" [disabled] [ref=e249]:
+                    - img [ref=e250]
+                  - button "Previous page" [disabled] [ref=e252]:
+                    - img [ref=e253]
+                  - textbox "Page number" [ref=e255]:
+                    - /placeholder: "1"
+                    - text: "1"
+                  - button "Next page" [disabled] [ref=e256]:
+                    - img [ref=e257]
+                  - button "Last page" [disabled] [ref=e259]:
+                    - img [ref=e260]
+      - contentinfo [ref=e118]:
+        - list [ref=e120]:
+          - listitem [ref=e121]:
+            - link "Support" [ref=e122] [cursor=pointer]:
+              - /url: https://support.cloudflare.com
+          - listitem [ref=e123]:
+            - link "System status" [ref=e124] [cursor=pointer]:
+              - /url: https://www.cloudflarestatus.com
+          - listitem [ref=e125]:
+            - link "Careers" [ref=e126] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/careers/
+          - listitem [ref=e127]:
+            - link "Terms of Use" [ref=e128] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/website-terms/
+          - listitem [ref=e129]:
+            - link "Report Security Issues" [ref=e130] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/disclosure/
+          - listitem [ref=e131]:
+            - link "Privacy Policy" [ref=e132] [cursor=pointer]:
+              - /url: https://www.cloudflare.com/privacypolicy/
+          - listitem [ref=e133]:
+            - button "A blue and white pill with a checkmark and an x, representing privacy choices Your Privacy Choices" [ref=e134] [cursor=pointer]:
+              - img "A blue and white pill with a checkmark and an x, representing privacy choices" [ref=e135]
+              - text: Your Privacy Choices
+          - listitem [ref=e136]:
+            - generic [ref=e137]: © 2026 Cloudflare, Inc.
+  - generic:
+    - region "Notifications"
