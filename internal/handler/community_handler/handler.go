@@ -18,6 +18,9 @@ import (
 	// 错误处理
 	"bluebell/pkg/errorx"
 
+	// 中间件
+	"bluebell/internal/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -50,8 +53,12 @@ func New(communityService svcdomain.CommunityService) *Handler {
 // @Success 200 {object} backfront.ResponseData{data=[]communityResp.Response}
 // @Router /community [get]
 func (h *Handler) GetCommunityListHandler(c *gin.Context) {
-	data, err := h.communityService.GetCommunityList(c.Request.Context())
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetCommunityListHandler")
+	defer span.End()
+
+	data, err := h.communityService.GetCommunityList(ctx)
 	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
@@ -82,8 +89,12 @@ func (h *Handler) GetCommunityDetailHandler(c *gin.Context) {
 		return
 	}
 
-	data, err := h.communityService.GetCommunityDetail(c.Request.Context(), p.ID)
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetCommunityDetailHandler")
+	defer span.End()
+
+	data, err := h.communityService.GetCommunityDetail(ctx, p.ID)
 	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
@@ -120,7 +131,11 @@ func (h *Handler) CreateCommunityHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.communityService.CreateCommunity(c.Request.Context(), p.Name, p.Introduction, userID.(int64)); err != nil {
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "CreateCommunityHandler")
+	defer span.End()
+
+	if err := h.communityService.CreateCommunity(ctx, p.Name, p.Introduction, userID.(int64)); err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}

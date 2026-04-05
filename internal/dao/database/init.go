@@ -13,6 +13,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/tracing"
 )
 
 // Init 初始化 MySQL 连接，返回数据库连接实例
@@ -61,6 +62,11 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(dsn), gormConfig)
 	if err != nil {
 		return nil, fmt.Errorf("connect to mysql failed: %w", err)
+	}
+
+	// 注册 OpenTelemetry 追踪插件
+	if err := db.Use(tracing.NewPlugin()); err != nil {
+		zap.L().Error("register otelgorm plugin failed", zap.Error(err))
 	}
 
 	sqlDB, err := db.DB()

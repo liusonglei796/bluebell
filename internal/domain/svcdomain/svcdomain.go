@@ -29,7 +29,7 @@ type CommunityService interface {
 // PostService 帖子业务逻辑服务接口
 type PostService interface {
 	// CreatePost 创建帖子
-	CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) error
+	CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error)
 
 	// GetPostByID 查询单个帖子详情
 	GetPostByID(ctx context.Context, pid int64) (*postResp.DetailResponse, error)
@@ -43,12 +43,17 @@ type PostService interface {
 	// DeletePost 删除帖子（软删除）
 	DeletePost(ctx context.Context, postID int64, userID int64) error
 
+	// UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
+	UpdatePostStatus(ctx context.Context, postID string, status int8) error
+
 	// VoteForPost 为帖子投票
 	VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error
 	//发表评论
-	RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) error
+	RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error)
 	// GetPostRemarks 获取帖子评论列表
 	GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error)
+	// DeleteRemark 删除违规评论（审核不通过时调用）
+	DeleteRemark(ctx context.Context, remarkID uint) error
 }
 
 // ========== User Service 接口 ==========

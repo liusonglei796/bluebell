@@ -24,6 +24,9 @@ import (
 	"context"
 	"strconv"
 
+	"bluebell/internal/middleware"
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.uber.org/zap"
 )
 
@@ -51,11 +54,18 @@ func NewPostService(
 }
 
 // CreatePost 创建帖子
-func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) error {
-	postID := snowflake.GenID()
+func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "CreatePost",
+		attribute.Int64("user.id", authorID),
+		attribute.Int64("community.id", p.CommunityID),
+	)
+	defer span.End()
+
+	postIDInt := snowflake.GenID()
+	postID = strconv.FormatInt(postIDInt, 10)
 
 	post := &model.Post{
-		PostID:   strconv.FormatInt(postID, 10),
+		PostID:   postID,
 		AuthorID: authorID,
 
 		CommunityID: p.CommunityID,
@@ -64,27 +74,32 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 		Status:      1,
 	}
 
-	err := s.postRepo.CreatePost(ctx, post)
+	err = s.postRepo.CreatePost(ctx, post)
 	if err != nil {
 		zap.L().Error("postRepo.CreatePost failed",
-			zap.Int64("post_id", postID),
+			zap.Int64("post_id", postIDInt),
 			zap.Error(err))
-		return errorx.ErrServerBusy
+		return "", errorx.ErrServerBusy
 	}
 
 	// 同步到 Redis
-	err = s.postCache.CreatePost(ctx, postID, p.CommunityID)
+	err = s.postCache.CreatePost(ctx, postIDInt, p.CommunityID)
 	if err != nil {
 		zap.L().Error("postCache.CreatePost failed",
-			zap.Int64("post_id", postID),
+			zap.Int64("post_id", postIDInt),
 			zap.Error(err))
 	}
 
-	return nil
+	return postID, nil
 }
 
 // GetPostByID 查询单个帖子详情
 func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *postResp.DetailResponse, err error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetPostByID",
+		attribute.Int64("post.id", pid),
+	)
+	defer span.End()
+
 	post, err := s.postRepo.GetPostByID(ctx, pid)
 	if err != nil {
 		zap.L().Error("postRepo.GetPostByID failed",
@@ -127,6 +142,13 @@ func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *p
 
 // GetPostList 获取帖子列表
 func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetPostList",
+		attribute.Int64("page", p.Page),
+		attribute.Int64("size", p.Size),
+		attribute.String("order", p.Order),
+	)
+	defer span.End()
+
 	ids, err := s.postCache.GetPostIDsInOrder(ctx, p.Order, p.Page, p.Size)
 	if err != nil {
 		zap.L().Error("postCache.GetPostIDsInOrder failed",
@@ -186,6 +208,14 @@ func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostList
 
 // GetCommunityPostList 根据社区ID获取帖子列表
 func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetCommunityPostList",
+		attribute.Int64("community.id", p.CommunityID),
+		attribute.Int64("page", p.Page),
+		attribute.Int64("size", p.Size),
+		attribute.String("order", p.Order),
+	)
+	defer span.End()
+
 	ids, err := s.postCache.GetCommunityPostIDsInOrder(ctx, p.CommunityID, p.Order, p.Page, p.Size)
 	if err != nil {
 		zap.L().Error("postCache.GetCommunityPostIDsInOrder failed",
@@ -246,6 +276,12 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 
 // DeletePost 删除帖子（软删除）
 func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID int64) error {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "DeletePost",
+		attribute.Int64("post.id", postID),
+		attribute.Int64("user.id", userID),
+	)
+	defer span.End()
+
 	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		zap.L().Error("postRepo.GetPostByID failed",
@@ -270,11 +306,50 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 		return errorx.ErrServerBusy
 	}
 
+	// 清理 Redis 缓存
+	if err := s.postCache.DeletePost(ctx, postID, post.CommunityID); err != nil {
+		zap.L().Error("postCache.DeletePost failed",
+			zap.Int64("post_id", postID),
+			zap.Error(err))
+		// 缓存清理失败不影响主流程，仅记录日志
+	}
+
+	return nil
+}
+
+// UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
+// Called by: ai/consumer.go (AuditConsumer 审核不通过时回调)
+func (s *postServiceStruct) UpdatePostStatus(ctx context.Context, postID string, status int8) error {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "UpdatePostStatus",
+		attribute.String("post.id", postID),
+		attribute.Int("post.status", int(status)),
+	)
+	defer span.End()
+
+	if err := s.postRepo.UpdatePostStatus(ctx, postID, status); err != nil {
+		zap.L().Error("postRepo.UpdatePostStatus failed",
+			zap.String("post_id", postID),
+			zap.Int8("status", status),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+
 	return nil
 }
 
 // VoteForPost 投票业务逻辑
 func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "VoteForPost",
+		attribute.Int64("user.id", userID),
+		attribute.String("post.id", strconv.FormatInt(p.PostID, 10)),
+		attribute.Int64("vote.direction", int64(p.Direction)),
+	)
+	defer span.End()
+
+	// Redis 原子操作：Lua 脚本保证"检查旧值 + 更新投票记录"的原子性，防止并发重复投票
+	userIDStr := strconv.FormatInt(userID, 10)
+	postIDStr := strconv.FormatInt(p.PostID, 10)
+
 	post, err := s.postRepo.GetPostByID(ctx, p.PostID)
 	if err != nil {
 		zap.L().Error("postRepo.GetPostByID failed",
@@ -286,11 +361,11 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 		return errorx.ErrNotFound
 	}
 
-	// Redis 模式：先写 Redis，再同步 MySQL
+	// Redis 投票（Lua 脚本内部已处理重复投票和时间过期）
 	err = s.postCache.VoteForPost(
 		ctx,
-		strconv.FormatInt(userID, 10),
-		strconv.FormatInt(p.PostID, 10),
+		userIDStr,
+		postIDStr,
 		strconv.FormatInt(post.CommunityID, 10),
 		float64(p.Direction),
 	)
@@ -304,7 +379,6 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 	}
 
 	// 同步落盘到 MySQL
-	// 修复：移除异步 goroutine 避免高并发下 goroutine 泄漏
 	err = s.voteRepo.SaveVote(ctx, userID, p.PostID, p.Direction)
 	if err != nil {
 		zap.L().Error("save vote to mysql failed",
@@ -317,17 +391,23 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 
 	return nil
 }
-func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) error {
+func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "RemarkPost",
+		attribute.Int64("post.id", req.PostID),
+		attribute.Int64("user.id", userID),
+	)
+	defer span.End()
+
 	// 1. 校验帖子是否存在
 	post, err := s.postRepo.GetPostByID(ctx, req.PostID)
 	if err != nil {
 		zap.L().Error("remarkPost: postRepo.GetPostByID failed",
 			zap.Int64("post_id", req.PostID),
 			zap.Error(err))
-		return errorx.ErrServerBusy
+		return 0, errorx.ErrServerBusy
 	}
 	if post == nil || post.PostID == "" {
-		return errorx.ErrNotFound
+		return 0, errorx.ErrNotFound
 	}
 
 	// 2. 构建评论模型
@@ -343,14 +423,19 @@ func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkR
 			zap.Int64("post_id", req.PostID),
 			zap.Int64("author_id", userID),
 			zap.Error(err))
-		return errorx.ErrServerBusy
+		return 0, errorx.ErrServerBusy
 	}
 
-	return nil
+	return remark.ID, nil
 }
 
 // GetPostRemarks 获取帖子评论列表
 func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetPostRemarks",
+		attribute.Int64("post.id", postID),
+	)
+	defer span.End()
+
 	// 1. 获取原始评论列表
 	remarks, err := s.remarkRepo.GetRemarksByPostID(ctx, postID)
 	if err != nil {
@@ -376,4 +461,16 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 	}
 
 	return resp, nil
+}
+
+// DeleteRemark 删除违规评论（审核不通过时调用）
+// Called by: main.go (AuditConsumer 审核失败回调)
+func (s *postServiceStruct) DeleteRemark(ctx context.Context, remarkID uint) error {
+	if err := s.remarkRepo.DeleteRemarkByID(ctx, remarkID); err != nil {
+		zap.L().Error("remarkRepo.DeleteRemarkByID failed",
+			zap.Uint("remark_id", remarkID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+	return nil
 }

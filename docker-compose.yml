@@ -78,6 +78,76 @@ services:
       - bluebell_net
     # 这个容器运行完拷贝任务后会自动退出，这是正常的
 
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    container_name: bluebell_elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - xpack.security.enabled=false
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    networks:
+      - bluebell_net
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: bluebell_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=bluebell
+      - RABBITMQ_DEFAULT_PASS=bluebell123
+    volumes:
+      - ./data/rabbitmq:/var/lib/rabbitmq
+    networks:
+      - bluebell_net
+    restart: always
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bluebell_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./data/prometheus:/prometheus
+    networks:
+      - bluebell_net
+    restart: always
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bluebell_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    networks:
+      - bluebell_net
+    depends_on:
+      - prometheus
+    restart: always
+
 networks:
   bluebell_net:
     driver: bridge

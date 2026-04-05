@@ -19,6 +19,9 @@ import (
 	"context"
 	"strconv"
 
+	"bluebell/internal/middleware"
+	"go.opentelemetry.io/otel/attribute"
+
 	"go.uber.org/zap"
 )
 
@@ -47,6 +50,9 @@ func toResponse(c *model.Community) *communityResp.Response {
 
 // GetCommunityList 获取社区列表
 func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*communityResp.Response, error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetCommunityList")
+	defer span.End()
+
 	data, err := s.communityRepo.GetCommunityList(ctx)
 	if err != nil {
 		zap.L().Error("communityRepo.GetCommunityList failed", zap.Error(err))
@@ -62,6 +68,11 @@ func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*commu
 
 // GetCommunityDetail 根据ID获取社区详情
 func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int64) (*communityResp.Response, error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetCommunityDetail",
+		attribute.Int64("community.id", id),
+	)
+	defer span.End()
+
 	data, err := s.communityRepo.GetCommunityDetailByID(ctx, id)
 	if err != nil {
 		zap.L().Error("communityRepo.GetCommunityDetailByID failed",
@@ -79,6 +90,12 @@ func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int6
 
 // CreateCommunity 创建社区（仅管理员）
 func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, introduction string, userID int64) error {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "CreateCommunity",
+		attribute.String("community.name", name),
+		attribute.Int64("user.id", userID),
+	)
+	defer span.End()
+
 	// 1. 校验用户角色是否为管理员
 	role, err := s.userRepo.GetUserRoleByID(ctx, userID)
 	if err != nil {

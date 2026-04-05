@@ -91,7 +91,6 @@ func (r *postRepoStruct) GetPostListByIDsWithPreload(ctx context.Context, ids []
 	return orderedPosts, nil
 }
 
-
 // DeletePostByAuthor 软删除帖子（带作者验证）
 func (r *postRepoStruct) DeletePostByAuthor(ctx context.Context, postID, authorID int64) error {
 	result := r.db.WithContext(ctx).Model(&model.Post{}).
@@ -102,6 +101,21 @@ func (r *postRepoStruct) DeletePostByAuthor(ctx context.Context, postID, authorI
 
 	if result.Error != nil {
 		return errorx.Wrap(result.Error, errorx.CodeDBError, "删除帖子失败")
+	}
+	if result.RowsAffected == 0 {
+		return errorx.ErrNotFound
+	}
+	return nil
+}
+
+// UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
+func (r *postRepoStruct) UpdatePostStatus(ctx context.Context, postID string, status int8) error {
+	result := r.db.WithContext(ctx).Model(&model.Post{}).
+		Where("post_id = ?", postID).
+		Update("status", status)
+
+	if result.Error != nil {
+		return errorx.Wrap(result.Error, errorx.CodeDBError, "更新帖子状态失败")
 	}
 	if result.RowsAffected == 0 {
 		return errorx.ErrNotFound

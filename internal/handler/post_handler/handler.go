@@ -17,8 +17,16 @@ import (
 	// 基础设施 - 参数校验
 	"bluebell/internal/infrastructure/translate"
 
+	// 基础设施 - MQ
+	"bluebell/internal/infrastructure/mq"
+
 	// 错误处理
 	"bluebell/pkg/errorx"
+
+	// 中间件
+	"bluebell/internal/middleware"
+
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -28,16 +36,18 @@ import (
 // Handler 帖子相关处理器
 type Handler struct {
 	postService svcdomain.PostService
+	publisher   *mq.MQPublisher
 }
 
 // New 创建 Handler 实例
 // 通过构造函数进行依赖注入
-func New(postService svcdomain.PostService) *Handler {
+func New(postService svcdomain.PostService, publisher *mq.MQPublisher) *Handler {
 	if postService == nil {
 		panic("postService cannot be nil")
 	}
 	return &Handler{
 		postService: postService,
+		publisher:   publisher,
 	}
 }
 
@@ -71,9 +81,44 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.postService.CreatePost(c.Request.Context(), p, userID.(int64)); err != nil {
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "CreatePostHandler")
+	defer span.End()
+
+	postID, err := h.postService.CreatePost(ctx, p, userID.(int64))
+	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
+	}
+
+	// 异步发送审核消息
+	if h.publisher != nil {
+		auditMsg := &mq.AuditMessage{
+			Title:    p.Title,
+			Content:  p.Content,
+			Type:     "post",
+			AuthorID: userID.(int64),
+		}
+		if err := h.publisher.PublishAudit(ctx, auditMsg); err != nil {
+			zap.L().Warn("publish audit message failed", zap.Error(err))
+		}
+	}
+
+	// 异步发送搜索同步消息（索引）
+	if h.publisher != nil {
+		syncMsg := &mq.SyncMessage{
+			PostID:      postID,
+			AuthorID:    userID.(int64),
+			CommunityID: p.CommunityID,
+			PostTitle:   p.Title,
+			Content:     p.Content,
+			Status:      1,
+			CreatedAt:   time.Now().Format(time.RFC3339),
+			Action:      "index",
+		}
+		if err := h.publisher.PublishSearch(ctx, syncMsg); err != nil {
+			zap.L().Warn("publish search index message failed", zap.Error(err))
+		}
 	}
 
 	backfront.ResponseSuccess(c, nil)
@@ -96,8 +141,13 @@ func (h *Handler) GetPostDetailHandler(c *gin.Context) {
 		backfront.HandleError(c, errorx.ErrInvalidParam)
 		return
 	}
-	data, err := h.postService.GetPostByID(c.Request.Context(), postID)
+
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetPostDetailHandler")
+	defer span.End()
+
+	data, err := h.postService.GetPostByID(ctx, postID)
 	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
@@ -150,16 +200,20 @@ func (h *Handler) GetPostListHandler(c *gin.Context) {
 		p.Order = postreq.OrderTime // 如果前端乱传了非法的一个order字符，强制使用默认的时间排序
 	}
 
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetPostListHandler")
+	defer span.End()
+
 	var data []*postResp.DetailResponse
 	var err error
 
 	if p.CommunityID == 0 {
-		data, err = h.postService.GetPostList(c.Request.Context(), p)
+		data, err = h.postService.GetPostList(ctx, p)
 	} else {
-		data, err = h.postService.GetCommunityPostList(c.Request.Context(), p)
+		data, err = h.postService.GetCommunityPostList(ctx, p)
 	}
 
 	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
@@ -191,9 +245,24 @@ func (h *Handler) DeletePostHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.postService.DeletePost(c.Request.Context(), postID, userID.(int64)); err != nil {
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "DeletePostHandler")
+	defer span.End()
+
+	if err := h.postService.DeletePost(ctx, postID, userID.(int64)); err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
+	}
+
+	// 异步发送搜索同步消息（删除）
+	if h.publisher != nil {
+		syncMsg := map[string]interface{}{
+			"post_id": strconv.FormatInt(postID, 10),
+			"action":  "delete",
+		}
+		if err := h.publisher.PublishSearch(ctx, syncMsg); err != nil {
+			zap.L().Warn("publish search sync message failed", zap.Error(err))
+		}
 	}
 
 	backfront.ResponseSuccess(c, nil)
@@ -229,11 +298,26 @@ func (h *Handler) PostVoteHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.postService.VoteForPost(c.Request.Context(), userID.(int64), p); err != nil {
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "PostVoteHandler")
+	defer span.End()
+
+	if err := h.postService.VoteForPost(ctx, userID.(int64), p); err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
 
+	// 异步发送投票消息更新 Redis 计数
+	if h.publisher != nil {
+		voteMsg := &mq.VoteMessage{
+			PostID: strconv.FormatInt(p.PostID, 10),
+			UserID: strconv.FormatInt(userID.(int64), 10),
+			Action: int(p.Direction),
+		}
+		if err := h.publisher.PublishVote(ctx, voteMsg); err != nil {
+			zap.L().Warn("publish vote message failed", zap.Error(err))
+		}
+	}
 	backfront.ResponseSuccess(c, nil)
 }
 
@@ -261,9 +345,27 @@ func (h *Handler) PostRemarkHandler(c *gin.Context) {
 	}
 
 	// 3. 执行业务
-	if err := h.postService.RemarkPost(c.Request.Context(), req, userID.(int64)); err != nil {
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "PostRemarkHandler")
+	defer span.End()
+
+	remarkID, err := h.postService.RemarkPost(ctx, req, userID.(int64))
+	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
+	}
+
+	// 异步发送评论审核消息
+	if h.publisher != nil {
+		auditMsg := &mq.AuditMessage{
+			Content:  req.Content,
+			Type:     "remark",
+			RemarkID: remarkID,
+			AuthorID: userID.(int64),
+		}
+		if err := h.publisher.PublishAudit(ctx, auditMsg); err != nil {
+			zap.L().Warn("publish remark audit message failed", zap.Error(err))
+		}
 	}
 
 	// 4. 响应
@@ -281,8 +383,12 @@ func (h *Handler) GetPostRemarksHandler(c *gin.Context) {
 	}
 
 	// 2. 业务处理
-	remarks, err := h.postService.GetPostRemarks(c.Request.Context(), postID)
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetPostRemarksHandler")
+	defer span.End()
+
+	remarks, err := h.postService.GetPostRemarks(ctx, postID)
 	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}

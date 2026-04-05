@@ -22,6 +22,8 @@ type PostRepository interface {
 	GetTopPostIDsWithScores(ctx context.Context, size int64) (ids []string, scores []float64, err error)
 	// GetCommunityTopPostIDsWithScores 获取社区排行榜数据
 	GetCommunityTopPostIDsWithScores(ctx context.Context, communityID, size int64) (ids []string, scores []float64, err error)
+	// DeletePost 删除帖子时清理 Redis 缓存（ZSet、Hash、投票记录）
+	DeletePost(ctx context.Context, postID, communityID int64) error
 }
 
 // UserTokenCacheRepository 用户Token缓存仓储接口

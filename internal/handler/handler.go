@@ -10,6 +10,9 @@ import (
 	"bluebell/internal/handler/community_handler"
 	"bluebell/internal/handler/post_handler"
 	"bluebell/internal/handler/user_handler"
+
+	// 基础设施 - MQ
+	"bluebell/internal/infrastructure/mq"
 )
 
 // ========== Handler Provider ==========
@@ -28,10 +31,11 @@ func NewProvider(
 	userService svcdomain.UserService,
 	postService svcdomain.PostService,
 	communityService svcdomain.CommunityService,
+	publisher *mq.MQPublisher,
 ) *Provider {
 	return &Provider{
 		UserHandler:      user_handler.New(userService),
-		PostHandler:      post_handler.New(postService),
+		PostHandler:      post_handler.New(postService, publisher),
 		CommunityHandler: community_handler.New(communityService),
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -146,62 +147,97 @@ func (c *cacheStruct) GetCommunityPostIDsInOrder(ctx context.Context, communityI
 
 // VoteForPost 为帖子投票
 // 使用 Gravity 算法：更新 Hash 中的投票计数，重新计算热度分数并覆盖 ZSet
+// 使用 Lua 脚本保证"检查旧值 + 更新投票记录"的原子性，防止并发重复投票
 func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error {
 	// 1. 判断投票时间限制
 	postTime := c.rdb.ZScore(ctx, redisKey(keyPostTimeZSet), postID).Val()
 	if float64(timeNow())-postTime > oneWeekInSeconds {
 		return errorx.ErrVoteTimeExpire
 	}
-	// 2. 查询用户之前对该帖子的投票记录
-	oldValue := c.rdb.ZScore(ctx, redisKey(keyPostVotedZSetPrefix+postID), userID).Val()
-	// 3. 如果新旧投票值相同，直接返回
-	if value == oldValue {
+
+	// 2. 使用 Lua 脚本原子执行：检查旧值 → 计算增量 → 更新投票记录
+	// KEYS[1] = vote record ZSet (bluebell:post:voted:{postID})
+	// ARGV[1] = userID
+	// ARGV[2] = new vote value (1/-1/0)
+	// 返回值: voteUpDelta,voteDownDelta (如 "1,0" / "-1,1" / "0,0")
+	// 错误码: "err_repeated" / "err_unknown"
+	const voteLua = `
+		local key = KEYS[1]
+		local userID = ARGV[1]
+		local newValue = tonumber(ARGV[2])
+
+		-- 查询旧投票值
+		local oldValue = redis.call('ZSCORE', key, userID)
+		if not oldValue then
+			oldValue = 0
+		else
+			oldValue = tonumber(oldValue)
+		end
+
+		-- 新旧值相同，拒绝
+		if newValue == oldValue then
+			return 'err_repeated'
+		end
+
+		-- 计算增量
+		local voteUpDelta = 0
+		local voteDownDelta = 0
+		if oldValue == 0 and newValue == 1 then
+			voteUpDelta = 1
+		elseif oldValue == 0 and newValue == -1 then
+			voteDownDelta = 1
+		elseif oldValue == 1 and newValue == 0 then
+			voteUpDelta = -1
+		elseif oldValue == 1 and newValue == -1 then
+			voteUpDelta = -1
+			voteDownDelta = 1
+		elseif oldValue == -1 and newValue == 0 then
+			voteDownDelta = -1
+		elseif oldValue == -1 and newValue == 1 then
+			voteDownDelta = -1
+			voteUpDelta = 1
+		else
+			return 'err_unknown'
+		end
+
+		-- 更新投票记录
+		if newValue == 0 then
+			redis.call('ZREM', key, userID)
+		else
+			redis.call('ZADD', key, newValue, userID)
+		end
+
+		return voteUpDelta .. ',' .. voteDownDelta
+	`
+
+	result, err := c.rdb.Eval(ctx, voteLua, []string{redisKey(keyPostVotedZSetPrefix + postID)}, userID, value).Text()
+	if err != nil {
+		return errorx.Wrapf(err, errorx.CodeCacheError, "vote lua eval failed (post_id: %s, user_id: %s)", postID, userID)
+	}
+
+	if result == "err_repeated" {
 		return errorx.ErrVoteRepeated
 	}
-
-	// 4. 计算 vote_up / vote_down 的增量
-	// direction: 1=赞成, 0=取消, -1=反对
-	var voteUpDelta, voteDownDelta int64
-	switch {
-	case oldValue == 0 && value == 1:
-		voteUpDelta = 1
-	case oldValue == 0 && value == -1:
-		voteDownDelta = 1
-	case oldValue == 1 && value == 0:
-		voteUpDelta = -1
-	case oldValue == 1 && value == -1:
-		voteUpDelta = -1
-		voteDownDelta = 1
-	case oldValue == -1 && value == 0:
-		voteDownDelta = -1
-	case oldValue == -1 && value == 1:
-		voteDownDelta = -1
-		voteUpDelta = 1
+	if result == "err_unknown" {
+		return errorx.Newf(errorx.CodeCacheError, "unknown vote state change (post_id: %s, user_id: %s)", postID, userID)
 	}
 
-	// 5. 更新 Hash 中的投票计数
+	// 3. 解析 Lua 返回的增量
+	parts := strings.SplitN(result, ",", 2)
+	if len(parts) != 2 {
+		return errorx.Newf(errorx.CodeCacheError, "invalid vote lua result: %s", result)
+	}
+	voteUpDelta, _ := strconv.ParseInt(parts[0], 10, 64)
+	voteDownDelta, _ := strconv.ParseInt(parts[1], 10, 64)
+
+	// 4. 更新 Hash 中的投票计数
 	if err := c.updatePostVoteCount(ctx, postID, voteUpDelta, voteDownDelta); err != nil {
 		return errorx.Wrapf(err, errorx.CodeCacheError, "update post vote count failed (post_id: %s)", postID)
 	}
 
-	// 6. 重新计算 Gravity 分数并更新 ZSet
+	// 5. 重新计算 Gravity 分数并更新 ZSet
 	if err := c.batchRefreshGravityScores(ctx, []string{postID}); err != nil {
 		return errorx.Wrapf(err, errorx.CodeCacheError, "refresh gravity score failed (post_id: %s)", postID)
-	}
-
-	// 7. 更新投票记录
-	pipeline := c.rdb.TxPipeline()
-	if value == 0 {
-		pipeline.ZRem(ctx, redisKey(keyPostVotedZSetPrefix+postID), userID)
-	} else {
-		pipeline.ZAdd(ctx, redisKey(keyPostVotedZSetPrefix+postID), redis.Z{
-			Score:  value,
-			Member: userID,
-		})
-	}
-	_, err := pipeline.Exec(ctx)
-	if err != nil {
-		return errorx.Wrapf(err, errorx.CodeCacheError, "vote pipeline exec failed (post_id: %s, user_id: %s)", postID, userID)
 	}
 
 	return nil
@@ -358,4 +394,33 @@ func (c *cacheStruct) batchRefreshGravityScores(ctx context.Context, postIDs []s
 	// [防御] Pipeline 即使为空 Exec 也是安全的
 	_, err := pipe.Exec(ctx)
 	return err
+}
+
+// DeletePost 删除帖子时清理 Redis 缓存
+// 清理范围：全局 ZSet（time/score）、社区 ZSet（time/score）、元数据 Hash、投票记录 ZSet
+func (c *cacheStruct) DeletePost(ctx context.Context, postID, communityID int64) error {
+	postIDStr := strconv.FormatInt(postID, 10)
+	communityIDStr := strconv.FormatInt(communityID, 10)
+
+	pipeline := c.rdb.TxPipeline()
+
+	// 全局维度 ZSet
+	pipeline.ZRem(ctx, redisKey(keyPostTimeZSet), postIDStr)
+	pipeline.ZRem(ctx, redisKey(keyPostScoreZSet), postIDStr)
+
+	// 社区维度 ZSet
+	pipeline.ZRem(ctx, redisKey(keyCommunityPostTimePrefix+communityIDStr), postIDStr)
+	pipeline.ZRem(ctx, redisKey(keyCommunityPostScorePrefix+communityIDStr), postIDStr)
+
+	// 帖子元数据 Hash
+	pipeline.Del(ctx, redisKey(keyPostMetaPrefix+postIDStr))
+
+	// 投票记录 ZSet
+	pipeline.Del(ctx, redisKey(keyPostVotedZSetPrefix+postIDStr))
+
+	_, err := pipeline.Exec(ctx)
+	if err != nil {
+		return errorx.Wrapf(err, errorx.CodeCacheError, "delete post cache cleanup failed (post_id: %d)", postID)
+	}
+	return nil
 }

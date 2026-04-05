@@ -52,6 +52,10 @@ type timeoutConfig struct {
 	Timeout string `mapstructure:"timeout"`
 }
 
+type rabbitmqConfig struct {
+	URL string `mapstructure:"url"`
+}
+
 type SnowflakeConfig struct {
 	StartTime int64 `mapstructure:"start_time"`
 	MachineID int64 `mapstructure:"machine_id"`
@@ -63,17 +67,42 @@ type jwtConfig struct {
 	RefreshExpiry string `mapstructure:"refresh_expiry"`
 }
 
+type aiAuditConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	BaseURL string `mapstructure:"base_url"`
+	APIKey  string `mapstructure:"api_key"`
+	Model   string `mapstructure:"model"`
+}
+
+type esConfig struct {
+	Addresses []string `mapstructure:"addresses"`
+	Username  string   `mapstructure:"username"`
+	Password  string   `mapstructure:"password"`
+}
+
+// otelConfig OpenTelemetry 配置结构体
+// 定义在 config 包中以避免与 otel 包的循环依赖
+type otelConfig struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	Endpoint    string `mapstructure:"endpoint"`
+	ServiceName string `mapstructure:"service_name"`
+}
+
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
 type Config struct {
-	App        *appConfig        `mapstructure:"app"`
-	Mysql      *mysqlConfig      `mapstructure:"mysql"`
-	Redis      *redisConfig      `mapstructure:"redis"`
-	Log        *logConfig        `mapstructure:"log"`
-	Snowflake  *SnowflakeConfig  `mapstructure:"snowflake"`
-	RateLimit  *rateLimitConfig  `mapstructure:"ratelimit"`
-	JWT        *jwtConfig        `mapstructure:"jwt"`
-	Timeout    *timeoutConfig    `mapstructure:"timeout"`
+	App       *appConfig       `mapstructure:"app"`
+	Mysql     *mysqlConfig     `mapstructure:"mysql"`
+	Redis     *redisConfig     `mapstructure:"redis"`
+	Log       *logConfig       `mapstructure:"log"`
+	Snowflake *SnowflakeConfig `mapstructure:"snowflake"`
+	RateLimit *rateLimitConfig `mapstructure:"ratelimit"`
+	JWT       *jwtConfig       `mapstructure:"jwt"`
+	Timeout   *timeoutConfig   `mapstructure:"timeout"`
+	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
+	AIAudit   *aiAuditConfig   `mapstructure:"ai_audit"`
+	ES        *esConfig        `mapstructure:"es"`
+	Otel      *otelConfig      `mapstructure:"otel"`
 }
 
 var atva atomic.Value

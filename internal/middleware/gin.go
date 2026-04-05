@@ -1,12 +1,12 @@
 package middleware
 
 import (
+	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 // GinLogger 日志中间件
@@ -25,11 +25,17 @@ func GinLogger() gin.HandlerFunc {
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
 			zap.String("path", c.Request.URL.Path),
-			zap.String("query",c.Request.URL.RawQuery),
+			zap.String("query", c.Request.URL.RawQuery),
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
 			zap.Duration("cost", cost),
 		)
+
+		// 从 context 中提取 traceID
+		spanCtx := trace.SpanContextFromContext(c.Request.Context())
+		if spanCtx.HasTraceID() {
+			fields = append(fields, zap.String("trace_id", spanCtx.TraceID().String()))
+		}
 
 		// 4. 只有存在错误时才添加 errors 字段，避免空字符串占用空间
 		if len(c.Errors) > 0 {

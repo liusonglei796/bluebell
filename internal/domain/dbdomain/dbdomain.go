@@ -11,6 +11,8 @@ type PostRepository interface {
 	GetPostByID(ctx context.Context, pid int64) (*model.Post, error)
 	GetPostListByIDsWithPreload(ctx context.Context, ids []string) ([]*model.Post, error)
 	DeletePostByAuthor(ctx context.Context, postID, authorID int64) error
+	// UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
+	UpdatePostStatus(ctx context.Context, postID string, status int8) error
 }
 
 // CommunityRepository 定义了关于社区数据的访问接口
@@ -39,4 +41,6 @@ type VoteRepository interface {
 type RemarkRepository interface {
 	CreateRemark(ctx context.Context, remark *model.Remark) error
 	GetRemarksByPostID(ctx context.Context, postID int64) ([]*model.Remark, error)
+	// DeleteRemarkByID 根据评论ID删除评论（软删除）
+	DeleteRemarkByID(ctx context.Context, remarkID uint) error
 }

@@ -42,9 +42,28 @@ jwt:
   access_expiry: "120m"
   refresh_expiry: "168h"
 
+rabbitmq:
+  url: "amqp://bluebell:bluebell123@localhost:5672/"
+
 Modelscope:
   api_key: ""
   url: ""
   model: ""
 
+ai_audit:
+  enabled: true
+  base_url: "https://api.openai.com/v1"
+  api_key: "your-openai-api-key-here"
+  model: "gpt-4o-mini"
+
+es:
+  addresses:
+    - "http://localhost:9200"
+  username: ""
+  password: ""
+
+otel:
+  enabled: true
+  endpoint: "http://localhost:4318"
+  service_name: "bluebell"
 

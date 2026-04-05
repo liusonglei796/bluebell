@@ -18,6 +18,9 @@ import (
 	// 错误处理
 	"bluebell/pkg/errorx"
 
+	// 中间件
+	"bluebell/internal/middleware"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -61,7 +64,11 @@ func (h *Handler) SignUpHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.SignUp(c.Request.Context(), p); err != nil {
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "SignUpHandler")
+	defer span.End()
+
+	if err := h.userService.SignUp(ctx, p); err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
@@ -92,8 +99,12 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	aToken, rToken, err := h.userService.Login(c.Request.Context(), p)
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "LoginHandler")
+	defer span.End()
+
+	aToken, rToken, err := h.userService.Login(ctx, p)
 	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
@@ -128,8 +139,12 @@ func (h *Handler) RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	newAToken, newRToken, err := h.userService.RefreshToken(c.Request.Context(), p)
+	ctx, span := middleware.StartSpan(c, "bluebell/handler", "RefreshTokenHandler")
+	defer span.End()
+
+	newAToken, newRToken, err := h.userService.RefreshToken(ctx, p)
 	if err != nil {
+		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}

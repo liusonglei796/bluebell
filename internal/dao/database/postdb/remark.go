@@ -29,6 +29,14 @@ func (r *postRepoStruct) GetRemarksByPostID(ctx context.Context, postID int64) (
 	return remarks, nil
 }
 
+// DeleteRemarkByID 根据评论ID删除评论（软删除，利用 gorm.Model 的 DeletedAt 字段）
+func (r *postRepoStruct) DeleteRemarkByID(ctx context.Context, remarkID uint) error {
+	if err := r.db.WithContext(ctx).Delete(&model.Remark{}, remarkID).Error; err != nil {
+		return errorx.Wrap(err, errorx.CodeDBError, "delete remark failed")
+	}
+	return nil
+}
+
 // NewRemarkRepo 返回 RemarkRepository 接口实现
 // 实际上 postRepoStruct 已经实现了该接口，为了保持一致性这里可以返回它
 func NewRemarkRepo(db *gorm.DB) *postRepoStruct {

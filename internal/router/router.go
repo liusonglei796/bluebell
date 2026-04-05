@@ -39,12 +39,17 @@ func NewRouter(
 	}
 
 	r.Use(
+		middleware.TracingMiddleware(),
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
 		middleware.Cors(), // 跨域中间件
 		// middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity),
 		middleware.TimeoutMiddleware(timeout),
+		middleware.PrometheusMiddleware(),
 	)
+
+	// Prometheus metrics endpoint (no authentication required)
+	r.GET("/metrics", middleware.PrometheusHandler())
 
 	// Swagger & PProf (仅在非生产环境)
 	if mode != gin.ReleaseMode {
@@ -55,32 +60,34 @@ func NewRouter(
 	// 路由组
 	apiV1 := r.Group("/api/v1")
 
-	// 公共路由（用户认证相关）
+	// 公共路由（无需登录即可访问）
 	{
 		apiV1.POST("/signup", hp.UserHandler.SignUpHandler)
 		apiV1.POST("/login", hp.UserHandler.LoginHandler)
 		apiV1.POST("/refresh_token", hp.UserHandler.RefreshTokenHandler)
 
-		// 社区相关（公开接口）
+		// 社区列表
 		apiV1.GET("/community", hp.CommunityHandler.GetCommunityListHandler)
+
+		// 帖子浏览（公开）
+		apiV1.GET("/posts", hp.PostHandler.GetPostListHandler)
+		apiV1.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
+		apiV1.GET("/post/:id/remarks", hp.PostHandler.GetPostRemarksHandler)
 	}
 
 	// 认证路由（需要 JWT 认证）
 	authGroup := apiV1.Group("")
 	authGroup.Use(middleware.JWTAuthMiddleware(cfg, tokenCache))
 	{
-		// 社区相关
+		// 社区管理
 		authGroup.GET("/community/:id", hp.CommunityHandler.GetCommunityDetailHandler)
 		authGroup.POST("/community", hp.CommunityHandler.CreateCommunityHandler)
 
-		// 帖子相关
+		// 帖子操作（需登录）
 		authGroup.POST("/post", hp.PostHandler.CreatePostHandler)
-		authGroup.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
-		authGroup.GET("/post/:id/remarks", hp.PostHandler.GetPostRemarksHandler)
 		authGroup.DELETE("/post/:id", hp.PostHandler.DeletePostHandler)
-		authGroup.GET("/posts", hp.PostHandler.GetPostListHandler)
 		authGroup.POST("/vote", hp.PostHandler.PostVoteHandler)
-		authGroup.POST("remark", hp.PostHandler.PostRemarkHandler)
+		authGroup.POST("/remark", hp.PostHandler.PostRemarkHandler)
 	}
 
 	// 404

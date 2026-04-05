@@ -12,7 +12,7 @@ import (
 	"bluebell/internal/domain/svcdomain"
 
 	// DTO
-	 "bluebell/internal/dto/request/user"
+	"bluebell/internal/dto/request/user"
 
 	// 基础设施
 	"bluebell/internal/infrastructure/jwt"
@@ -27,6 +27,9 @@ import (
 	"context"
 	"strings"
 	"time"
+
+	"bluebell/internal/middleware"
+	"go.opentelemetry.io/otel/attribute"
 
 	"go.uber.org/zap"
 )
@@ -49,6 +52,11 @@ func NewUserService(userRepo dbdomain.UserRepository, tokenCache cachedomain.Use
 
 // SignUp 处理用户注册业务逻辑
 func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest) (err error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "SignUp",
+		attribute.String("username", p.Username),
+	)
+	defer span.End()
+
 	if err = s.userRepo.CheckUserExist(ctx, p.Username); err != nil {
 		if errorx.GetCode(err) == errorx.CodeUserExist {
 			return err
@@ -83,6 +91,11 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 
 // Login 处理用户登录业务逻辑
 func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) (string, string, error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "Login",
+		attribute.String("username", p.Username),
+	)
+	defer span.End()
+
 	user := &model.User{
 		UserName: p.Username,
 		Passwd:   p.Password,
@@ -108,8 +121,16 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 		return "", "", errorx.ErrServerBusy
 	}
 
-	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
-	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
+	accessTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
+	if err != nil {
+		zap.L().Error("parse access token expiry failed", zap.Error(err))
+		accessTokenExp = 2 * time.Hour // 默认 2 小时
+	}
+	refreshTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
+	if err != nil {
+		zap.L().Error("parse refresh token expiry failed", zap.Error(err))
+		refreshTokenExp = 7 * 24 * time.Hour // 默认 7 天
+	}
 
 	err = s.tokenCache.SetUserToken(ctx, user.UserID, aToken, rToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
@@ -124,6 +145,9 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 
 // RefreshToken 刷新 Token
 func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.RefreshTokenRequest) (newAToken, newRToken string, err error) {
+	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "RefreshToken")
+	defer span.End()
+
 	// 1. 解析 Authorization Header 获取 Access Token
 	parts := strings.SplitN(p.Authorization, " ", 2)
 	if !(len(parts) == 2 && parts[0] == "Bearer") {
@@ -154,8 +178,16 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 		return "", "", errorx.ErrServerBusy
 	}
 
-	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
-	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
+	accessTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
+	if err != nil {
+		zap.L().Error("parse access token expiry failed in refresh", zap.Error(err))
+		accessTokenExp = 2 * time.Hour // 默认 2 小时
+	}
+	refreshTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
+	if err != nil {
+		zap.L().Error("parse refresh token expiry failed in refresh", zap.Error(err))
+		refreshTokenExp = 7 * 24 * time.Hour // 默认 7 天
+	}
 
 	err = s.tokenCache.SetUserToken(ctx, user.UserID, newAToken, newRToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
