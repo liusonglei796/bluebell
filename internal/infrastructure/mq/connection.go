@@ -32,7 +32,7 @@ type MQConnection struct {
 	channel *amqp.Channel
 }
 
-func NewMQConnection(ctx context.Context, cfg *config.Config) (*MQConnection, error) {
+func newMQConnection(ctx context.Context, cfg *config.Config) (*MQConnection, error) {
 	if cfg == nil || cfg.RabbitMQ == nil {
 		return nil, errorx.New(errorx.CodeConfigError, "rabbitmq config is nil")
 	}

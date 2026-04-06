@@ -17,7 +17,7 @@ type MQPublisher struct {
 	channel *amqp.Channel
 }
 
-func NewPublisher(conn *MQConnection) *MQPublisher {
+func newPublisher(conn *MQConnection) *MQPublisher {
 	return &MQPublisher{channel: conn.Channel()}
 }
 

@@ -12,7 +12,7 @@ import (
 // 返回: MQConnection, MQPublisher, error
 func InitMQ(ctx context.Context, cfg *config.Config) (*MQConnection, *MQPublisher, error) {
 	// 1. 建立连接
-	conn, err := NewMQConnection(ctx, cfg)
+	conn, err := newMQConnection(ctx, cfg)
 	if err != nil {
 		return nil, nil, errorx.Wrap(err, errorx.CodeInfraError, "init rabbitmq connection failed")
 	}
@@ -30,7 +30,7 @@ func InitMQ(ctx context.Context, cfg *config.Config) (*MQConnection, *MQPublishe
 	}
 
 	// 4. 创建 Publisher
-	publisher := NewPublisher(conn)
+	publisher := newPublisher(conn)
 
 	zap.L().Info("init rabbitmq infrastructure success",
 		zap.String("publisher", publisher.String()),
