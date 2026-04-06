@@ -27,7 +27,7 @@ type SyncMessage struct {
 	CommunityID int64  `json:"community_id"`
 	PostTitle   string `json:"post_title"`
 	Content     string `json:"content"`
-	Status      int8   `json:"status"`
+	Status      int8   `json:"status"` // post status: 1=published
 	CreatedAt   string `json:"created_at"`
 	Action      string `json:"action"` // "index" or "delete"
 }

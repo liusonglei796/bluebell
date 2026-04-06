@@ -12,6 +12,9 @@ import (
 	// 领域层 - Service 接口
 	"bluebell/internal/domain/svcdomain"
 
+	// 基础设施层 - MQ
+	"bluebell/internal/infrastructure/mq"
+
 	// Service 层
 	"bluebell/internal/service/communitysvc"
 	"bluebell/internal/service/postsvc"
@@ -29,10 +32,11 @@ type Services struct {
 func NewServices(
 	dbRepos *database.Repositories,
 	cacheRepos *cache.Repositories,
+	publisher *mq.MQPublisher,
 	cfg *config.Config,
 ) *Services {
 	return &Services{
-		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark),
+		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher),
 		Community: communitysvc.NewCommunityService(dbRepos.Community, dbRepos.User),
 		User:      usersvc.NewUserService(dbRepos.User, cacheRepos.TokenCache, cfg),
 	}

@@ -84,6 +84,9 @@ func (a *Auditor) Audit(ctx context.Context, title, content string) (*AuditOutpu
 		"title":   title,
 		"content": content,
 	}
+	if strings.TrimSpace(title) == "" {
+		input["title"] = "无"
+	}
 
 	result, err := a.runnable.Invoke(ctx, input)
 	if err != nil {

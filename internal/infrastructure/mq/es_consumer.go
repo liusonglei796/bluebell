@@ -1,4 +1,4 @@
-package es
+package mq
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"bluebell/internal/infrastructure/mq"
+	"bluebell/internal/infrastructure/es"
 	"bluebell/pkg/errorx"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -17,13 +17,13 @@ import (
 // SyncConsumer ES 同步消费者
 // 从 RabbitMQ 消费帖子数据并索引到 Elasticsearch
 type SyncConsumer struct {
-	conn   *mq.MQConnection // RabbitMQ 连接，用于创建 Channel 消费消息
-	client *Client          // ES 客户端，用于执行索引/删除操作
+	conn   *MQConnection // RabbitMQ 连接，用于创建 Channel 消费消息
+	client *es.Client    // ES 客户端，用于执行索引/删除操作
 }
 
 // NewSyncConsumer 创建 ES 同步消费者实例
-// Called by: cmd/bluebell/main.go (es.NewSyncConsumer(conn, esClient))
-func NewSyncConsumer(conn *mq.MQConnection, esClient *Client) *SyncConsumer {
+// Called by: cmd/bluebell/main.go (mq.NewSyncConsumer(conn, esClient))
+func NewSyncConsumer(conn *MQConnection, esClient *es.Client) *SyncConsumer {
 	return &SyncConsumer{
 		conn:   conn,
 		client: esClient,
@@ -47,19 +47,19 @@ func (c *SyncConsumer) Start(ctx context.Context) error {
 
 	// 注册消费者，开始从 search.queue 消费消息
 	msgs, err := ch.Consume(
-		mq.QueueSearch, // queue name：search.queue
-		"",             // consumer tag：空表示由服务器自动生成
-		false,          // auto-ack：false 表示手动确认（处理成功后才 Ack）
-		false,          // exclusive：false 表示允许多个 consumer 共享
-		false,          // no-local：false 表示可以接收自己发布的消息
-		false,          // no-wait：false 表示等待服务器响应
-		nil,            // args：无额外参数
+		QueueSearch, // queue name：search.queue
+		"",          // consumer tag：空表示由服务器自动生成
+		false,       // auto-ack：false 表示手动确认（处理成功后才 Ack）
+		false,       // exclusive：false 表示允许多个 consumer 共享
+		false,       // no-local：false 表示可以接收自己发布的消息
+		false,       // no-wait：false 表示等待服务器响应
+		nil,         // args：无额外参数
 	)
 	if err != nil {
 		return errorx.Wrap(err, errorx.CodeInfraError, "Failed to register search consumer")
 	}
 
-	zap.L().Info("ES sync consumer started", zap.String("queue", mq.QueueSearch))
+	zap.L().Info("ES sync consumer started", zap.String("queue", QueueSearch))
 
 	// 阻塞循环，持续监听消息
 	for {
@@ -88,7 +88,7 @@ func (c *SyncConsumer) Start(ctx context.Context) error {
 // Called by: Start (line 71: c.handleDelivery(d))
 func (c *SyncConsumer) handleDelivery(d amqp.Delivery) error {
 	// 解析 JSON 消息体
-	var msg mq.SyncMessage
+	var msg SyncMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
 		zap.L().Error("Failed to parse sync message", zap.Error(err))
 		_ = d.Nack(false, false) // 解析失败，丢弃消息
@@ -129,7 +129,7 @@ func (c *SyncConsumer) handleDelivery(d amqp.Delivery) error {
 
 // indexDocument 将帖子文档索引到 ES
 // Called by: handleDelivery (line 104: c.indexDocument(&msg))
-func (c *SyncConsumer) indexDocument(msg *mq.SyncMessage) error {
+func (c *SyncConsumer) indexDocument(msg *SyncMessage) error {
 	// 构建 ES 文档（字段需与 mapping.go 中的 PostMapping 一致）
 	doc := map[string]interface{}{
 		"post_id":      msg.PostID,
@@ -150,8 +150,8 @@ func (c *SyncConsumer) indexDocument(msg *mq.SyncMessage) error {
 	// 发送 Index 请求到 ES，以 post_id 作为文档 ID（幂等更新）
 	req := bytes.NewReader(body)
 	res, err := c.client.ES().Index(
-		IndexPost, // index name：post
-		req,       // request body
+		es.IndexPost, // index name：post
+		req,          // request body
 		c.client.ES().Index.WithDocumentID(msg.PostID), // 指定文档 ID，实现 upsert
 	)
 	if err != nil {
@@ -172,7 +172,7 @@ func (c *SyncConsumer) indexDocument(msg *mq.SyncMessage) error {
 // Called by: handleDelivery (line 95: c.deleteDocument(msg.PostID))
 func (c *SyncConsumer) deleteDocument(postID string) error {
 	// 发送 Delete 请求到 ES
-	res, err := c.client.ES().Delete(IndexPost, postID)
+	res, err := c.client.ES().Delete(es.IndexPost, postID)
 	if err != nil {
 		return fmt.Errorf("ES delete failed: %w", err)
 	}

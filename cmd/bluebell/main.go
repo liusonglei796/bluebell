@@ -16,7 +16,6 @@ import (
 	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/infrastructure/otel"
-	"bluebell/internal/infrastructure/redis"
 	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/infrastructure/translate"
 	"bluebell/internal/middleware"
@@ -107,11 +106,19 @@ func main() {
 	cacheRepos.HotScoreRefresher.Start()
 	defer cacheRepos.HotScoreRefresher.Stop()
 
-	// 2) 业务逻辑层：创建 Service 实例
-	services := service.NewServices(repositoriesUOW, cacheRepos, cfg)
-
 	// ====== 基础设施层：ES / AI / MQ ======
 	ctx := context.Background()
+
+	// 初始化 RabbitMQ (必须在 services 之前，因为 PostService 需要 publisher)
+	conn, publisher, err := mq.InitMQ(ctx, cfg)
+	if err != nil {
+		zap.L().Error("init MQ failed", zap.Error(err))
+		conn = nil
+		publisher = nil
+	}
+
+	// 2) 业务逻辑层：创建 Service 实例
+	services := service.NewServices(repositoriesUOW, cacheRepos, publisher, cfg)
 
 	// 初始化 Elasticsearch 客户端
 	esClient, err := es.NewClient(cfg)
@@ -133,14 +140,6 @@ func main() {
 		auditor = nil
 	}
 
-	// 初始化 RabbitMQ
-	conn, publisher, err := mq.InitMQ(ctx, cfg)
-	if err != nil {
-		zap.L().Error("init MQ failed", zap.Error(err))
-		conn = nil
-		publisher = nil
-	}
-
 	// 3) 表现层：创建 Handler 实例（通过 DI 注入 Service 接口 + MQ Publisher）
 	handlerProvider := handler.NewProvider(
 		services.User,      // 注入 UserService 接口
@@ -155,8 +154,8 @@ func main() {
 	// SyncConsumer: ES 数据同步（esClient 不为空时启动）
 	// 各消费者在独立 goroutine 中并行运行，互不干扰
 	if conn != nil {
-		// VoteConsumer: 投票异步计数
-		voteConsumer := redis.NewVoteConsumer(conn, rdb)
+		// VoteConsumer: 投票异步落盘 MySQL
+		voteConsumer := mq.NewVoteConsumer(conn, repositoriesUOW.Vote)
 		go func() {
 			if err := voteConsumer.Start(ctx); err != nil {
 				zap.L().Error("vote consumer exited", zap.Error(err))
@@ -165,7 +164,7 @@ func main() {
 
 		// AuditConsumer: AI 内容审核
 		if auditor != nil {
-			auditConsumer := ai.NewAuditConsumer(conn, auditor, func(ctx context.Context, msgType string, postID string, remarkID uint, violations []string, reason string) {
+			auditConsumer := mq.NewAuditConsumer(conn, auditor, func(ctx context.Context, msgType string, postID string, remarkID uint, violations []string, reason string) {
 				switch msgType {
 				case "post":
 					// 审核不通过：将帖子状态设为 -1（审核失败隐藏）
@@ -206,7 +205,7 @@ func main() {
 
 		// SyncConsumer: ES 数据同步
 		if esClient != nil {
-			esConsumer := es.NewSyncConsumer(conn, esClient)
+			esConsumer := mq.NewSyncConsumer(conn, esClient)
 			go func() {
 				if err := esConsumer.Start(ctx); err != nil {
 					zap.L().Error("sync consumer exited", zap.Error(err))

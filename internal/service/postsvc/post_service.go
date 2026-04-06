@@ -13,6 +13,7 @@ import (
 	postResp "bluebell/internal/dto/response/post"
 
 	// 基础设施
+	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/infrastructure/snowflake"
 
 	// 模型
@@ -36,6 +37,7 @@ type postServiceStruct struct {
 	postCache  cachedomain.PostRepository
 	voteRepo   dbdomain.VoteRepository
 	remarkRepo dbdomain.RemarkRepository
+	publisher  *mq.MQPublisher
 }
 
 // NewPostService 创建帖子服务实例
@@ -44,12 +46,14 @@ func NewPostService(
 	postCache cachedomain.PostRepository,
 	voteRepo dbdomain.VoteRepository,
 	remarkRepo dbdomain.RemarkRepository,
+	publisher *mq.MQPublisher,
 ) svcdomain.PostService {
 	return &postServiceStruct{
 		postRepo:   postRepo,
 		postCache:  postCache,
 		voteRepo:   voteRepo,
 		remarkRepo: remarkRepo,
+		publisher:  publisher,
 	}
 }
 
@@ -378,15 +382,22 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 		return errorx.ErrServerBusy
 	}
 
-	// 同步落盘到 MySQL
-	err = s.voteRepo.SaveVote(ctx, userID, p.PostID, p.Direction)
-	if err != nil {
-		zap.L().Error("save vote to mysql failed",
-			zap.Int64("user_id", userID),
-			zap.Int64("post_id", p.PostID),
-			zap.Error(err),
-		)
-		return errorx.ErrServerBusy
+	// 发布投票消息到 MQ，由 VoteConsumer 异步落盘 MySQL
+	if s.publisher != nil {
+		voteMsg := &mq.VoteMessage{
+			PostID: postIDStr,
+			UserID: userIDStr,
+			Action: int(p.Direction),
+		}
+		if err := s.publisher.PublishVote(ctx, voteMsg); err != nil {
+			zap.L().Error("publish vote message to mq failed",
+				zap.Int64("user_id", userID),
+				zap.Int64("post_id", p.PostID),
+				zap.Error(err),
+			)
+			// MQ 发送失败不影响投票结果（Redis 已更新），仅记录日志
+			// 可通过监控告警人工介入
+		}
 	}
 
 	return nil

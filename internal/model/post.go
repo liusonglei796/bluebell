@@ -4,6 +4,11 @@ import (
 	"gorm.io/gorm"
 )
 
+// PostStatus 帖子状态
+const (
+	PostStatusPublished = 1 // 已发布
+)
+
 // Post 内存对齐优化建议：把相同类型的字段放在一起，宽字段（如 int64, string）放在前面
 // 这个结构体是对数据库表结构的直接映射，使用 GORM ORM
 type Post struct {

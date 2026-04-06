@@ -1,10 +1,10 @@
-package ai
+package mq
 
 import (
 	"context"
 	"encoding/json"
 
-	"bluebell/internal/infrastructure/mq"
+	"bluebell/internal/infrastructure/ai"
 	"bluebell/pkg/errorx"
 
 	amqp091 "github.com/rabbitmq/amqp091-go"
@@ -17,14 +17,14 @@ type AuditFailedHandler func(ctx context.Context, msgType string, postID string,
 
 // AuditConsumer AI 内容审核消费者
 type AuditConsumer struct {
-	conn     *mq.MQConnection
-	auditor  *Auditor
+	conn     *MQConnection
+	auditor  *ai.Auditor
 	onFailed AuditFailedHandler // 审核失败回调
 }
 
 // NewAuditConsumer 创建审核消费者实例
-// Called by: cmd/bluebell/main.go (ai.NewAuditConsumer(conn, auditor, onFailed))
-func NewAuditConsumer(conn *mq.MQConnection, auditor *Auditor, onFailed AuditFailedHandler) *AuditConsumer {
+// Called by: cmd/bluebell/main.go (mq.NewAuditConsumer(conn, auditor, onFailed))
+func NewAuditConsumer(conn *MQConnection, auditor *ai.Auditor, onFailed AuditFailedHandler) *AuditConsumer {
 	return &AuditConsumer{
 		conn:     conn,
 		auditor:  auditor,
@@ -48,20 +48,20 @@ func (c *AuditConsumer) Start(ctx context.Context) error {
 
 	// 消费 audit.queue
 	msgs, err := channel.Consume(
-		mq.QueueAudit, // queue
-		"",            // consumer
-		false,         // auto-ack
-		false,         // exclusive
-		false,         // no-local
-		false,         // no-wait
-		nil,           // args
+		QueueAudit, // queue
+		"",         // consumer
+		false,      // auto-ack
+		false,      // exclusive
+		false,      // no-local
+		false,      // no-wait
+		nil,        // args
 	)
 	if err != nil {
 		return errorx.Wrapf(err, errorx.CodeInfraError, "consume audit queue failed")
 	}
 
 	zap.L().Info("audit consumer started",
-		zap.String("queue", mq.QueueAudit),
+		zap.String("queue", QueueAudit),
 	)
 
 	// 阻塞处理消息
@@ -92,7 +92,7 @@ func (c *AuditConsumer) Start(ctx context.Context) error {
 // HandleDelivery 处理单条审核消息
 func (c *AuditConsumer) HandleDelivery(d amqp091.Delivery) error {
 	// 解析消息体
-	var msg mq.AuditMessage
+	var msg AuditMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
 		return errorx.Wrapf(err, errorx.CodeInvalidParam, "unmarshal audit message failed")
 	}

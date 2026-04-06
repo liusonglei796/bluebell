@@ -1,36 +1,30 @@
-package redis
+package mq
 
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 
-	"bluebell/internal/infrastructure/mq"
+	"bluebell/internal/domain/dbdomain"
 	"bluebell/pkg/errorx"
 
 	amqp091 "github.com/rabbitmq/amqp091-go"
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
-// Redis Key 前缀
-const (
-	voteKeyPrefixUp   = "bluebell:votes:up:"
-	voteKeyPrefixDown = "bluebell:votes:down:"
-)
-
 // VoteConsumer 投票消息消费者
-// 消费 RabbitMQ 中的投票消息，异步更新 Redis 投票计数
+// 消费 RabbitMQ 中的投票消息，异步落盘到 MySQL
 type VoteConsumer struct {
-	conn        *mq.MQConnection
-	redisClient *redis.Client
+	conn     *MQConnection
+	voteRepo dbdomain.VoteRepository
 }
 
 // NewVoteConsumer 创建投票消费者实例
-// Called by: cmd/bluebell/main.go (redis.NewVoteConsumer(conn, rdb))
-func NewVoteConsumer(conn *mq.MQConnection, redisClient *redis.Client) *VoteConsumer {
+// Called by: cmd/bluebell/main.go (mq.NewVoteConsumer(conn, voteRepo))
+func NewVoteConsumer(conn *MQConnection, voteRepo dbdomain.VoteRepository) *VoteConsumer {
 	return &VoteConsumer{
-		conn:        conn,
-		redisClient: redisClient,
+		conn:     conn,
+		voteRepo: voteRepo,
 	}
 }
 
@@ -50,20 +44,20 @@ func (c *VoteConsumer) Start(ctx context.Context) error {
 
 	// 消费 vote.queue
 	msgs, err := channel.Consume(
-		mq.QueueVote, // queue
-		"",           // consumer
-		false,        // auto-ack
-		false,        // exclusive
-		false,        // no-local
-		false,        // no-wait
-		nil,          // args
+		QueueVote, // queue
+		"",        // consumer
+		false,     // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
 	)
 	if err != nil {
 		return errorx.Wrapf(err, errorx.CodeInfraError, "consume vote queue failed")
 	}
 
 	zap.L().Info("vote consumer started",
-		zap.String("queue", mq.QueueVote),
+		zap.String("queue", QueueVote),
 	)
 
 	// 阻塞处理消息
@@ -94,34 +88,33 @@ func (c *VoteConsumer) Start(ctx context.Context) error {
 // HandleDelivery 处理单条投票消息
 func (c *VoteConsumer) HandleDelivery(d amqp091.Delivery) error {
 	// 解析消息体
-	var msg mq.VoteMessage
+	var msg VoteMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
 		return errorx.Wrapf(err, errorx.CodeInvalidParam, "unmarshal vote message failed")
 	}
 
-	// 根据 action 更新 Redis 计数
-	ctx := context.Background()
-	switch msg.Action {
-	case 1:
-		// upvote: INCR bluebell:votes:up:{postID}
-		if err := c.redisClient.Incr(ctx, voteKeyPrefixUp+msg.PostID).Err(); err != nil {
-			return errorx.Wrapf(err, errorx.CodeCacheError, "incr vote up failed (post_id: %s)", msg.PostID)
-		}
-	case -1:
-		// downvote: INCR bluebell:votes:down:{postID}
-		if err := c.redisClient.Incr(ctx, voteKeyPrefixDown+msg.PostID).Err(); err != nil {
-			return errorx.Wrapf(err, errorx.CodeCacheError, "incr vote down failed (post_id: %s)", msg.PostID)
-		}
-	default:
+	// 校验 action
+	if msg.Action != 1 && msg.Action != -1 {
 		return errorx.Newf(errorx.CodeInvalidParam, "invalid vote action: %d", msg.Action)
 	}
 
-	// 处理成功，ack 消息
-	if err := d.Ack(false); err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "ack vote message failed (post_id: %s)", msg.PostID)
+	// 解析 userID 和 postID
+	userID, err := strconv.ParseInt(msg.UserID, 10, 64)
+	if err != nil {
+		return errorx.Wrapf(err, errorx.CodeInvalidParam, "parse user_id failed: %s", msg.UserID)
+	}
+	postID, err := strconv.ParseInt(msg.PostID, 10, 64)
+	if err != nil {
+		return errorx.Wrapf(err, errorx.CodeInvalidParam, "parse post_id failed: %s", msg.PostID)
 	}
 
-	zap.L().Debug("vote message processed",
+	// 异步落盘到 MySQL（upsert，天然幂等）
+	ctx := context.Background()
+	if err := c.voteRepo.SaveVote(ctx, userID, postID, int8(msg.Action)); err != nil {
+		return errorx.Wrapf(err, errorx.CodeDBError, "save vote to mysql failed (user_id: %s, post_id: %s)", msg.UserID, msg.PostID)
+	}
+
+	zap.L().Debug("vote message persisted to mysql",
 		zap.String("post_id", msg.PostID),
 		zap.String("user_id", msg.UserID),
 		zap.Int("action", msg.Action),

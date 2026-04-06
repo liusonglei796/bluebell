@@ -20,6 +20,9 @@ import (
 	// 基础设施 - MQ
 	"bluebell/internal/infrastructure/mq"
 
+	// 领域模型
+	"bluebell/internal/model"
+
 	// 错误处理
 	"bluebell/pkg/errorx"
 
@@ -112,7 +115,7 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 			CommunityID: p.CommunityID,
 			PostTitle:   p.Title,
 			Content:     p.Content,
-			Status:      1,
+			Status:      model.PostStatusPublished,
 			CreatedAt:   time.Now().Format(time.RFC3339),
 			Action:      "index",
 		}
@@ -307,17 +310,6 @@ func (h *Handler) PostVoteHandler(c *gin.Context) {
 		return
 	}
 
-	// 异步发送投票消息更新 Redis 计数
-	if h.publisher != nil {
-		voteMsg := &mq.VoteMessage{
-			PostID: strconv.FormatInt(p.PostID, 10),
-			UserID: strconv.FormatInt(userID.(int64), 10),
-			Action: int(p.Direction),
-		}
-		if err := h.publisher.PublishVote(ctx, voteMsg); err != nil {
-			zap.L().Warn("publish vote message failed", zap.Error(err))
-		}
-	}
 	backfront.ResponseSuccess(c, nil)
 }
 
