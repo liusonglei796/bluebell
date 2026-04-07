@@ -110,7 +110,11 @@ func (c *AuditConsumer) HandleDelivery(d amqp091.Delivery) error {
 
 	// 调用 AI 审核
 	auditCtx := context.Background()
-	result, err := c.auditor.Audit(auditCtx, msg.Title, msg.Content)
+	input := ai.AuditInput{
+		Title:   msg.Title,
+		Content: msg.Content,
+	}
+	result, err := c.auditor.Audit(auditCtx, input)
 	if err != nil {
 		return errorx.Wrapf(err, errorx.CodeInfraError, "audit content failed (post_id: %s)", msg.PostID)
 	}
@@ -121,7 +125,6 @@ func (c *AuditConsumer) HandleDelivery(d amqp091.Delivery) error {
 			zap.String("post_id", msg.PostID),
 			zap.String("type", msg.Type),
 			zap.Int64("author_id", msg.AuthorID),
-			zap.Int("score", result.Score),
 			zap.Strings("violations", result.Violations),
 			zap.String("reason", result.Reason),
 		)

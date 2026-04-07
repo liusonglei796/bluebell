@@ -13,8 +13,8 @@ import (
 	postResp "bluebell/internal/dto/response/post"
 
 	// 基础设施
-	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/infrastructure/snowflake"
+	"bluebell/internal/service/mq"
 
 	// 模型
 	"bluebell/internal/model"
@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	"bluebell/internal/middleware"
+
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.uber.org/zap"

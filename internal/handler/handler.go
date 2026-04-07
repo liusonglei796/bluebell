@@ -11,8 +11,8 @@ import (
 	"bluebell/internal/handler/post_handler"
 	"bluebell/internal/handler/user_handler"
 
-	// 基础设施 - MQ
-	"bluebell/internal/infrastructure/mq"
+	// MQ 消息发布
+	"bluebell/internal/service/mq"
 )
 
 // ========== Handler Provider ==========

@@ -17,18 +17,22 @@ import (
 	"go.uber.org/zap"
 )
 
-// AuditOutput 审核输出
-// Called by: mq/audit_consumer.go (HandleDelivery 中读取 result.IsSafe/Violations/Score/Reason)
+// AuditOutput AI 内容审核输出
 type AuditOutput struct {
 	IsSafe     bool     `json:"is_safe"`
 	Violations []string `json:"violations,omitempty"`
-	Score      int      `json:"score"` // 0-100, 100最安全
 	Reason     string   `json:"reason"`
+}
+
+// AuditInput AI 内容审核输入
+type AuditInput struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }
 
 // Auditor AI 内容审核服务
 type Auditor struct {
-	runnable compose.Runnable[map[string]any, *AuditOutput]
+	runnable compose.Runnable[AuditInput, *AuditOutput]
 	enabled  bool
 }
 
@@ -74,18 +78,14 @@ func (a *Auditor) IsEnabled() bool {
 }
 
 // Audit 执行内容审核
-// Called by: mq/audit_consumer.go (HandleDelivery 中 c.auditor.Audit(ctx, msg.Title, msg.Content))
-func (a *Auditor) Audit(ctx context.Context, title, content string) (*AuditOutput, error) {
+// Called by: mq/ai_consumer.go (HandleDelivery 中 c.auditor.Audit(ctx, input))
+func (a *Auditor) Audit(ctx context.Context, input AuditInput) (*AuditOutput, error) {
 	if !a.enabled {
-		return &AuditOutput{IsSafe: true, Score: 100}, nil
+		return &AuditOutput{IsSafe: true}, nil
 	}
 
-	input := map[string]any{
-		"title":   title,
-		"content": content,
-	}
-	if strings.TrimSpace(title) == "" {
-		input["title"] = "无"
+	if strings.TrimSpace(input.Title) == "" {
+		input.Title = "无"
 	}
 
 	result, err := a.runnable.Invoke(ctx, input)
@@ -96,7 +96,6 @@ func (a *Auditor) Audit(ctx context.Context, title, content string) (*AuditOutpu
 
 	zap.L().Info("AI audit result",
 		zap.Bool("is_safe", result.IsSafe),
-		zap.Int("score", result.Score),
 		zap.Strings("violations", result.Violations))
 
 	return result, nil
@@ -104,13 +103,7 @@ func (a *Auditor) Audit(ctx context.Context, title, content string) (*AuditOutpu
 
 // buildAuditWorkflow 构建审核工作流 Graph（包内私有）
 // Called by: NewAuditor (line 56: buildAuditWorkflow(ctx, cm))
-func buildAuditWorkflow(ctx context.Context, chatModel model.ToolCallingChatModel) (compose.Runnable[map[string]any, *AuditOutput], error) {
-	const (
-		nodeOfPrompt = "prompt"
-		nodeOfModel  = "model"
-		nodeOfParse  = "parse"
-	)
-
+func buildAuditWorkflow(ctx context.Context, chatModel model.ToolCallingChatModel) (compose.Runnable[AuditInput, *AuditOutput], error) {
 	systemPrompt := `你是一个专业的内容审核助手。请审核以下内容是否包含违规信息。
 
 审核规则：
@@ -124,7 +117,6 @@ func buildAuditWorkflow(ctx context.Context, chatModel model.ToolCallingChatMode
 {
     "is_safe": true/false,
     "violations": ["违规类型1", "违规类型2"],
-    "score": 0-100,
     "reason": "审核原因"
 }
 
@@ -152,16 +144,16 @@ func buildAuditWorkflow(ctx context.Context, chatModel model.ToolCallingChatMode
 		return &result, nil
 	})
 
-	g := compose.NewGraph[map[string]any, *AuditOutput]()
+	g := compose.NewGraph[AuditInput, *AuditOutput]()
 
-	_ = g.AddChatTemplateNode(nodeOfPrompt, chatTpl)
-	_ = g.AddChatModelNode(nodeOfModel, chatModel)
-	_ = g.AddLambdaNode(nodeOfParse, parseLambda)
+	_ = g.AddChatTemplateNode("prompt", chatTpl)
+	_ = g.AddChatModelNode("model", chatModel)
+	_ = g.AddLambdaNode("parse", parseLambda)
 
-	_ = g.AddEdge(compose.START, nodeOfPrompt)
-	_ = g.AddEdge(nodeOfPrompt, nodeOfModel)
-	_ = g.AddEdge(nodeOfModel, nodeOfParse)
-	_ = g.AddEdge(nodeOfParse, compose.END)
+	_ = g.AddEdge(compose.START, "prompt")
+	_ = g.AddEdge("prompt", "model")
+	_ = g.AddEdge("model", "parse")
+	_ = g.AddEdge("parse", compose.END)
 
 	runnable, err := g.Compile(ctx)
 	if err != nil {

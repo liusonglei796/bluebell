@@ -17,8 +17,8 @@ import (
 	// 基础设施 - 参数校验
 	"bluebell/internal/infrastructure/translate"
 
-	// 基础设施 - MQ
-	"bluebell/internal/infrastructure/mq"
+	// MQ 消息发布
+	"bluebell/internal/service/mq"
 
 	// 领域模型
 	"bluebell/internal/model"

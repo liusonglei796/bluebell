@@ -12,8 +12,8 @@ import (
 	// 领域层 - Service 接口
 	"bluebell/internal/domain/svcdomain"
 
-	// 基础设施层 - MQ
-	"bluebell/internal/infrastructure/mq"
+	// MQ 消息发布
+	"bluebell/internal/service/mq"
 
 	// Service 层
 	"bluebell/internal/service/communitysvc"
