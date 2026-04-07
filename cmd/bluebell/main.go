@@ -178,6 +178,22 @@ func main() {
 							zap.Strings("violations", violations),
 							zap.String("reason", reason))
 					}
+
+					// 删除 ES 中的文档，避免用户搜索到违规内容
+					if esClient != nil && publisher != nil {
+						syncMsg := map[string]interface{}{
+							"post_id": postID,
+							"action":  "delete",
+						}
+						if err := publisher.PublishSearch(ctx, syncMsg); err != nil {
+							zap.L().Warn("publish delete search message on audit failure failed",
+								zap.String("post_id", postID),
+								zap.Error(err))
+						} else {
+							zap.L().Info("published ES delete message for audited post",
+								zap.String("post_id", postID))
+						}
+					}
 				case "remark":
 					// 审核不通过：删除违规评论
 					if remarkID == 0 {
