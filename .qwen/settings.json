@@ -10,7 +10,8 @@
       "Bash(npx @anthropic-ai/chrome-devtools-mcp *)",
       "Bash(npm run *)",
       "Bash(pnpm *)",
-      "Bash(yarn *)"
+      "Bash(yarn *)",
+      "Bash(curl *)"
     ]
   },
   "mcpServers": {
