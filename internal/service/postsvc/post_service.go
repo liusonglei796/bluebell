@@ -60,7 +60,7 @@ func NewPostService(
 
 // CreatePost 创建帖子
 func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "CreatePost",
+	ctx, span := middleware.StartSpanFromContext(ctx, "CreatePost",
 		attribute.Int64("user.id", authorID),
 		attribute.Int64("community.id", p.CommunityID),
 	)
@@ -100,7 +100,7 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 
 // GetPostByID 查询单个帖子详情
 func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *postResp.DetailResponse, err error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetPostByID",
+	ctx, span := middleware.StartSpanFromContext(ctx, "GetPostByID",
 		attribute.Int64("post.id", pid),
 	)
 	defer span.End()
@@ -147,7 +147,7 @@ func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *p
 
 // GetPostList 获取帖子列表
 func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetPostList",
+	ctx, span := middleware.StartSpanFromContext(ctx, "GetPostList",
 		attribute.Int64("page", p.Page),
 		attribute.Int64("size", p.Size),
 		attribute.String("order", p.Order),
@@ -213,7 +213,7 @@ func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostList
 
 // GetCommunityPostList 根据社区ID获取帖子列表
 func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetCommunityPostList",
+	ctx, span := middleware.StartSpanFromContext(ctx, "GetCommunityPostList",
 		attribute.Int64("community.id", p.CommunityID),
 		attribute.Int64("page", p.Page),
 		attribute.Int64("size", p.Size),
@@ -281,7 +281,7 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 
 // DeletePost 删除帖子（软删除）
 func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID int64) error {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "DeletePost",
+	ctx, span := middleware.StartSpanFromContext(ctx, "DeletePost",
 		attribute.Int64("post.id", postID),
 		attribute.Int64("user.id", userID),
 	)
@@ -325,7 +325,7 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 // UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
 // Called by: ai/consumer.go (AuditConsumer 审核不通过时回调)
 func (s *postServiceStruct) UpdatePostStatus(ctx context.Context, postID string, status int8) error {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "UpdatePostStatus",
+	ctx, span := middleware.StartSpanFromContext(ctx, "UpdatePostStatus",
 		attribute.String("post.id", postID),
 		attribute.Int("post.status", int(status)),
 	)
@@ -344,7 +344,7 @@ func (s *postServiceStruct) UpdatePostStatus(ctx context.Context, postID string,
 
 // VoteForPost 投票业务逻辑
 func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "VoteForPost",
+	ctx, span := middleware.StartSpanFromContext(ctx, "VoteForPost",
 		attribute.Int64("user.id", userID),
 		attribute.String("post.id", strconv.FormatInt(p.PostID, 10)),
 		attribute.Int64("vote.direction", int64(p.Direction)),
@@ -404,7 +404,7 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 	return nil
 }
 func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "RemarkPost",
+	ctx, span := middleware.StartSpanFromContext(ctx, "RemarkPost",
 		attribute.Int64("post.id", req.PostID),
 		attribute.Int64("user.id", userID),
 	)
@@ -443,7 +443,7 @@ func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkR
 
 // GetPostRemarks 获取帖子评论列表
 func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetPostRemarks",
+	ctx, span := middleware.StartSpanFromContext(ctx, "GetPostRemarks",
 		attribute.Int64("post.id", postID),
 	)
 	defer span.End()

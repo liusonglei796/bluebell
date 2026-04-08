@@ -5,8 +5,21 @@
       "Bash(findstr *)",
       "Bash(git add *)",
       "Bash(git commit *)",
-      "Bash(git push)"
+      "Bash(git push *)",
+      "Bash(npx chrome-devtools-mcp *)",
+      "Bash(npx @anthropic-ai/chrome-devtools-mcp *)",
+      "Bash(npm run *)",
+      "Bash(pnpm *)",
+      "Bash(yarn *)"
     ]
+  },
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "chrome-devtools-mcp@latest"
+      ]
+    }
   },
   "$version": 3
 }

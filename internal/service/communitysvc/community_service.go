@@ -50,7 +50,7 @@ func toResponse(c *model.Community) *communityResp.Response {
 
 // GetCommunityList 获取社区列表
 func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*communityResp.Response, error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetCommunityList")
+	ctx, span := middleware.StartSpanFromContext(ctx, "GetCommunityList")
 	defer span.End()
 
 	data, err := s.communityRepo.GetCommunityList(ctx)
@@ -68,7 +68,7 @@ func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*commu
 
 // GetCommunityDetail 根据ID获取社区详情
 func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int64) (*communityResp.Response, error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "GetCommunityDetail",
+	ctx, span := middleware.StartSpanFromContext(ctx, "GetCommunityDetail",
 		attribute.Int64("community.id", id),
 	)
 	defer span.End()
@@ -90,7 +90,7 @@ func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int6
 
 // CreateCommunity 创建社区（仅管理员）
 func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, introduction string, userID int64) error {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "CreateCommunity",
+	ctx, span := middleware.StartSpanFromContext(ctx, "CreateCommunity",
 		attribute.String("community.name", name),
 		attribute.Int64("user.id", userID),
 	)

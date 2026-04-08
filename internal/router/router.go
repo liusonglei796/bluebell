@@ -45,11 +45,7 @@ func NewRouter(
 		middleware.Cors(), // 跨域中间件
 		// middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity),
 		middleware.TimeoutMiddleware(timeout),
-		middleware.PrometheusMiddleware(),
 	)
-
-	// Prometheus metrics endpoint (no authentication required)
-	r.GET("/metrics", middleware.PrometheusHandler())
 
 	// Swagger & PProf (仅在非生产环境)
 	if mode != gin.ReleaseMode {

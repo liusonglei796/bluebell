@@ -79,7 +79,9 @@ services:
     # 这个容器运行完拷贝任务后会自动退出，这是正常的
 
   elasticsearch:
-    image: elasticsearch:8.12.0
+    build:
+      context: .
+      dockerfile: Dockerfile.elasticsearch
     container_name: bluebell_elasticsearch
     ports:
       - "9200:9200"
@@ -93,7 +95,7 @@ services:
       - bluebell_net
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+      test: [ "CMD", "curl", "-f", "http://localhost:9200/_cluster/health" ]
       interval: 10s
       timeout: 10s
       retries: 5
@@ -113,39 +115,34 @@ services:
       - bluebell_net
     restart: always
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 10s
       retries: 5
 
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: bluebell_prometheus
-    ports:
-      - "9090:9090"
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: bluebell_otel_collector
+    command: [ "--config", "/etc/otel-collector-config.yaml" ]
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./data/prometheus:/prometheus
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317" # gRPC receiver
+      - "4318:4318" # HTTP receiver
     networks:
       - bluebell_net
     restart: always
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
 
-  grafana:
-    image: grafana/grafana:latest
-    container_name: bluebell_grafana
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: bluebell_jaeger
     ports:
-      - "3000:3000"
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # gRPC 接收端口
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    volumes:
-      - ./data/grafana:/var/lib/grafana
+      - COLLECTOR_OTLP_ENABLED=true
     networks:
       - bluebell_net
-    depends_on:
-      - prometheus
     restart: always
 
 networks:

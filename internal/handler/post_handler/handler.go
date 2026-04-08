@@ -84,7 +84,7 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "CreatePostHandler")
+	ctx, span := middleware.StartSpan(c, "CreatePostHandler")
 	defer span.End()
 
 	postID, err := h.postService.CreatePost(ctx, p, userID.(int64))
@@ -145,7 +145,7 @@ func (h *Handler) GetPostDetailHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetPostDetailHandler")
+	ctx, span := middleware.StartSpan(c, "GetPostDetailHandler")
 	defer span.End()
 
 	data, err := h.postService.GetPostByID(ctx, postID)
@@ -203,7 +203,7 @@ func (h *Handler) GetPostListHandler(c *gin.Context) {
 		p.Order = postreq.OrderTime // 如果前端乱传了非法的一个order字符，强制使用默认的时间排序
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetPostListHandler")
+	ctx, span := middleware.StartSpan(c, "GetPostListHandler")
 	defer span.End()
 
 	var data []*postResp.DetailResponse
@@ -248,7 +248,7 @@ func (h *Handler) DeletePostHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "DeletePostHandler")
+	ctx, span := middleware.StartSpan(c, "DeletePostHandler")
 	defer span.End()
 
 	if err := h.postService.DeletePost(ctx, postID, userID.(int64)); err != nil {
@@ -301,7 +301,7 @@ func (h *Handler) PostVoteHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "PostVoteHandler")
+	ctx, span := middleware.StartSpan(c, "PostVoteHandler")
 	defer span.End()
 
 	if err := h.postService.VoteForPost(ctx, userID.(int64), p); err != nil {
@@ -337,7 +337,7 @@ func (h *Handler) PostRemarkHandler(c *gin.Context) {
 	}
 
 	// 3. 执行业务
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "PostRemarkHandler")
+	ctx, span := middleware.StartSpan(c, "PostRemarkHandler")
 	defer span.End()
 
 	remarkID, err := h.postService.RemarkPost(ctx, req, userID.(int64))
@@ -375,7 +375,7 @@ func (h *Handler) GetPostRemarksHandler(c *gin.Context) {
 	}
 
 	// 2. 业务处理
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetPostRemarksHandler")
+	ctx, span := middleware.StartSpan(c, "GetPostRemarksHandler")
 	defer span.End()
 
 	remarks, err := h.postService.GetPostRemarks(ctx, postID)

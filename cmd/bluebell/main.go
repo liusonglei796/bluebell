@@ -13,11 +13,9 @@ import (
 	"bluebell/internal/infrastructure/ai"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/otel"
 	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/infrastructure/translate"
-	"bluebell/internal/middleware"
 	"bluebell/internal/router"
 	"bluebell/internal/service"
 	"bluebell/internal/service/mq"
@@ -79,16 +77,10 @@ func main() {
 	}
 	defer cache.Close(rdb)
 
-	// ====== 基础设施层：OpenTelemetry & Prometheus ======
+	// ====== 基础设施层：OpenTelemetry ======
 	// 初始化 OpenTelemetry TracerProvider
 	otelShutdown := otel.InitTracerProvider(cfg)
 	defer otelShutdown()
-
-	// 注册 Prometheus 指标收集器
-	middleware.RegisterPrometheusMetrics()
-
-	// 注册自定义业务指标（Metrics 已自动注册到 Prometheus 全局注册表）
-	metrics.RegisterCustomMetrics()
 
 	// 初始化 Validator
 	if err := translate.InitTrans(); err != nil {

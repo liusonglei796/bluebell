@@ -1,0 +1,7 @@
+FROM elasticsearch:8.12.0
+
+# 安装 IK 分词器
+RUN elasticsearch-plugin install --batch https://github.com/infinilabs/analysis-ik/releases/download/v8.12.0/elasticsearch-analysis-ik-8.12.0.zip
+
+# 或者使用国内镜像源加速
+# RUN elasticsearch-plugin install --batch https://maven.infinilabs.com/analysis-ik/8.12.0/elasticsearch-analysis-ik-8.12.0.zip

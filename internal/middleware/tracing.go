@@ -25,16 +25,16 @@ func TracingMiddleware() gin.HandlerFunc {
 }
 
 // StartSpan 从 gin.Context 获取当前 trace 并创建一个子 span。
-// tracerName 用于标识 span 来源模块，如 "bluebell/handler"。
+// 使用统一的 tracer name "bluebell"，通过 spanName 区分不同操作。
 // 适用于在 handler 或 service 层手动添加自定义 span 的场景。
 // 返回的 context 应传递给后续调用，span 需由调用者负责 End()。
 //
 // 使用示例:
 //
-//	ctx, span := middleware.StartSpan(c, "bluebell/handler", "CreatePost")
+//	ctx, span := middleware.StartSpan(c, "CreatePost")
 //	defer span.End()
-func StartSpan(c *gin.Context, tracerName, spanName string) (context.Context, trace.Span) {
-	tracer := otel.Tracer(tracerName)
+func StartSpan(c *gin.Context, spanName string) (context.Context, trace.Span) {
+	tracer := otel.Tracer("bluebell")
 
 	// 从 gin.Context 获取底层 context（otelgin 中间件已将 trace 注入其中）
 	ctx := c.Request.Context()
@@ -59,19 +59,19 @@ func StartSpan(c *gin.Context, tracerName, spanName string) (context.Context, tr
 }
 
 // StartSpanFromContext 从标准 context.Context 创建子 span。
-// tracerName 用于标识 span 来源模块，如 "bluebell/service"。
+// 使用统一的 tracer name "bluebell"，通过 spanName 区分不同操作。
 // 适用于 service 层等无法访问 gin.Context 的场景。
 // 要求上游已通过 otelgin 中间件或手动将 trace 注入到 context 中。
 //
 // 使用示例 (service 层):
 //
-//	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "VoteForPost",
+//	ctx, span := middleware.StartSpanFromContext(ctx, "VoteForPost",
 //	    attribute.Int64("user.id", userID),
 //	    attribute.String("post.id", postIDStr),
 //	)
 //	defer span.End()
-func StartSpanFromContext(ctx context.Context, tracerName, spanName string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
-	tracer := otel.Tracer(tracerName)
+func StartSpanFromContext(ctx context.Context, spanName string, attrs ...attribute.KeyValue) (context.Context, trace.Span) {
+	tracer := otel.Tracer("bluebell")
 	return tracer.Start(ctx, spanName, trace.WithAttributes(attrs...))
 }
 

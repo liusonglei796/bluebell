@@ -53,7 +53,7 @@ func New(communityService svcdomain.CommunityService) *Handler {
 // @Success 200 {object} backfront.ResponseData{data=[]communityResp.Response}
 // @Router /community [get]
 func (h *Handler) GetCommunityListHandler(c *gin.Context) {
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetCommunityListHandler")
+	ctx, span := middleware.StartSpan(c, "GetCommunityListHandler")
 	defer span.End()
 
 	data, err := h.communityService.GetCommunityList(ctx)
@@ -89,7 +89,7 @@ func (h *Handler) GetCommunityDetailHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "GetCommunityDetailHandler")
+	ctx, span := middleware.StartSpan(c, "GetCommunityDetailHandler")
 	defer span.End()
 
 	data, err := h.communityService.GetCommunityDetail(ctx, p.ID)
@@ -131,7 +131,7 @@ func (h *Handler) CreateCommunityHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "CreateCommunityHandler")
+	ctx, span := middleware.StartSpan(c, "CreateCommunityHandler")
 	defer span.End()
 
 	if err := h.communityService.CreateCommunity(ctx, p.Name, p.Introduction, userID.(int64)); err != nil {
