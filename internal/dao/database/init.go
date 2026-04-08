@@ -108,20 +108,40 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 
 // seedData 初始化基础数据
 func seedData(db *gorm.DB) error {
-	var count int64
-	db.Model(&model.Community{}).Count(&count)
-	if count == 0 {
+	// 1. 初始化社区数据
+	var communityCount int64
+	db.Model(&model.Community{}).Count(&communityCount)
+	if communityCount == 0 {
 		communities := []model.Community{
 			{CommunityName: "Go", Introduction: "Golang is the best language!"},
 			{CommunityName: "Vue", Introduction: "Vue.js is a progressive JavaScript framework."},
 			{CommunityName: "LeetCode", Introduction: "Practice coding and prepare for interviews."},
 			{CommunityName: "Life", Introduction: "Everything about life outside of coding."},
+			{CommunityName: "Python", Introduction: "A versatile programming language for everyone."},
+			{CommunityName: "React", Introduction: "Build user interfaces with React."},
 		}
 		if err := db.Create(&communities).Error; err != nil {
 			return err
 		}
 		zap.L().Info("seed communities success")
 	}
+
+	// 2. 初始化管理员账号
+	var userCount int64
+	db.Model(&model.User{}).Count(&userCount)
+	if userCount == 0 {
+		// 创建管理员账号
+		adminUser := &model.User{
+			UserName: "admin",
+			Passwd:   "admin123", // 密码会被 BeforeCreate 钩子自动加密
+			Role:     model.RoleAdmin,
+		}
+		if err := db.Create(adminUser).Error; err != nil {
+			return err
+		}
+		zap.L().Info("seed admin user success", zap.String("username", "admin"))
+	}
+
 	return nil
 }
 

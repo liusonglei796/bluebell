@@ -8,6 +8,7 @@ import (
 	communityResp "bluebell/internal/dto/response/community"
 	postResp "bluebell/internal/dto/response/post"
 	voteresp "bluebell/internal/dto/response/vote"
+	"bluebell/internal/model"
 
 	"context"
 )
@@ -68,6 +69,9 @@ type UserService interface {
 
 	// RefreshToken 使用刷新令牌获取新的访问令牌
 	RefreshToken(ctx context.Context, p *userreq.RefreshTokenRequest) (newAccessToken, newRefreshToken string, err error)
+
+	// GetUserByUsername 根据用户名获取用户信息
+	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
 }
 
 // ========== Vote Service 接口 ==========

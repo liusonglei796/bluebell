@@ -34,6 +34,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/CreatePost.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/create-community',
+    name: 'CreateCommunity',
+    component: () => import('../pages/CreateCommunity.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
 ];
 
 const router = createRouter({
@@ -45,6 +51,8 @@ router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
   if (to.meta.requiresAuth && !authStore.token) {
     next({ name: 'Login' });
+  } else if (to.meta.requiresAdmin && !authStore.isAdmin()) {
+    next({ name: 'Home' });
   } else {
     next();
   }

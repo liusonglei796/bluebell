@@ -41,7 +41,7 @@ const handleLogin = async () => {
   try {
     const res: any = await request.post('/login', form.value);
     if (res.code === 1000) {
-      authStore.setAuth(res.data.access_token, res.data.refresh_token, res.data.username, res.data.user_id);
+      authStore.setAuth(res.data.access_token, res.data.refresh_token, res.data.username, res.data.user_id, res.data.role);
       router.push('/');
     } else {
       errorMsg.value = res.msg || 'Login failed';

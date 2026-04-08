@@ -106,3 +106,16 @@ func (r *userRepoStruct) GetUserRoleByID(ctx context.Context, uid int64) (int, e
 	}
 	return user.Role, nil
 }
+
+// GetUserByUsername 根据用户名获取用户信息
+func (r *userRepoStruct) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+	user := &model.User{}
+	err := r.db.WithContext(ctx).Where("user_name = ?", username).First(user).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errorx.ErrUserNotExist
+		}
+		return nil, errorx.Wrap(err, errorx.CodeDBError, "查询用户失败")
+	}
+	return user, nil
+}

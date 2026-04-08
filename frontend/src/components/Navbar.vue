@@ -10,6 +10,13 @@
         <div class="flex items-center space-x-4">
           <template v-if="authStore.token">
             <span class="text-gray-700">Welcome, {{ authStore.user?.username }}</span>
+            <router-link
+              v-if="authStore.isAdmin()"
+              to="/create-community"
+              class="text-sm font-medium text-indigo-600 hover:text-indigo-800"
+            >
+              New Community
+            </router-link>
             <button @click="logout" class="text-sm font-medium text-gray-500 hover:text-gray-900">
               Logout
             </button>

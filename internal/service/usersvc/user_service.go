@@ -12,7 +12,7 @@ import (
 	"bluebell/internal/domain/svcdomain"
 
 	// DTO
-	"bluebell/internal/dto/request/user"
+	userreq "bluebell/internal/dto/request/user"
 
 	// 基础设施
 	"bluebell/internal/infrastructure/jwt"
@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"bluebell/internal/middleware"
+
 	"go.opentelemetry.io/otel/attribute"
 
 	"go.uber.org/zap"
@@ -52,7 +53,7 @@ func NewUserService(userRepo dbdomain.UserRepository, tokenCache cachedomain.Use
 
 // SignUp 处理用户注册业务逻辑
 func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest) (err error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "SignUp",
+	ctx, span := middleware.StartSpanFromContext(ctx, "SignUp",
 		attribute.String("username", p.Username),
 	)
 	defer span.End()
@@ -91,7 +92,7 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 
 // Login 处理用户登录业务逻辑
 func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) (string, string, error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "Login",
+	ctx, span := middleware.StartSpanFromContext(ctx, "Login",
 		attribute.String("username", p.Username),
 	)
 	defer span.End()
@@ -145,7 +146,7 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 
 // RefreshToken 刷新 Token
 func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.RefreshTokenRequest) (newAToken, newRToken string, err error) {
-	ctx, span := middleware.StartSpanFromContext(ctx, "bluebell/service", "RefreshToken")
+	ctx, span := middleware.StartSpanFromContext(ctx, "RefreshToken")
 	defer span.End()
 
 	// 1. 解析 Authorization Header 获取 Access Token
@@ -198,4 +199,9 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 	}
 
 	return newAToken, newRToken, nil
+}
+
+// GetUserByUsername 根据用户名获取用户信息
+func (s *userServiceStruct) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+	return s.userRepo.GetUserByUsername(ctx, username)
 }

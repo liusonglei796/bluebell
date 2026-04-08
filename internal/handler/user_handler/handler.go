@@ -10,7 +10,7 @@ import (
 	"bluebell/internal/domain/svcdomain"
 
 	// DTO 请求
-	"bluebell/internal/dto/request/user"
+	userreq "bluebell/internal/dto/request/user"
 
 	// 基础设施 - 参数校验
 	"bluebell/internal/infrastructure/translate"
@@ -64,7 +64,7 @@ func (h *Handler) SignUpHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "SignUpHandler")
+	ctx, span := middleware.StartSpan(c, "SignUpHandler")
 	defer span.End()
 
 	if err := h.userService.SignUp(ctx, p); err != nil {
@@ -99,7 +99,7 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "LoginHandler")
+	ctx, span := middleware.StartSpan(c, "LoginHandler")
 	defer span.End()
 
 	aToken, rToken, err := h.userService.Login(ctx, p)
@@ -109,9 +109,20 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	backfront.ResponseSuccess(c, map[string]string{
+	// 获取用户信息（用于返回给前端）
+	userInfo, err := h.userService.GetUserByUsername(ctx, p.Username)
+	if err != nil {
+		middleware.RecordError(span, err)
+		backfront.HandleError(c, err)
+		return
+	}
+
+	backfront.ResponseSuccess(c, map[string]interface{}{
 		"access_token":  aToken,
 		"refresh_token": rToken,
+		"user_id":       userInfo.UserID,
+		"username":      userInfo.UserName,
+		"role":          userInfo.Role,
 	})
 }
 
@@ -139,7 +150,7 @@ func (h *Handler) RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	ctx, span := middleware.StartSpan(c, "bluebell/handler", "RefreshTokenHandler")
+	ctx, span := middleware.StartSpan(c, "RefreshTokenHandler")
 	defer span.End()
 
 	newAToken, newRToken, err := h.userService.RefreshToken(ctx, p)

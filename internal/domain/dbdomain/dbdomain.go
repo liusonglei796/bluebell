@@ -30,6 +30,7 @@ type UserRepository interface {
 	CheckUserExistsByID(ctx context.Context, uid int64) (*model.User, error)
 	GetUsersByIDs(ctx context.Context, ids []int64) ([]*model.User, error)
 	GetUserRoleByID(ctx context.Context, uid int64) (int, error)
+	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
 }
 
 // VoteRepository 定义了关于投票数据的访问接口
