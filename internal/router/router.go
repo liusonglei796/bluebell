@@ -28,7 +28,6 @@ func NewRouter(
 	r := gin.New()
 
 	fillInterval, err := time.ParseDuration(cfg.RateLimit.FillInterval)
-	_ = fillInterval
 	if err != nil {
 		return nil, errorx.Wrap(err, errorx.CodeConfigError, "parse rate limit fill interval failed")
 	}
@@ -43,7 +42,7 @@ func NewRouter(
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
 		middleware.Cors(), // 跨域中间件
-		// middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity),
+		middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity), // 令牌桶限流
 		middleware.TimeoutMiddleware(timeout),
 	)
 
