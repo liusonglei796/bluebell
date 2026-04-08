@@ -11,7 +11,11 @@
       "Bash(npm run *)",
       "Bash(pnpm *)",
       "Bash(yarn *)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(taskkill *)",
+      "Bash(timeout *)",
+      "Bash(tasklist)",
+      "Bash(type *)"
     ]
   },
   "mcpServers": {
