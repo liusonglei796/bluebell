@@ -1,0 +1,36 @@
+# Requirement Model Description for Bluebell Project - Interview QA
+
+Topic: Requirement Model Description for Bluebell Project
+User Context: A Reddit-like forum system with features: User auth (JWT), Community management, Posting, Pagination, Voting (Redis ZSet), Commenting. Built with Go/Gin and Vue/TS.
+
+## User Answers:
+- What is the primary scenario for this "Requirement Model Description" PPT?
+  - Product Introduction (Focus on features and value for developers/students)
+- Who is the target audience for this presentation?
+  - Developers / Engineering Students
+- Which production strategy should I follow?
+  - Source (Local Project) - Use existing local project files and context.
+- What is the primary target action for the audience?
+  - Deep Learning (Build architectural understanding)
+- What is your preferred visual style?
+  - Minimal Business (Blue-White)
+- What are your expectations for page count and information density?
+  - Compact (5-10 pages), High Density (Rich)
+- Which model strategy should the sub-agents use?
+  - System Choice (Dynamic)
+- Any specific "Must Include" or "Must Avoid" items?
+  - Must include: System complete use case diagram, Use case specification for 1-2 core/typical use cases.
+
+## Anchor Block (Internal Validation):
+- scenario: Product Introduction
+- audience: Developers / Engineering Students
+- target_action: Deep Learning
+- expected_pages: 5-10
+- page_density: High Density (Rich)
+- style: Minimal Business (Blue-White)
+- brand: Bluebell Project Theme (Blue/White)
+- must_include: System UML Use Case Diagram, 1-2 typical Use Case Specifications (e.g., Posting, Voting)
+- must_avoid: None
+- language: Chinese
+- imagery: decorate
+- material_strategy: source

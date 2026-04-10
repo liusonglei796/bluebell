@@ -15,7 +15,8 @@
       "Bash(taskkill *)",
       "Bash(timeout *)",
       "Bash(tasklist)",
-      "Bash(type *)"
+      "Bash(type *)",
+      "Bash(ssh *)"
     ]
   },
   "mcpServers": {

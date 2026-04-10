@@ -4,11 +4,12 @@ import (
 	"bluebell/internal/domain/cachedomain"
 	"bluebell/pkg/errorx"
 	"context"
-	"github.com/redis/go-redis/v9"
 	"math"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // ========== Redis Keys 常量 ==========
@@ -243,7 +244,7 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 	return nil
 }
 
-// GetPostsVoteData 批量获取多个帖子的投票数（赞成票数）
+// GetPostsVoteData 批量获取多个帖子的投票数（净投票数 = vote_up - vote_down）
 func (c *cacheStruct) GetPostsVoteData(ctx context.Context, ids []string) (data []int64, err error) {
 	return c.getPostVoteCounts(ctx, ids)
 }
@@ -334,7 +335,7 @@ func (c *cacheStruct) updatePostVoteCount(ctx context.Context, postID string, vo
 	return err
 }
 
-// getPostVoteCounts 批量获取帖子投票数
+// getPostVoteCounts 批量获取帖子投票数（净投票数 = vote_up - vote_down）
 func (c *cacheStruct) getPostVoteCounts(ctx context.Context, postIDs []string) ([]int64, error) {
 	// [防御] 空切片直接返回
 	if len(postIDs) == 0 {
@@ -354,9 +355,10 @@ func (c *cacheStruct) getPostVoteCounts(ctx context.Context, postIDs []string) (
 	counts := make([]int64, len(postIDs))
 	for i, cmd := range cmds {
 		result, _ := cmd.Result()
-		// [防御] 保证 counts 长度和 postIDs 严格一致，Hash 不存在时 voteUp=0 占位
+		// [防御] 计算净投票数 = vote_up - vote_down
 		voteUp, _ := strconv.ParseInt(result["vote_up"], 10, 64)
-		counts[i] = voteUp
+		voteDown, _ := strconv.ParseInt(result["vote_down"], 10, 64)
+		counts[i] = voteUp - voteDown
 	}
 	return counts, nil
 }

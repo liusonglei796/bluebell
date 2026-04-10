@@ -1,0 +1,16 @@
+# Bluebell Requirement Model PPT - Requirements Interview Parameters
+
+- 分支: source
+- scenario: Product Introduction
+- audience: Developers / Engineering Students
+- target_action: Deep Learning
+- expected_pages: 5-10
+- page_density: High Density (Rich)
+- style: Minimal Business (Blue-White)
+- brand: Bluebell Project Theme (Blue/White)
+- must_include: System Complete UML Use Case Diagram, Detailed Use Case Specifications for Posting and Voting.
+- must_avoid: None
+- language: Chinese
+- imagery: decorate
+- material_strategy: source
+- subagent_model_strategy: gemini-1.5-pro

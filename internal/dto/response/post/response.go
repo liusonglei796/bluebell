@@ -14,5 +14,5 @@ type DetailResponse struct {
 	Content     string    `json:"content"`
 	CreateTime  time.Time `json:"create_time"`
 	AuthorName  string    `json:"author_name"` // 作者名称
-	VoteNum     int64     `json:"vote_num"`    // 投票数（赞成票数）
+	VoteNum     int64     `json:"vote_num"`    // 净投票数（vote_up - vote_down）
 }
