@@ -1,7 +1,4 @@
 FROM elasticsearch:8.12.0
 
-# 安装 IK 分词器
-RUN elasticsearch-plugin install --batch https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v8.12.0/elasticsearch-analysis-ik-8.12.0.zip
-
-# 或者使用国内镜像源加速
-# RUN elasticsearch-plugin install --batch https://maven.infinilabs.com/analysis-ik/8.12.0/elasticsearch-analysis-ik-8.12.0.zip
+# 暂时移除 IK 分词器安装以确保基础服务能启动
+# 如果需要 IK 分词器，建议手动下载并挂载或在容器启动后安装
