@@ -147,8 +147,8 @@ func (c *cacheStruct) GetCommunityPostIDsInOrder(ctx context.Context, communityI
 }
 
 // VoteForPost 为帖子投票
-// 使用 Gravity 算法：更新 Hash 中的投票计数，重新计算热度分数并覆盖 ZSet
-// 使用 Lua 脚本保证"检查旧值 + 更新投票记录"的原子性，防止并发重复投票
+// 使用 Gravity 算法：Lua 原子更新投票记录和 Hash 计数，Go 侧重新计算热度分数并覆盖 ZSet
+// 使用 Lua 脚本保证"检查旧值 + 更新投票记录 + 更新计数"的原子性，防止并发重复投票
 func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error {
 	// 1. 判断投票时间限制
 	postTime := c.rdb.ZScore(ctx, redisKey(keyPostTimeZSet), postID).Val()
@@ -156,19 +156,21 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 		return errorx.ErrVoteTimeExpire
 	}
 
-	// 2. 使用 Lua 脚本原子执行：检查旧值 → 计算增量 → 更新投票记录
+	// 2. 使用 Lua 脚本原子执行：检查旧值 → 更新投票记录 → 更新 Hash 计数
 	// KEYS[1] = vote record ZSet (bluebell:post:voted:{postID})
+	// KEYS[2] = post meta Hash (bluebell:post:meta:{postID})
 	// ARGV[1] = userID
 	// ARGV[2] = new vote value (1/-1/0)
-	// 返回值: voteUpDelta,voteDownDelta (如 "1,0" / "-1,1" / "0,0")
+	// 返回值: voteUp,voteDown,createTime (如 "1,0,1710000000")
 	// 错误码: "err_repeated" / "err_unknown"
 	const voteLua = `
-		local key = KEYS[1]
+		local voteKey = KEYS[1]
+		local metaKey = KEYS[2]
 		local userID = ARGV[1]
 		local newValue = tonumber(ARGV[2])
 
 		-- 查询旧投票值
-		local oldValue = redis.call('ZSCORE', key, userID)
+		local oldValue = redis.call('ZSCORE', voteKey, userID)
 		if not oldValue then
 			oldValue = 0
 		else
@@ -203,15 +205,27 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 
 		-- 更新投票记录
 		if newValue == 0 then
-			redis.call('ZREM', key, userID)
+			redis.call('ZREM', voteKey, userID)
 		else
-			redis.call('ZADD', key, newValue, userID)
+			redis.call('ZADD', voteKey, newValue, userID)
 		end
 
-		return voteUpDelta .. ',' .. voteDownDelta
+		-- 更新帖子元数据 Hash 中的投票计数
+		if voteUpDelta ~= 0 then
+			redis.call('HINCRBY', metaKey, 'vote_up', voteUpDelta)
+		end
+		if voteDownDelta ~= 0 then
+			redis.call('HINCRBY', metaKey, 'vote_down', voteDownDelta)
+		end
+
+		local result = redis.call('HMGET', metaKey, 'vote_up', 'vote_down', 'create_time')
+		return result[1] .. ',' .. result[2] .. ',' .. result[3]
 	`
 
-	result, err := c.rdb.Eval(ctx, voteLua, []string{redisKey(keyPostVotedZSetPrefix + postID)}, userID, value).Text()
+	result, err := c.rdb.Eval(ctx, voteLua, []string{
+		redisKey(keyPostVotedZSetPrefix + postID),
+		redisKey(keyPostMetaPrefix + postID),
+	}, userID, value).Text()
 	if err != nil {
 		return errorx.Wrapf(err, errorx.CodeCacheError, "vote lua eval failed (post_id: %s, user_id: %s)", postID, userID)
 	}
@@ -223,22 +237,23 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 		return errorx.Newf(errorx.CodeCacheError, "unknown vote state change (post_id: %s, user_id: %s)", postID, userID)
 	}
 
-	// 3. 解析 Lua 返回的增量
-	parts := strings.SplitN(result, ",", 2)
-	if len(parts) != 2 {
+	// 3. 解析 Lua 返回的最新投票数据
+	parts := strings.SplitN(result, ",", 3)
+	if len(parts) != 3 {
 		return errorx.Newf(errorx.CodeCacheError, "invalid vote lua result: %s", result)
 	}
-	voteUpDelta, _ := strconv.ParseInt(parts[0], 10, 64)
-	voteDownDelta, _ := strconv.ParseInt(parts[1], 10, 64)
+	voteUp, _ := strconv.ParseInt(parts[0], 10, 64)
+	voteDown, _ := strconv.ParseInt(parts[1], 10, 64)
+	createTimeUnix, _ := strconv.ParseInt(parts[2], 10, 64)
 
-	// 4. 更新 Hash 中的投票计数
-	if err := c.updatePostVoteCount(ctx, postID, voteUpDelta, voteDownDelta); err != nil {
-		return errorx.Wrapf(err, errorx.CodeCacheError, "update post vote count failed (post_id: %s)", postID)
-	}
-
-	// 5. 重新计算 Gravity 分数并更新 ZSet
-	if err := c.batchRefreshGravityScores(ctx, []string{postID}); err != nil {
-		return errorx.Wrapf(err, errorx.CodeCacheError, "refresh gravity score failed (post_id: %s)", postID)
+	// 4. 基于最新总票数重新计算 Gravity 分数并更新 ZSet
+	createTime := time.Unix(createTimeUnix, 0)
+	score := CalculateGravityScore(voteUp, voteDown, createTime)
+	if err := c.rdb.ZAdd(ctx, redisKey(keyPostScoreZSet), redis.Z{
+		Score:  score,
+		Member: postID,
+	}).Err(); err != nil {
+		return errorx.Wrapf(err, errorx.CodeCacheError, "update gravity score failed (post_id: %s)", postID)
 	}
 
 	return nil
@@ -318,22 +333,6 @@ func CalculateGravityScore(voteUp, voteDown int64, createTime time.Time) float64
 }
 
 // ========== Hash 元数据操作 ==========
-
-// updatePostVoteCount 更新帖子投票计数（增量更新）
-func (c *cacheStruct) updatePostVoteCount(ctx context.Context, postID string, voteUpDelta, voteDownDelta int64) error {
-	key := redisKey(keyPostMetaPrefix + postID)
-	pipe := c.rdb.Pipeline()
-
-	// [防御] 只在 delta != 0 时才发命令，减少 Pipeline 命令数量
-	if voteUpDelta != 0 {
-		pipe.HIncrBy(ctx, key, "vote_up", voteUpDelta)
-	}
-	if voteDownDelta != 0 {
-		pipe.HIncrBy(ctx, key, "vote_down", voteDownDelta)
-	}
-	_, err := pipe.Exec(ctx)
-	return err
-}
 
 // getPostVoteCounts 批量获取帖子投票数（净投票数 = vote_up - vote_down）
 func (c *cacheStruct) getPostVoteCounts(ctx context.Context, postIDs []string) ([]int64, error) {

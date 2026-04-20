@@ -4,6 +4,7 @@ import (
 	"bluebell/internal/config"
 	"bluebell/pkg/errorx"
 	"context"
+
 	"go.uber.org/zap"
 )
 
@@ -31,6 +32,9 @@ func InitMQ(ctx context.Context, cfg *config.Config) (*MQConnection, *MQPublishe
 
 	// 4. 创建 Publisher
 	publisher := newPublisher(conn)
+
+	// 5. 启动 Return 回调处理器（处理无法路由的消息）
+	publisher.StartReturnHandler(ctx)
 
 	zap.L().Info("init rabbitmq infrastructure success",
 		zap.String("publisher", publisher.String()),

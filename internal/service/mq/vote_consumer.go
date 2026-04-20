@@ -153,8 +153,10 @@ func (c *VoteConsumer) Start(ctx context.Context) error {
 				//   2. MySQL 短暂不可用时，可通过监控告警人工介入
 				//   3. Redis 已保证投票功能正常，MySQL 最终一致性即可
 				_ = d.Nack(false, false)
+			} else {
+				// 处理成功：发送 ACK 确认，RabbitMQ 从队列中删除
+				_ = d.Ack(false)
 			}
-			// 处理成功：消息自动确认（RabbitMQ 从队列中删除）
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"bluebell/internal/config"
 	"bluebell/pkg/errorx"
 	"context"
+
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.uber.org/zap"
 )
@@ -46,6 +47,13 @@ func newMQConnection(ctx context.Context, cfg *config.Config) (*MQConnection, er
 	if err != nil {
 		conn.Close()
 		return nil, errorx.Wrap(err, errorx.CodeInfraError, "create rabbitmq channel failed")
+	}
+
+	// 开启生产者确认机制（Publisher Confirm）：
+	// false 表示逐条确认（最安全），确保每条消息都到达了 Exchange
+	if err := ch.Confirm(false); err != nil {
+		conn.Close()
+		return nil, errorx.Wrap(err, errorx.CodeInfraError, "enable publisher confirm failed")
 	}
 
 	mqConn := &MQConnection{conn: conn, channel: ch}
