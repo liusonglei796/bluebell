@@ -67,13 +67,6 @@ type jwtConfig struct {
 	RefreshExpiry string `mapstructure:"refresh_expiry"`
 }
 
-type aiAuditConfig struct {
-	Enabled bool   `mapstructure:"enabled"`
-	BaseURL string `mapstructure:"base_url"`
-	APIKey  string `mapstructure:"api_key"`
-	Model   string `mapstructure:"model"`
-}
-
 type esConfig struct {
 	Addresses []string `mapstructure:"addresses"`
 	Username  string   `mapstructure:"username"`
@@ -100,7 +93,6 @@ type Config struct {
 	JWT       *jwtConfig       `mapstructure:"jwt"`
 	Timeout   *timeoutConfig   `mapstructure:"timeout"`
 	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
-	AIAudit   *aiAuditConfig   `mapstructure:"ai_audit"`
 	ES        *esConfig        `mapstructure:"es"`
 	Otel      *otelConfig      `mapstructure:"otel"`
 }
