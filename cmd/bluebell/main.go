@@ -10,7 +10,6 @@ import (
 	"bluebell/internal/dao/database"
 	"bluebell/internal/handler"
 	"bluebell/internal/http_server"
-	"bluebell/internal/infrastructure/ai"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/otel"
@@ -98,19 +97,8 @@ func main() {
 	cacheRepos.HotScoreRefresher.Start()
 	defer cacheRepos.HotScoreRefresher.Stop()
 
-	// ====== 基础设施层：ES / AI / MQ ======
+	// ====== 基础设施层：ES / MQ ======
 	ctx := context.Background()
-
-	// 初始化 RabbitMQ (必须在 services 之前，因为 PostService 需要 publisher)
-	conn, publisher, err := mq.InitMQ(ctx, cfg)
-	if err != nil {
-		zap.L().Error("init MQ failed", zap.Error(err))
-		conn = nil
-		publisher = nil
-	}
-
-	// 2) 业务逻辑层：创建 Service 实例
-	services := service.NewServices(repositoriesUOW, cacheRepos, publisher, cfg)
 
 	// 初始化 Elasticsearch 客户端
 	esClient, err := es.NewClient(cfg)
@@ -125,12 +113,16 @@ func main() {
 		}
 	}
 
-	// 初始化 AI Auditor
-	auditor, err := ai.NewAuditor(ctx, cfg)
+	// 初始化 RabbitMQ (必须在 services 之前，因为 PostService 需要 publisher)
+	conn, publisher, err := mq.InitMQ(ctx, cfg)
 	if err != nil {
-		zap.L().Error("init AI auditor failed", zap.Error(err))
-		auditor = nil
+		zap.L().Error("init MQ failed", zap.Error(err))
+		conn = nil
+		publisher = nil
 	}
+
+	// 2) 业务逻辑层：创建 Service 实例
+	services := service.NewServices(repositoriesUOW, cacheRepos, publisher, cfg)
 
 	// 3) 表现层：创建 Handler 实例（通过 DI 注入 Service 接口 + MQ Publisher）
 	handlerProvider := handler.NewProvider(
@@ -142,7 +134,6 @@ func main() {
 
 	// 创建并启动所有 MQ 消费者（非阻塞 goroutine）
 	// VoteConsumer: 投票异步计数（始终启动）
-	// AuditConsumer: AI 内容审核（auditor 不为空时启动）
 	// SyncConsumer: ES 数据同步（esClient 不为空时启动）
 	// 各消费者在独立 goroutine 中并行运行，互不干扰
 	if conn != nil {
@@ -153,63 +144,6 @@ func main() {
 				zap.L().Error("vote consumer exited", zap.Error(err))
 			}
 		}()
-
-		// AuditConsumer: AI 内容审核
-		if auditor != nil {
-			auditConsumer := mq.NewAuditConsumer(conn, auditor, func(ctx context.Context, msgType string, postID string, remarkID uint, violations []string, reason string) {
-				switch msgType {
-				case "post":
-					// 审核不通过：将帖子状态设为 -1（审核失败隐藏）
-					if err := services.Post.UpdatePostStatus(ctx, postID, -1); err != nil {
-						zap.L().Error("hide post on audit failure failed",
-							zap.String("post_id", postID),
-							zap.Error(err))
-					} else {
-						zap.L().Info("post hidden due to audit failure",
-							zap.String("post_id", postID),
-							zap.Strings("violations", violations),
-							zap.String("reason", reason))
-					}
-
-					// 删除 ES 中的文档，避免用户搜索到违规内容
-					if esClient != nil && publisher != nil {
-						syncMsg := map[string]interface{}{
-							"post_id": postID,
-							"action":  "delete",
-						}
-						if err := publisher.PublishSearch(ctx, syncMsg); err != nil {
-							zap.L().Warn("publish delete search message on audit failure failed",
-								zap.String("post_id", postID),
-								zap.Error(err))
-						} else {
-							zap.L().Info("published ES delete message for audited post",
-								zap.String("post_id", postID))
-						}
-					}
-				case "remark":
-					// 审核不通过：删除违规评论
-					if remarkID == 0 {
-						zap.L().Warn("remark audit failure with no remarkID, skipping")
-						return
-					}
-					if err := services.Post.DeleteRemark(ctx, remarkID); err != nil {
-						zap.L().Error("delete remark on audit failure failed",
-							zap.Uint("remark_id", remarkID),
-							zap.Error(err))
-					} else {
-						zap.L().Info("remark deleted due to audit failure",
-							zap.Uint("remark_id", remarkID),
-							zap.Strings("violations", violations),
-							zap.String("reason", reason))
-					}
-				}
-			})
-			go func() {
-				if err := auditConsumer.Start(ctx); err != nil {
-					zap.L().Error("audit consumer exited", zap.Error(err))
-				}
-			}()
-		}
 
 		// SyncConsumer: ES 数据同步
 		if esClient != nil {
