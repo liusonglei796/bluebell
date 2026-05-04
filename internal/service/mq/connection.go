@@ -16,11 +16,6 @@ const (
 	QueueVote      = "vote.queue"
 	RoutingKeyVote = "vote.count"
 
-	ExchangeAudit         = "audit.exchange"
-	QueueAudit            = "audit.queue"
-	RoutingKeyAuditPost   = "audit.post"
-	RoutingKeyAuditRemark = "audit.remark"
-
 	ExchangeSearch   = "search.exchange"
 	QueueSearch      = "search.queue"
 	RoutingKeySearch = "search.sync"
@@ -80,9 +75,6 @@ func (m *MQConnection) DeclareExchanges() error {
 	if err := m.channel.ExchangeDeclare(ExchangeVote, "direct", true, false, false, false, nil); err != nil {
 		return errorx.Wrapf(err, errorx.CodeInfraError, "declare exchange %s failed", ExchangeVote)
 	}
-	if err := m.channel.ExchangeDeclare(ExchangeAudit, "direct", true, false, false, false, nil); err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "declare exchange %s failed", ExchangeAudit)
-	}
 	if err := m.channel.ExchangeDeclare(ExchangeSearch, "direct", true, false, false, false, nil); err != nil {
 		return errorx.Wrapf(err, errorx.CodeInfraError, "declare exchange %s failed", ExchangeSearch)
 	}
@@ -97,17 +89,6 @@ func (m *MQConnection) DeclareQueues() error {
 	}
 	if err := m.channel.QueueBind(QueueVote, RoutingKeyVote, ExchangeVote, false, nil); err != nil {
 		return errorx.Wrapf(err, errorx.CodeInfraError, "bind queue %s failed", QueueVote)
-	}
-
-	// audit
-	if _, err := m.channel.QueueDeclare(QueueAudit, true, false, false, false, nil); err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "declare queue %s failed", QueueAudit)
-	}
-	if err := m.channel.QueueBind(QueueAudit, RoutingKeyAuditPost, ExchangeAudit, false, nil); err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "bind queue %s failed", QueueAudit)
-	}
-	if err := m.channel.QueueBind(QueueAudit, RoutingKeyAuditRemark, ExchangeAudit, false, nil); err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "bind queue %s failed", QueueAudit)
 	}
 
 	// search

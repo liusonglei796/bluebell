@@ -58,7 +58,7 @@ func NewPostService(
 	}
 }
 
-// CreatePost 创建帖子
+// CreatePost 创建帖子 (同步审核版)
 func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error) {
 	ctx, span := middleware.StartSpanFromContext(ctx, "CreatePost",
 		attribute.Int64("user.id", authorID),
@@ -322,26 +322,6 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 	return nil
 }
 
-// UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
-// Called by: ai/consumer.go (AuditConsumer 审核不通过时回调)
-func (s *postServiceStruct) UpdatePostStatus(ctx context.Context, postID string, status int8) error {
-	ctx, span := middleware.StartSpanFromContext(ctx, "UpdatePostStatus",
-		attribute.String("post.id", postID),
-		attribute.Int("post.status", int(status)),
-	)
-	defer span.End()
-
-	if err := s.postRepo.UpdatePostStatus(ctx, postID, status); err != nil {
-		zap.L().Error("postRepo.UpdatePostStatus failed",
-			zap.String("post_id", postID),
-			zap.Int8("status", status),
-			zap.Error(err))
-		return errorx.ErrServerBusy
-	}
-
-	return nil
-}
-
 // VoteForPost 投票业务逻辑
 func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
 	ctx, span := middleware.StartSpanFromContext(ctx, "VoteForPost",
@@ -473,16 +453,4 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 	}
 
 	return resp, nil
-}
-
-// DeleteRemark 删除违规评论（审核不通过时调用）
-// Called by: main.go (AuditConsumer 审核失败回调)
-func (s *postServiceStruct) DeleteRemark(ctx context.Context, remarkID uint) error {
-	if err := s.remarkRepo.DeleteRemarkByID(ctx, remarkID); err != nil {
-		zap.L().Error("remarkRepo.DeleteRemarkByID failed",
-			zap.Uint("remark_id", remarkID),
-			zap.Error(err))
-		return errorx.ErrServerBusy
-	}
-	return nil
 }

@@ -115,14 +115,6 @@ func (p *MQPublisher) PublishVote(ctx context.Context, msg *VoteMessage) error {
 	return p.publish(ctx, ExchangeVote, RoutingKeyVote, msg, "vote", amqp.Transient)
 }
 
-func (p *MQPublisher) PublishAudit(ctx context.Context, msg *AuditMessage) error {
-	routingKey := RoutingKeyAuditPost
-	if msg.Type == "remark" {
-		routingKey = RoutingKeyAuditRemark
-	}
-	return p.publish(ctx, ExchangeAudit, routingKey, msg, "audit", amqp.Persistent)
-}
-
 func (p *MQPublisher) PublishSearch(ctx context.Context, msg any) error {
 	return p.publish(ctx, ExchangeSearch, RoutingKeySearch, msg, "search", amqp.Transient)
 }

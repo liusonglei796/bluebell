@@ -44,18 +44,13 @@ type PostService interface {
 	// DeletePost 删除帖子（软删除）
 	DeletePost(ctx context.Context, postID int64, userID int64) error
 
-	// UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
-	UpdatePostStatus(ctx context.Context, postID string, status int8) error
-
 	// VoteForPost 为帖子投票
 	VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error
 	//发表评论
 	RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error)
 	// GetPostRemarks 获取帖子评论列表
 	GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error)
-	// DeleteRemark 删除违规评论（审核不通过时调用）
-	DeleteRemark(ctx context.Context, remarkID uint) error
-}
+	}
 
 // ========== User Service 接口 ==========
 
