@@ -18,7 +18,7 @@ type Repositories struct {
 
 // NewRepositories 创建缓存仓储聚合实例
 func NewRepositories(rdb *redis.Client) *Repositories {
-	postCache, refresher := postcache.NewCacheWithRefresher(rdb, nil)
+	postCache, refresher := postcache.NewCacheWithRefresher(rdb)
 	return &Repositories{
 		PostCache:         postCache,
 		TokenCache:        usercache.NewUserTokenCache(rdb),

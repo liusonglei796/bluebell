@@ -44,4 +44,6 @@ type RemarkRepository interface {
 	GetRemarksByPostID(ctx context.Context, postID int64) ([]*model.Remark, error)
 	// DeleteRemarkByID 根据评论ID删除评论（软删除）
 	DeleteRemarkByID(ctx context.Context, remarkID uint) error
+	// DeleteRemarksByPostID 删除指定帖子的所有评论（用于级联删除）
+	DeleteRemarksByPostID(ctx context.Context, postID int64) error
 }

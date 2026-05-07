@@ -94,19 +94,6 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 		return
 	}
 
-	// 异步发送审核消息
-	if h.publisher != nil {
-		auditMsg := &mq.AuditMessage{
-			Title:    p.Title,
-			Content:  p.Content,
-			Type:     "post",
-			AuthorID: userID.(int64),
-		}
-		if err := h.publisher.PublishAudit(ctx, auditMsg); err != nil {
-			zap.L().Warn("publish audit message failed", zap.Error(err))
-		}
-	}
-
 	// 异步发送搜索同步消息（索引）
 	if h.publisher != nil {
 		syncMsg := &mq.SyncMessage{
@@ -340,29 +327,17 @@ func (h *Handler) PostRemarkHandler(c *gin.Context) {
 	ctx, span := middleware.StartSpan(c, "PostRemarkHandler")
 	defer span.End()
 
-	remarkID, err := h.postService.RemarkPost(ctx, req, userID.(int64))
+	_, err := h.postService.RemarkPost(ctx, req, userID.(int64))
 	if err != nil {
 		middleware.RecordError(span, err)
 		backfront.HandleError(c, err)
 		return
 	}
 
-	// 异步发送评论审核消息
-	if h.publisher != nil {
-		auditMsg := &mq.AuditMessage{
-			Content:  req.Content,
-			Type:     "remark",
-			RemarkID: remarkID,
-			AuthorID: userID.(int64),
-		}
-		if err := h.publisher.PublishAudit(ctx, auditMsg); err != nil {
-			zap.L().Warn("publish remark audit message failed", zap.Error(err))
-		}
-	}
-
 	// 4. 响应
 	backfront.ResponseSuccess(c, nil)
-}
+	}
+
 
 // GetPostRemarksHandler 获取帖子评论列表
 func (h *Handler) GetPostRemarksHandler(c *gin.Context) {

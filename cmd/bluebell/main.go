@@ -122,7 +122,7 @@ func main() {
 	}
 
 	// 2) 业务逻辑层：创建 Service 实例
-	services := service.NewServices(repositoriesUOW, cacheRepos, publisher, cfg)
+	services := service.NewServices(repositoriesUOW, cacheRepos, publisher, esClient, cfg)
 
 	// 3) 表现层：创建 Handler 实例（通过 DI 注入 Service 接口 + MQ Publisher）
 	handlerProvider := handler.NewProvider(

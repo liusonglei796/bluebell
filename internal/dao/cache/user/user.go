@@ -34,10 +34,8 @@ func NewUserTokenCache(rdb *redis.Client) cachedomain.UserTokenCacheRepository {
 // SetUserToken 存储用户的 Access Token 和 Refresh Token
 func (c *userTokenCacheStruct) SetUserToken(ctx context.Context, userID int64, aToken, rToken string, aExp, rExp time.Duration) error {
 	pipe := c.rdb.Pipeline()
-
 	pipe.Set(ctx, getRedisKey(keyUserAccessToken+fmt.Sprint(userID)), aToken, aExp)
 	pipe.Set(ctx, getRedisKey(keyUserRefreshToken+fmt.Sprint(userID)), rToken, rExp)
-
 	_, err := pipe.Exec(ctx)
 	if err != nil {
 		return errorx.Wrapf(err, errorx.CodeCacheError, "set user token pipeline exec failed (user_id: %d)", userID)

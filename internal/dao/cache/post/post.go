@@ -43,9 +43,9 @@ func NewCache(rdb *redis.Client) cachedomain.PostRepository {
 }
 
 // NewCacheWithRefresher 创建 cacheStruct 实例和热度刷新器
-func NewCacheWithRefresher(rdb *redis.Client, config *HotScoreRefresherConfig) (cachedomain.PostRepository, *HotScoreRefresher) {
+func NewCacheWithRefresher(rdb *redis.Client) (cachedomain.PostRepository, *HotScoreRefresher) {
 	c := &cacheStruct{rdb: rdb}
-	refresher := NewHotScoreRefresher(rdb, c, config)
+	refresher := NewHotScoreRefresher(rdb)
 	return c, refresher
 }
 
@@ -168,7 +168,6 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 		local metaKey = KEYS[2]
 		local userID = ARGV[1]
 		local newValue = tonumber(ARGV[2])
-
 		-- 查询旧投票值
 		local oldValue = redis.call('ZSCORE', voteKey, userID)
 		if not oldValue then
@@ -260,48 +259,36 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 }
 
 // GetPostsVoteData 批量获取多个帖子的投票数（净投票数 = vote_up - vote_down）
-func (c *cacheStruct) GetPostsVoteData(ctx context.Context, ids []string) (data []int64, err error) {
-	return c.getPostVoteCounts(ctx, ids)
-}
-
-// GetTopPostIDsWithScores 获取全站排行榜数据（Top N 帖子ID及其分数）
-func (c *cacheStruct) GetTopPostIDsWithScores(ctx context.Context, size int64) (ids []string, scores []float64, err error) {
-	key := redisKey(keyPostScoreZSet)
-
-	results, err := c.rdb.ZRevRangeWithScores(ctx, key, 0, size-1).Result()
-	if err != nil {
-		return nil, nil, errorx.Wrapf(err, errorx.CodeCacheError, "get top posts with scores failed (size: %d)", size)
+// 直接从“原始账本” ZSet 中统计，确保数据绝对准确（但性能略低于从 Hash 直接读取）
+func (c *cacheStruct) GetPostsVoteData(ctx context.Context, ids []string) ([]int64, error) {
+	// [防御] 空切片直接返回
+	if len(ids) == 0 {
+		return nil, nil
 	}
 
-	ids = make([]string, 0, len(results))
-	scores = make([]float64, 0, len(results))
+	pipe := c.rdb.Pipeline()
+	// 每个帖子需要两个统计操作：1 (赞成) 和 -1 (反对)
+	upCmds := make([]*redis.IntCmd, len(ids))
+	downCmds := make([]*redis.IntCmd, len(ids))
 
-	for _, z := range results {
-		ids = append(ids, z.Member.(string))
-		scores = append(scores, z.Score)
+	for i, postID := range ids {
+		key := redisKey(keyPostVotedZSetPrefix + postID)
+		upCmds[i] = pipe.ZCount(ctx, key, "1", "1")
+		downCmds[i] = pipe.ZCount(ctx, key, "-1", "-1")
 	}
 
-	return ids, scores, nil
-}
-
-// GetCommunityTopPostIDsWithScores 获取社区排行榜数据（Top N 帖子ID及其分数）
-func (c *cacheStruct) GetCommunityTopPostIDsWithScores(ctx context.Context, communityID, size int64) (ids []string, scores []float64, err error) {
-	key := redisKey(keyCommunityPostScorePrefix + strconv.FormatInt(communityID, 10))
-
-	results, err := c.rdb.ZRevRangeWithScores(ctx, key, 0, size-1).Result()
-	if err != nil {
-		return nil, nil, errorx.Wrapf(err, errorx.CodeCacheError, "get community top posts with scores failed (community_id: %d, size: %d)", communityID, size)
+	_, err := pipe.Exec(ctx)
+	if err != nil && err != redis.Nil {
+		return nil, errorx.Wrapf(err, errorx.CodeCacheError, "batch get vote count from zset failed")
 	}
 
-	ids = make([]string, 0, len(results))
-	scores = make([]float64, 0, len(results))
-
-	for _, z := range results {
-		ids = append(ids, z.Member.(string))
-		scores = append(scores, z.Score)
+	counts := make([]int64, len(ids))
+	for i := range ids {
+		up, _ := upCmds[i].Result()
+		down, _ := downCmds[i].Result()
+		counts[i] = up - down
 	}
-
-	return ids, scores, nil
+	return counts, nil
 }
 
 // ========== Gravity 算法 ==========
@@ -333,69 +320,6 @@ func CalculateGravityScore(voteUp, voteDown int64, createTime time.Time) float64
 }
 
 // ========== Hash 元数据操作 ==========
-
-// getPostVoteCounts 批量获取帖子投票数（净投票数 = vote_up - vote_down）
-func (c *cacheStruct) getPostVoteCounts(ctx context.Context, postIDs []string) ([]int64, error) {
-	// [防御] 空切片直接返回
-	if len(postIDs) == 0 {
-		return nil, nil
-	}
-
-	pipe := c.rdb.Pipeline()
-	cmds := make([]*redis.MapStringStringCmd, len(postIDs))
-	for i, postID := range postIDs {
-		cmds[i] = pipe.HGetAll(ctx, redisKey(keyPostMetaPrefix+postID))
-	}
-	_, err := pipe.Exec(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	counts := make([]int64, len(postIDs))
-	for i, cmd := range cmds {
-		result, _ := cmd.Result()
-		// [防御] 计算净投票数 = vote_up - vote_down
-		voteUp, _ := strconv.ParseInt(result["vote_up"], 10, 64)
-		voteDown, _ := strconv.ParseInt(result["vote_down"], 10, 64)
-		counts[i] = voteUp - voteDown
-	}
-	return counts, nil
-}
-
-// batchRefreshGravityScores 批量刷新帖子的 Gravity 分数到 ZSet
-func (c *cacheStruct) batchRefreshGravityScores(ctx context.Context, postIDs []string) error {
-	// [防御] 空切片直接返回
-	if len(postIDs) == 0 {
-		return nil
-	}
-
-	pipe := c.rdb.Pipeline()
-
-	for _, postID := range postIDs {
-		result, err := c.rdb.HGetAll(ctx, redisKey(keyPostMetaPrefix+postID)).Result()
-		// [防御] 单个帖子失败不影响其他帖子，不能因为一个帖子失败就 abort 整批
-		if err != nil || len(result) == 0 {
-			continue
-		}
-
-		// [防御] ParseInt 忽略 error，格式不对时降级为 0
-		createTimeUnix, _ := strconv.ParseInt(result["create_time"], 10, 64)
-		voteUp, _ := strconv.ParseInt(result["vote_up"], 10, 64)
-		voteDown, _ := strconv.ParseInt(result["vote_down"], 10, 64)
-
-		createTime := time.Unix(createTimeUnix, 0)
-		score := CalculateGravityScore(voteUp, voteDown, createTime)
-
-		pipe.ZAdd(ctx, redisKey(keyPostScoreZSet), redis.Z{
-			Score:  score,
-			Member: postID,
-		})
-	}
-
-	// [防御] Pipeline 即使为空 Exec 也是安全的
-	_, err := pipe.Exec(ctx)
-	return err
-}
 
 // DeletePost 删除帖子时清理 Redis 缓存
 // 清理范围：全局 ZSet（time/score）、社区 ZSet（time/score）、元数据 Hash、投票记录 ZSet

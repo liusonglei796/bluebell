@@ -1,0 +1,10 @@
+# 使用 nginx 镜像直接运行前端
+FROM nginx:alpine
+
+# 将构建产物复制到 nginx 默认目录
+COPY dist /usr/share/nginx/html
+
+# 暴露 80 端口
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

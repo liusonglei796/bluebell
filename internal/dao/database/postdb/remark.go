@@ -37,6 +37,14 @@ func (r *postRepoStruct) DeleteRemarkByID(ctx context.Context, remarkID uint) er
 	return nil
 }
 
+// DeleteRemarksByPostID 删除指定帖子的所有评论（用于级联删除）
+func (r *postRepoStruct) DeleteRemarksByPostID(ctx context.Context, postID int64) error {
+	if err := r.db.WithContext(ctx).Where("post_id = ?", postID).Delete(&model.Remark{}).Error; err != nil {
+		return errorx.Wrap(err, errorx.CodeDBError, "delete remarks by post_id failed")
+	}
+	return nil
+}
+
 // NewRemarkRepo 返回 RemarkRepository 接口实现
 // 实际上 postRepoStruct 已经实现了该接口，为了保持一致性这里可以返回它
 func NewRemarkRepo(db *gorm.DB) *postRepoStruct {

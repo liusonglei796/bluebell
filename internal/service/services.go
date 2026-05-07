@@ -9,6 +9,9 @@ import (
 	"bluebell/internal/dao/cache"
 	"bluebell/internal/dao/database"
 
+	// 基础设施层 - ES 客户端
+	"bluebell/internal/infrastructure/es"
+
 	// 领域层 - Service 接口
 	"bluebell/internal/domain/svcdomain"
 
@@ -33,10 +36,11 @@ func NewServices(
 	dbRepos *database.Repositories,
 	cacheRepos *cache.Repositories,
 	publisher *mq.MQPublisher,
+	esClient *es.Client,
 	cfg *config.Config,
 ) *Services {
 	return &Services{
-		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher),
+		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher, esClient),
 		Community: communitysvc.NewCommunityService(dbRepos.Community, dbRepos.User),
 		User:      usersvc.NewUserService(dbRepos.User, cacheRepos.TokenCache, cfg),
 	}

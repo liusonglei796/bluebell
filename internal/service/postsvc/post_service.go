@@ -13,6 +13,7 @@ import (
 	postResp "bluebell/internal/dto/response/post"
 
 	// 基础设施
+	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/service/mq"
 
@@ -39,6 +40,7 @@ type postServiceStruct struct {
 	voteRepo   dbdomain.VoteRepository
 	remarkRepo dbdomain.RemarkRepository
 	publisher  *mq.MQPublisher
+	esClient   *es.Client
 }
 
 // NewPostService 创建帖子服务实例
@@ -48,6 +50,7 @@ func NewPostService(
 	voteRepo dbdomain.VoteRepository,
 	remarkRepo dbdomain.RemarkRepository,
 	publisher *mq.MQPublisher,
+	esClient *es.Client,
 ) svcdomain.PostService {
 	return &postServiceStruct{
 		postRepo:   postRepo,
@@ -55,6 +58,7 @@ func NewPostService(
 		voteRepo:   voteRepo,
 		remarkRepo: remarkRepo,
 		publisher:  publisher,
+		esClient:   esClient,
 	}
 }
 
@@ -279,7 +283,7 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 	return data, nil
 }
 
-// DeletePost 删除帖子（软删除）
+// DeletePost 删除帖子及其评论（级联软删除）
 func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID int64) error {
 	ctx, span := middleware.StartSpanFromContext(ctx, "DeletePost",
 		attribute.Int64("post.id", postID),
@@ -302,6 +306,15 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 		return errorx.ErrForbidden
 	}
 
+	// 1. 删除该帖子的所有评论
+	if err := s.remarkRepo.DeleteRemarksByPostID(ctx, postID); err != nil {
+		zap.L().Error("remarkRepo.DeleteRemarksByPostID failed",
+			zap.Int64("post_id", postID),
+			zap.Error(err))
+		return errorx.ErrServerBusy
+	}
+
+	// 2. 软删除帖子 (status = 0)
 	err = s.postRepo.DeletePostByAuthor(ctx, postID, userID)
 	if err != nil {
 		zap.L().Error("postRepo.DeletePostByAuthor failed",
@@ -309,6 +322,17 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 			zap.Int64("user_id", userID),
 			zap.Error(err))
 		return errorx.ErrServerBusy
+	}
+
+	// 3. 删除 ES 中的帖子文档
+	if s.esClient != nil {
+		postIDStr := strconv.FormatInt(postID, 10)
+		if err := s.esClient.DeleteDocument(ctx, es.IndexPost, postIDStr); err != nil {
+			zap.L().Error("esClient.DeleteDocument failed",
+				zap.Int64("post_id", postID),
+				zap.Error(err))
+			// ES 删除失败不影响主流程，仅记录日志
+		}
 	}
 
 	// 清理 Redis 缓存

@@ -1,7 +1,9 @@
 package es
 
 import (
+	"context"
 	"fmt"
+	"io"
 
 	"bluebell/internal/config"
 
@@ -49,4 +51,19 @@ func NewClient(cfg *config.Config) (*Client, error) {
 // Called by: sync_consumer.go (indexDocument 和 deleteDocument 中 c.client.ES())
 func (c *Client) ES() *elasticsearch.Client {
 	return c.es
+}
+
+// DeleteDocument deletes a document from the specified index by ID
+func (c *Client) DeleteDocument(ctx context.Context, index, docID string) error {
+	res, err := c.es.Delete(index, docID, c.es.Delete.WithContext(ctx))
+	if err != nil {
+		return fmt.Errorf("ES delete document failed: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		body, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("ES delete document error: %s", string(body))
+	}
+	return nil
 }
