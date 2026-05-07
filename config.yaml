@@ -32,8 +32,8 @@ redis:
 
 ratelimit:
   # 中型项目推荐配置：50 请求/秒，最大突发 100
-  fill_interval: "20ms"
-  capacity: 100
+  fill_interval: "0.1ms"
+  capacity: 1000000
 
 timeout:
   timeout: "30s"

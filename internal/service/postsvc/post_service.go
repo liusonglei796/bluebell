@@ -25,6 +25,7 @@ import (
 
 	"context"
 	"strconv"
+	"time"
 
 	"bluebell/internal/middleware"
 
@@ -348,64 +349,8 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 
 // VoteForPost 投票业务逻辑
 func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
-	ctx, span := middleware.StartSpanFromContext(ctx, "VoteForPost",
-		attribute.Int64("user.id", userID),
-		attribute.String("post.id", strconv.FormatInt(p.PostID, 10)),
-		attribute.Int64("vote.direction", int64(p.Direction)),
-	)
-	defer span.End()
-
-	// Redis 原子操作：Lua 脚本保证"检查旧值 + 更新投票记录"的原子性，防止并发重复投票
-	userIDStr := strconv.FormatInt(userID, 10)
-	postIDStr := strconv.FormatInt(p.PostID, 10)
-
-	post, err := s.postRepo.GetPostByID(ctx, p.PostID)
-	if err != nil {
-		zap.L().Error("postRepo.GetPostByID failed",
-			zap.Int64("post_id", p.PostID),
-			zap.Error(err))
-		return errorx.ErrServerBusy
-	}
-	if post == nil {
-		return errorx.ErrNotFound
-	}
-
-	// Redis 投票（Lua 脚本内部已处理重复投票和时间过期）
-	err = s.postCache.VoteForPost(
-		ctx,
-		userIDStr,
-		postIDStr,
-		strconv.FormatInt(post.CommunityID, 10),
-		float64(p.Direction),
-	)
-	if err != nil {
-		code := errorx.GetCode(err)
-		if code == errorx.CodeVoteTimeExpire || code == errorx.CodeVoteRepeated {
-			return err
-		}
-
-		return errorx.ErrServerBusy
-	}
-
-	// 发布投票消息到 MQ，由 VoteConsumer 异步落盘 MySQL
-	if s.publisher != nil {
-		voteMsg := &mq.VoteMessage{
-			PostID: postIDStr,
-			UserID: userIDStr,
-			Action: int(p.Direction),
-		}
-		if err := s.publisher.PublishVote(ctx, voteMsg); err != nil {
-			zap.L().Error("publish vote message to mq failed",
-				zap.Int64("user_id", userID),
-				zap.Int64("post_id", p.PostID),
-				zap.Error(err),
-			)
-			// MQ 发送失败不影响投票结果（Redis 已更新），仅记录日志
-			// 可通过监控告警人工介入
-		}
-	}
-
-	return nil
+	time.Sleep(100 * time.Millisecond) // 模拟瓶颈 (强制延迟)
+	return nil // 直接返回，绕过业务逻辑，仅演示延迟带来的并发瓶颈
 }
 func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error) {
 	ctx, span := middleware.StartSpanFromContext(ctx, "RemarkPost",
