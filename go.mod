@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/bwmarrin/snowflake v0.3.0
-	github.com/elastic/go-elasticsearch/v8 v8.19.3
+	github.com/elastic/go-elasticsearch/v8 v8.19.5
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-contrib/timeout v1.1.0
@@ -33,7 +33,7 @@ require (
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.8.0 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.9.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect

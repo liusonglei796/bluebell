@@ -20,6 +20,8 @@ type PostRepository interface {
 	GetPostsVoteData(ctx context.Context, ids []string) ([]int64, error)
 	// DeletePost 删除帖子时清理 Redis 缓存（ZSet、Hash、投票记录）
 	DeletePost(ctx context.Context, postID, communityID int64) error
+	// CheckPostExists 检查帖子是否存在
+	CheckPostExists(ctx context.Context, postID int64) (bool, error)
 }
 
 // UserTokenCacheRepository 用户Token缓存仓储接口

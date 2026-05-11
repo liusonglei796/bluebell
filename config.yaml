@@ -1,7 +1,7 @@
 app:
   name: "bluebell"
   port: 8080
-  mode: "release"
+  mode: "dev"
 
 snowflake:
   start_time: 1775539200000
@@ -15,25 +15,25 @@ log:
   max_age: 30
 
 mysql:
-  host: "localhost"
+  host: "127.0.0.1"
   port: 3307
   passwd: "15939087780Ll@"
   db_name: "bluebell"
   user: "root"
-  max_open_conns: 200
-  max_idle_conns: 30
+  max_open_conns: 50
+  max_idle_conns: 25
 
 redis:
-  host: "localhost"
+  host: "127.0.0.1"
   port: 6380
   password: ""
   db_name: 1
-  pool_size: 100
+  pool_size: 200
 
 ratelimit:
-  # 中型项目推荐配置：50 请求/秒，最大突发 100
-  fill_interval: "0.1ms"
-  capacity: 1000000
+  # 彻底关闭限流，观察物理瓶颈
+  fill_interval: "1ns"
+  capacity: 999999999999
 
 timeout:
   timeout: "30s"
@@ -53,7 +53,6 @@ es:
   password: ""
 
 otel:
-  enabled: true
-  endpoint: "http://localhost:4318"
+  enabled: false
+  endpoint: "localhost:4317"
   service_name: "bluebell"
-

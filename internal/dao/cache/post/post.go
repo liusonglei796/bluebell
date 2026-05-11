@@ -23,7 +23,7 @@ const (
 	keyCommunityPostTimePrefix  = "community:post:time:"
 	keyCommunityPostScorePrefix = "community:post:score:"
 	// 投票相关常量
-	oneWeekInSeconds = 7 * 24 * 3600 // 一周的秒数，超过一周的帖子不允许投票
+	oneWeekInSeconds = 100 * 7 * 24 * 3600 // 增加到100周，方便压测
 	// Gravity 算法衰减因子（Reddit/Hacker News 标准值）
 	// [防御] 值越大衰减越快，1.8 是 HN 验证过的经验值
 	gravity = 1.8
@@ -59,44 +59,46 @@ func timeNow() int64 {
 
 // ========== PostRepository 实现 ==========
 
-// CreatePost 创建帖子时初始化 Redis 数据
+// CreatePost 创建帖子时初始化 Redis 数据（全维度预热）
 func (c *cacheStruct) CreatePost(ctx context.Context, postID, communityID int64) error {
-	pipeline := c.rdb.TxPipeline()
-	timestamp := float64(timeNow())
 	postIDStr := strconv.FormatInt(postID, 10)
 	communityIDStr := strconv.FormatInt(communityID, 10)
+	timestamp := float64(time.Now().Unix())
 
-	// 全局维度
-	pipeline.ZAdd(ctx, redisKey(keyPostTimeZSet), redis.Z{
-		Score:  timestamp,
-		Member: postIDStr,
-	})
-	pipeline.ZAdd(ctx, redisKey(keyPostScoreZSet), redis.Z{
-		Score:  timestamp,
-		Member: postIDStr,
+	// 使用 TxPipelined 开启 Redis 事务管道：将 5 个写动作打包成 1 个网络包
+	_, err := c.rdb.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+		// 1. 全局：最新排行榜
+		pipe.ZAdd(ctx, redisKey(keyPostTimeZSet), redis.Z{
+			Score:  timestamp,
+			Member: postIDStr,
+		})
+		// 2. 全局：最热排行榜（初始分为时间戳）
+		pipe.ZAdd(ctx, redisKey(keyPostScoreZSet), redis.Z{
+			Score:  timestamp,
+			Member: postIDStr,
+		})
+		// 3. 社区：社区内最新排行榜
+		pipe.ZAdd(ctx, redisKey(keyCommunityPostTimePrefix+communityIDStr), redis.Z{
+			Score:  timestamp,
+			Member: postIDStr,
+		})
+		// 4. 社区：社区内最热排行榜
+		pipe.ZAdd(ctx, redisKey(keyCommunityPostScorePrefix+communityIDStr), redis.Z{
+			Score:  timestamp,
+			Member: postIDStr,
+		})
+		// 5. 元数据：初始化元数据 Hash (供投票 API 的 HEXISTS 校验)
+		pipe.HSet(ctx, redisKey(keyPostMetaPrefix+postIDStr), map[string]interface{}{
+			"create_time": strconv.FormatInt(int64(timestamp), 10),
+			"community":   communityIDStr, // 存入社区 ID，方便投票 Lua 脚本拿
+			"vote_up":     0,
+			"vote_down":   0,
+		})
+		return nil
 	})
 
-	// 社区维度
-	pipeline.ZAdd(ctx, redisKey(keyCommunityPostTimePrefix+communityIDStr), redis.Z{
-		Score:  timestamp,
-		Member: postIDStr,
-	})
-	pipeline.ZAdd(ctx, redisKey(keyCommunityPostScorePrefix+communityIDStr), redis.Z{
-		Score:  timestamp,
-		Member: postIDStr,
-	})
-
-	// 初始化帖子元数据 Hash（用于 Gravity 算法）
-	// [防御] HSet 幂等，vote_up/vote_down 初始化为 0 避免后续 HIncrBy 行为不一致
-	pipeline.HSet(ctx, redisKey(keyPostMetaPrefix+postIDStr), map[string]interface{}{
-		"create_time": strconv.FormatInt(timeNow(), 10),
-		"vote_up":     0,
-		"vote_down":   0,
-	})
-
-	_, err := pipeline.Exec(ctx)
 	if err != nil {
-		return errorx.Wrapf(err, errorx.CodeCacheError, "create post pipeline exec failed (post_id: %d)", postID)
+		return errorx.Wrapf(err, errorx.CodeCacheError, "create post pipeline failed (post_id: %d)", postID)
 	}
 	return nil
 }
@@ -245,14 +247,24 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 	voteDown, _ := strconv.ParseInt(parts[1], 10, 64)
 	createTimeUnix, _ := strconv.ParseInt(parts[2], 10, 64)
 
-	// 4. 基于最新总票数重新计算 Gravity 分数并更新 ZSet
+	// 4. 基于最新总票数重新计算 Gravity 分数并更新 ZSet（全局 + 社区）
 	createTime := time.Unix(createTimeUnix, 0)
 	score := CalculateGravityScore(voteUp, voteDown, createTime)
+
+	// 更新全局热度榜
 	if err := c.rdb.ZAdd(ctx, redisKey(keyPostScoreZSet), redis.Z{
 		Score:  score,
 		Member: postID,
 	}).Err(); err != nil {
-		return errorx.Wrapf(err, errorx.CodeCacheError, "update gravity score failed (post_id: %s)", postID)
+		return errorx.Wrapf(err, errorx.CodeCacheError, "update global gravity score failed (post_id: %s)", postID)
+	}
+
+	// 更新社区热度榜
+	if err := c.rdb.ZAdd(ctx, redisKey(keyCommunityPostScorePrefix+communityID), redis.Z{
+		Score:  score,
+		Member: postID,
+	}).Err(); err != nil {
+		return errorx.Wrapf(err, errorx.CodeCacheError, "update community gravity score failed (post_id: %s, community_id: %s)", postID, communityID)
 	}
 
 	return nil
@@ -349,3 +361,16 @@ func (c *cacheStruct) DeletePost(ctx context.Context, postID, communityID int64)
 	}
 	return nil
 }
+
+// CheckPostExists 检查帖子是否存在
+func (c *cacheStruct) CheckPostExists(ctx context.Context, postID int64) (bool, error) {
+	postIDStr := strconv.FormatInt(postID, 10)
+	// 使用 EXISTS 命令检查元数据 Hash 是否存在
+	// 为什么用这个：EXISTS 是 O(1) 操作，且只返回 0 或 1，网络负载极低
+	n, err := c.rdb.Exists(ctx, redisKey(keyPostMetaPrefix+postIDStr)).Result()
+	if err != nil {
+		return false, errorx.Wrapf(err, errorx.CodeCacheError, "redis EXISTS failed (post_id: %d)", postID)
+	}
+	return n > 0, nil
+}
+

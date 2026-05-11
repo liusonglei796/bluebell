@@ -67,16 +67,15 @@ func (p *MQPublisher) publish(ctx context.Context, exchange, routingKey string, 
 		return errorx.Wrapf(err, errorx.CodeInfraError, "marshal %s message failed", logName)
 	}
 
-	publishCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	err = p.channel.PublishWithContext(
-		publishCtx, exchange, routingKey,
-		true,  // mandatory: true
+	// 异步非阻塞发布：不等待 Publisher Confirm，fire-and-forget
+	// 性能优先，消息可能丢失（MQ重启时），但 Redis 是真相源，MySQL 只是最终一致性备份
+	err = p.channel.Publish(
+		exchange, routingKey,
+		false, // mandatory: false - 不需要确认是否路由成功
 		false, // immediate: false
 		amqp.Publishing{
 			ContentType:  "application/json",
-			DeliveryMode: deliveryMode, // 动态设置投递模式（瞬态/持久化）
+			DeliveryMode: deliveryMode,
 			Body:         body,
 			Timestamp:    time.Now(),
 		},
@@ -90,24 +89,7 @@ func (p *MQPublisher) publish(ctx context.Context, exchange, routingKey string, 
 		return errorx.Wrapf(err, errorx.CodeInfraError, "publish %s to %s failed", logName, exchange)
 	}
 
-	// 等待生产者确认（Publisher Confirm）：
-	// 阻塞等待 RabbitMQ 返回 Ack 或 Nack，确保消息已成功到达 Exchange
-	select {
-	case confirm := <-p.confirm:
-		if !confirm.Ack {
-			// 消息未到达 Exchange（如 Exchange 不存在或路由失败）
-			zap.L().Error("message not acked by exchange",
-				zap.String("exchange", exchange),
-				zap.Uint64("delivery_tag", confirm.DeliveryTag),
-			)
-			return errorx.Newf(errorx.CodeInfraError, "message not acked by exchange: %s", exchange)
-		}
-	case <-publishCtx.Done():
-		// 等待确认超时
-		return errorx.Newf(errorx.CodeInfraError, "waiting for publisher confirm timeout: %s", exchange)
-	}
-
-	zap.L().Debug("publish confirmed by exchange", zap.String("exchange", exchange), zap.Int("size", len(body)))
+	zap.L().Debug("publish (async, no confirm)", zap.String("exchange", exchange), zap.Int("size", len(body)))
 	return nil
 }
 

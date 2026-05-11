@@ -41,3 +41,16 @@ timeout = "30s"
 secret = "bluebell_secret_key_change_in_prod"
 access_expiry = "120m"
 refresh_expiry = "168h"
+
+[rabbitmq]
+url = "amqp://bluebell:bluebell123@rabbitmq:5672/"
+
+[es]
+addresses = ["http://elasticsearch:9200"]
+username = ""
+password = ""
+
+[otel]
+enabled = false
+endpoint = "otel-collector:4317"
+service_name = "bluebell"

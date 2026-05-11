@@ -2,8 +2,8 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/main.exe ./cmd/bluebell/"
-bin = "./tmp/main.exe"
+cmd = "go build -o ./tmp/bluebell_dev.exe ./cmd/bluebell/"
+bin = "./tmp/bluebell_dev.exe"
 args = ["-conf", "./config.yaml"]
 include_ext = ["go", "tpl", "tmpl", "html", "yaml"]
 exclude_dir = ["assets", "tmp", "vendor", "frontend/node_modules", "教学文档", ".git", "data", "docs", "design-system", "sql", "node_modules", "bin", "pkg", "frontend"]

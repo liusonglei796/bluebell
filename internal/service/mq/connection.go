@@ -53,10 +53,7 @@ func newMQConnection(ctx context.Context, cfg *config.Config) (*MQConnection, er
 
 	mqConn := &MQConnection{conn: conn, channel: ch}
 
-	if err := mqConn.ping(); err != nil {
-		mqConn.Close()
-		return nil, errorx.Wrap(err, errorx.CodeInfraError, "rabbitmq ping failed")
-	}
+	// mqConn.ping() removed
 
 	zap.L().Info("init rabbitmq connection success", zap.String("url", cfg.RabbitMQ.URL))
 	return mqConn, nil

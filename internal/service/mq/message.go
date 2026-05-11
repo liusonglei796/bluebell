@@ -3,6 +3,7 @@ package mq
 // VoteMessage 投票异步计数消息
 // 通过 RabbitMQ 异步消费后更新 Redis 中的投票计数
 type VoteMessage struct {
+	MsgID  string `json:"msg_id"`  // 消息唯一 ID (如 Snowflake ID)
 	PostID string `json:"post_id"`
 	UserID string `json:"user_id"`
 	Action int    `json:"action"` // 1=upvote, -1=downvote

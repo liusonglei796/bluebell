@@ -39,14 +39,16 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 	// - test/release: Silent 级别，不打印任何 SQL（生产环境）
 	var gormLogger logger.Interface
 
-	if cfg.App.Mode == "debug" {
+	if cfg.App.Mode == "dev" {
+		// 独立创建一个慢查询日志文件，避免和 zap 冲突
+		slowLogFile, _ := os.OpenFile("gorm_slow.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		gormLogger = logger.New(
-			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			log.New(slowLogFile, "\r\n", log.LstdFlags), // 专门输出到新文件
 			logger.Config{
-				SlowThreshold:             0,
-				LogLevel:                  logger.Info,
+				SlowThreshold:             10 * time.Millisecond,
+				LogLevel:                  logger.Warn,
 				IgnoreRecordNotFoundError: true,
-				Colorful:                  true,
+				Colorful:                  false,
 			},
 		)
 	} else {

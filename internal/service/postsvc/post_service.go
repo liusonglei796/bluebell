@@ -25,7 +25,6 @@ import (
 
 	"context"
 	"strconv"
-	"time"
 
 	"bluebell/internal/middleware"
 
@@ -347,11 +346,39 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 	return nil
 }
 
-// VoteForPost 投票业务逻辑
+// VoteForPost 投票业务逻辑 (Situation C: Full Optimization)
 func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
-	time.Sleep(100 * time.Millisecond) // 模拟瓶颈 (强制延迟)
-	return nil // 直接返回，绕过业务逻辑，仅演示延迟带来的并发瓶颈
+	ctx, span := middleware.StartSpanFromContext(ctx, "VoteForPost",
+		attribute.Int64("user.id", userID),
+	)
+	defer span.End()
+
+	// 1. 优先从 Redis 检查帖子是否存在
+	exists, _ := s.postCache.CheckPostExists(ctx, p.PostID)
+	if !exists {
+		post, err := s.postRepo.GetPostByID(ctx, p.PostID)
+		if err != nil || post == nil {
+			return errorx.ErrNotFound
+		}
+	}
+
+	// 2. 异步入队 (MQ)
+	postIDStr := strconv.FormatInt(p.PostID, 10)
+	userIDStr := strconv.FormatInt(userID, 10)
+
+	if s.publisher != nil {
+		msg := &mq.VoteMessage{
+			MsgID:  strconv.FormatInt(snowflake.GenID(), 10), // 生成全局唯一消息ID
+			PostID: postIDStr,
+			UserID: userIDStr,
+			Action: int(p.Direction),
+		}
+		_ = s.publisher.PublishVote(ctx, msg)
+	}
+
+	return nil
 }
+
 func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error) {
 	ctx, span := middleware.StartSpanFromContext(ctx, "RemarkPost",
 		attribute.Int64("post.id", req.PostID),
