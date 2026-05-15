@@ -1,6 +1,7 @@
 package translate
 import (
-	"bluebell/pkg/errorx"
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -32,12 +33,12 @@ func InitTrans() (err error) {
 		var ok bool
 		Trans, ok = uni.GetTranslator("zh")
 		if !ok {
-			return errorx.New(errorx.CodeInfraError, "uni.GetTranslator(\"zh\") failed")
+			return errors.New("uni.GetTranslator(\"zh\") failed")
 		}
 
 		// 注册中文翻译
 		if err = zh_translations.RegisterDefaultTranslations(v, Trans); err != nil {
-			return errorx.Wrap(err, errorx.CodeInfraError, "zh_translations.RegisterDefaultTranslations failed")
+			return fmt.Errorf("zh_translations.RegisterDefaultTranslations failed: %w", err)
 		}
 	}
 	return nil

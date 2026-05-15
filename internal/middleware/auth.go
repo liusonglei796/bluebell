@@ -1,23 +1,23 @@
 package middleware
 
 import (
-	"bluebell/internal/backfront"
 	"bluebell/internal/config"
-	"bluebell/internal/domain/cachedomain"
+	"bluebell/internal/domain"
+	"bluebell/internal/domain/entity"
 	"bluebell/internal/infrastructure/jwt"
-	"bluebell/pkg/errorx"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 // JWTAuthMiddleware 基于JWT的认证中间件，包含 SSO 校验
-func JWTAuthMiddleware(cfg *config.Config, tokenRepo cachedomain.UserTokenCacheRepository) gin.HandlerFunc {
+func JWTAuthMiddleware(cfg *config.Config, tokenRepo domain.UserTokenCacheRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. 获取 Authorization Header
 		authHeader := c.Request.Header.Get("Authorization")
 		if authHeader == "" {
-			backfront.HandleError(c, errorx.ErrNeedLogin)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": entity.ErrNeedLogin.Error()})
 			c.Abort()
 			return
 		}
@@ -25,7 +25,7 @@ func JWTAuthMiddleware(cfg *config.Config, tokenRepo cachedomain.UserTokenCacheR
 		// 2. 解析 Bearer Token
 		parts := strings.SplitN(authHeader, " ", 2)
 		if !(len(parts) == 2 && parts[0] == "Bearer") {
-			backfront.HandleError(c, errorx.ErrInvalidToken)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": entity.ErrInvalidToken.Error()})
 			c.Abort()
 			return
 		}
@@ -34,7 +34,7 @@ func JWTAuthMiddleware(cfg *config.Config, tokenRepo cachedomain.UserTokenCacheR
 		// 3. 解析并校验 aToken
 		userID, err := jwt.ParseToken(cfg, tokenStr, jwt.AccessTokenType)
 		if err != nil {
-			backfront.HandleError(c, errorx.ErrInvalidToken)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": entity.ErrInvalidToken.Error()})
 			c.Abort()
 			return
 		}
@@ -46,7 +46,7 @@ func JWTAuthMiddleware(cfg *config.Config, tokenRepo cachedomain.UserTokenCacheR
 			// 此处如果不满足业务强限制，也可以选择直接 Abort
 		} else {
 			if activeToken != tokenStr {
-				backfront.HandleError(c, errorx.New(errorx.CodeInvalidToken, "账号已在其他地方登录"))
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "账号已在其他地方登录"})
 				c.Abort()
 				return
 			}

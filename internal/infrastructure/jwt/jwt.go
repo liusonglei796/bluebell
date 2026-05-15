@@ -3,7 +3,7 @@ package jwt
 
 import (
 	"bluebell/internal/config"
-	"bluebell/pkg/errorx"
+	"bluebell/internal/domain/entity"
 	"fmt"
 	"strconv"
 	"time"
@@ -41,23 +41,23 @@ func ParseToken(cfg *config.Config, tokenString string, expectedType TokenType) 
 		return []byte(cfg.JWT.Secret), nil
 	})
 	if err != nil {
-		return 0, errorx.Wrap(err, errorx.CodeInvalidToken, "Token 解析失败")
+		return 0, fmt.Errorf("token 解析失败: %w", err)
 	}
 	if !token.Valid {
-		return 0, errorx.New(errorx.CodeInvalidToken, "无效的Token")
+		return 0, entity.ErrInvalidToken
 	}
 
 	if claims.TokenType != expectedType {
-		return 0, errorx.New(errorx.CodeInvalidToken, "Token类型不匹配")
+		return 0, entity.ErrInvalidToken
 	}
 
 	if claims.Subject == "" {
-		return 0, errorx.New(errorx.CodeInvalidToken, "无效的用户ID")
+		return 0, entity.ErrInvalidToken
 	}
 
 	userID, err = strconv.ParseInt(claims.Subject, 10, 64)
 	if err != nil {
-		return 0, errorx.New(errorx.CodeInvalidToken, "无效的用户ID")
+		return 0, entity.ErrInvalidToken
 	}
 	return userID, nil
 }
@@ -74,7 +74,7 @@ func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err erro
 	}
 	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
-		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 AccessToken 失败")
+		return "", "", fmt.Errorf("生成 AccessToken 失败: %w", err)
 	}
 
 	rClaims := CustomClaims{
@@ -87,7 +87,7 @@ func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err erro
 	}
 	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString([]byte(cfg.JWT.Secret))
 	if err != nil {
-		return "", "", errorx.Wrap(err, errorx.CodeInfraError, "生成 RefreshToken 失败")
+		return "", "", fmt.Errorf("生成 RefreshToken 失败: %w", err)
 	}
 
 	return aToken, rToken, nil

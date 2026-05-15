@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"bluebell/internal/infrastructure/logger"
 	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"net/http"
 	"strings"
@@ -13,15 +13,10 @@ import (
 func GinLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
-		// 1. 执行后续中间件和业务逻辑
 		c.Next()
-		// 2. 只有在业务处理完后才计算耗时
 		cost := time.Since(start)
 
-		// 3. 性能优化：构造字段切片
-		// 预分配 8-10 个容量，减少 append 导致的扩容
-		fields := make([]zap.Field, 0, 10)
-		fields = append(fields,
+		fields := []zap.Field{
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
 			zap.String("path", c.Request.URL.Path),
@@ -29,26 +24,23 @@ func GinLogger() gin.HandlerFunc {
 			zap.String("ip", c.ClientIP()),
 			zap.String("user_agent", c.Request.UserAgent()),
 			zap.Duration("cost", cost),
-		)
-
-		// 从 context 中提取 traceID
-		spanCtx := trace.SpanContextFromContext(c.Request.Context())
-		if spanCtx.HasTraceID() {
-			fields = append(fields, zap.String("trace_id", spanCtx.TraceID().String()))
 		}
 
-		// 4. 只有存在错误时才添加 errors 字段，避免空字符串占用空间
 		if len(c.Errors) > 0 {
 			fields = append(fields, zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()))
 		}
 
-		// 5. 根据状态码自动切换日志级别
-		if c.Writer.Status() >= 500 {
-			zap.L().Error("server error", fields...)
-		} else if c.Writer.Status() >= 400 {
-			zap.L().Warn("client error", fields...)
+		// 使用 logger.WithContext(ctx) 获取带 trace_id 的 logger
+		ctx := c.Request.Context()
+		status := c.Writer.Status()
+		log := logger.WithContext(ctx)
+
+		if status >= 500 {
+			log.Error("server error", fields...)
+		} else if status >= 400 {
+			log.Warn("client error", fields...)
 		} else {
-			zap.L().Info("http request", fields...)
+			log.Info("http request", fields...)
 		}
 	}
 }

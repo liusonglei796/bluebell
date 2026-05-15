@@ -67,3 +67,23 @@ func (c *Client) DeleteDocument(ctx context.Context, index, docID string) error 
 	}
 	return nil
 }
+
+// IndexDocument indexes a document into the specified index
+func (c *Client) IndexDocument(ctx context.Context, index, docID string, body io.Reader) error {
+	res, err := c.es.Index(
+		index,
+		body,
+		c.es.Index.WithContext(ctx),
+		c.es.Index.WithDocumentID(docID),
+	)
+	if err != nil {
+		return fmt.Errorf("ES index document failed: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		respBody, _ := io.ReadAll(res.Body)
+		return fmt.Errorf("ES index document error: %s", string(respBody))
+	}
+	return nil
+}

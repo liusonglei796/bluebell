@@ -53,6 +53,6 @@ es:
   password: ""
 
 otel:
-  enabled: false
+  enabled: true
   endpoint: "localhost:4317"
   service_name: "bluebell"

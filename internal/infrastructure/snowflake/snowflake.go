@@ -2,7 +2,7 @@ package snowflake
 
 import (
 	"bluebell/internal/config"
-	"bluebell/pkg/errorx"
+	"fmt"
 	"sync"
 	"time"
 
@@ -25,7 +25,7 @@ func Init(cfg *config.Config) (err error) {
 	// 创建节点
 	node, err = sf.NewNode(cfg.Snowflake.MachineID)
 	if err != nil {
-		return errorx.Wrapf(err, errorx.CodeInfraError, "初始化雪花算法节点失败, machineID=%d", cfg.Snowflake.MachineID)
+		return fmt.Errorf("初始化雪花算法节点失败, machineID=%d: %w", cfg.Snowflake.MachineID, err)
 	}
 	return
 }

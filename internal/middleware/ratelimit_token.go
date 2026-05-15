@@ -5,8 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"bluebell/internal/backfront"
-	"bluebell/pkg/errorx"
+	"bluebell/internal/domain/entity"
 
 	"github.com/gin-gonic/gin"
 	"github.com/juju/ratelimit"
@@ -55,10 +54,8 @@ func RateLimitMiddleware(fillInterval time.Duration, capacity int64) gin.Handler
 
 			c.Header("Retry-After", "1")
 			c.Header("X-RateLimit-Limit", "rate-limited")
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, &backfront.ResponseData{
-				Code: errorx.CodeRateLimitExceeded,
-				Msg:  errorx.ErrRateLimitExceeded.Error(),
-				Data: nil,
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"error": entity.ErrRateLimitExceeded.Error(),
 			})
 			return
 		}

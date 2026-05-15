@@ -49,8 +49,3 @@ url = "amqp://bluebell:bluebell123@rabbitmq:5672/"
 addresses = ["http://elasticsearch:9200"]
 username = ""
 password = ""
-
-[otel]
-enabled = false
-endpoint = "otel-collector:4317"
-service_name = "bluebell"

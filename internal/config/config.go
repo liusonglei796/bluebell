@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bluebell/pkg/errorx"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -73,13 +72,13 @@ type esConfig struct {
 	Password  string   `mapstructure:"password"`
 }
 
-// otelConfig OpenTelemetry 配置结构体
-// 定义在 config 包中以避免与 otel 包的循环依赖
-type otelConfig struct {
+// OtelConfig OpenTelemetry 配置结构体
+type OtelConfig struct {
 	Enabled     bool   `mapstructure:"enabled"`
 	Endpoint    string `mapstructure:"endpoint"`
 	ServiceName string `mapstructure:"service_name"`
 }
+
 
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
@@ -94,7 +93,7 @@ type Config struct {
 	Timeout   *timeoutConfig   `mapstructure:"timeout"`
 	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
 	ES        *esConfig        `mapstructure:"es"`
-	Otel      *otelConfig      `mapstructure:"otel"`
+	Otel      *OtelConfig      `mapstructure:"otel"`
 }
 
 var atva atomic.Value
@@ -116,12 +115,12 @@ func Init(filePath string) (*Config, error) {
 	viper.SetConfigFile(filePath)
 	err := viper.ReadInConfig()
 	if err != nil {
-		return nil, errorx.Wrap(err, errorx.CodeConfigError, "Read config failed")
+		return nil, fmt.Errorf("Read config failed: %w", err)
 	}
 
 	conf := &Config{}
 	if err := viper.Unmarshal(conf); err != nil {
-		return nil, errorx.Wrap(err, errorx.CodeConfigError, "Unmarshal config failed")
+		return nil, fmt.Errorf("Unmarshal config failed: %w", err)
 	}
 	//把这个对象安全地发布给其他并发读取的 goroutine。
 	atva.Store(conf)
