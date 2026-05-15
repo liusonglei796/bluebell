@@ -5,7 +5,7 @@
 package domain
 
 import (
-	"bluebell/internal/infrastructure/persistence/mysql/model"
+	"bluebell/internal/domain/entity"
 	"context"
 	"time"
 )
@@ -46,29 +46,29 @@ type UserTokenCacheRepository interface {
 
 // PostRepository 帖子数据库仓储接口（MySQL）
 type PostRepository interface {
-	CreatePost(ctx context.Context, post *model.Post) error
-	GetPostByID(ctx context.Context, pid int64) (*model.Post, error)
-	GetPostListByIDsWithPreload(ctx context.Context, ids []string) ([]*model.Post, error)
+	CreatePost(ctx context.Context, post *entity.Post) error
+	GetPostByID(ctx context.Context, pid int64) (*entity.Post, error)
+	GetPostListByIDsWithPreload(ctx context.Context, ids []string) ([]*entity.Post, error)
 	DeletePostByAuthor(ctx context.Context, postID, authorID int64) error
 	UpdatePostStatus(ctx context.Context, postID string, status int8) error
 }
 
 // CommunityRepository 社区数据库仓储接口
 type CommunityRepository interface {
-	GetCommunityList(ctx context.Context) ([]*model.Community, error)
-	GetCommunityDetailByID(ctx context.Context, id int64) (*model.Community, error)
-	CreateCommunity(ctx context.Context, community *model.Community) error
+	GetCommunityList(ctx context.Context) ([]*entity.Community, error)
+	GetCommunityDetailByID(ctx context.Context, id int64) (*entity.Community, error)
+	CreateCommunity(ctx context.Context, community *entity.Community) error
 }
 
 // UserRepository 用户数据库仓储接口
 type UserRepository interface {
 	CheckUserExist(ctx context.Context, username string) error
-	InsertUser(ctx context.Context, user *model.User) error
-	VerifyUser(ctx context.Context, user *model.User) error
-	CheckUserExistsByID(ctx context.Context, uid int64) (*model.User, error)
-	GetUsersByIDs(ctx context.Context, ids []int64) ([]*model.User, error)
+	InsertUser(ctx context.Context, user *entity.User) error
+	VerifyUser(ctx context.Context, user *entity.User) error
+	CheckUserExistsByID(ctx context.Context, uid int64) (*entity.User, error)
+	GetUsersByIDs(ctx context.Context, ids []int64) ([]*entity.User, error)
 	GetUserRoleByID(ctx context.Context, uid int64) (int, error)
-	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
 }
 
 // VoteRepository 投票数据库仓储接口
@@ -78,8 +78,8 @@ type VoteRepository interface {
 
 // RemarkRepository 评论数据库仓储接口
 type RemarkRepository interface {
-	CreateRemark(ctx context.Context, remark *model.Remark) error
-	GetRemarksByPostID(ctx context.Context, postID int64) ([]*model.Remark, error)
+	CreateRemark(ctx context.Context, remark *entity.Remark) error
+	GetRemarksByPostID(ctx context.Context, postID int64) ([]*entity.Remark, error)
 	DeleteRemarkByID(ctx context.Context, remarkID uint) error
 	DeleteRemarksByPostID(ctx context.Context, postID int64) error
 }
