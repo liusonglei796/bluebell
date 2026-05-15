@@ -6,6 +6,21 @@
           <router-link to="/" class="flex-shrink-0 flex items-center">
             <span class="text-xl font-bold text-indigo-600">Bluebell</span>
           </router-link>
+          
+          <!-- Search Bar -->
+          <div class="hidden sm:ml-6 sm:flex sm:items-center">
+            <form @submit.prevent="handleSearch" class="relative">
+              <input 
+                v-model="searchKeyword"
+                type="text" 
+                class="block w-full pl-3 pr-10 py-1 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" 
+                placeholder="Search Bluebell"
+              >
+              <button type="submit" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              </button>
+            </form>
+          </div>
         </div>
         <div class="flex items-center space-x-4">
           <template v-if="authStore.token">
@@ -39,11 +54,23 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useAuthStore } from '../store/auth';
 import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const searchKeyword = ref('');
+
+const handleSearch = () => {
+  if (searchKeyword.value.trim()) {
+    router.push({
+      path: '/search',
+      query: { q: searchKeyword.value.trim() }
+    });
+    searchKeyword.value = '';
+  }
+};
 
 const logout = () => {
   authStore.clearAuth();
