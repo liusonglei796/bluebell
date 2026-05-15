@@ -8,7 +8,7 @@ import (
 	communityResp "bluebell/internal/interfaces/http/dto/response/community"
 	postResp "bluebell/internal/interfaces/http/dto/response/post"
 	voteresp "bluebell/internal/interfaces/http/dto/response/vote"
-	"bluebell/internal/infrastructure/persistence/mysql/model"
+	"bluebell/internal/domain/entity"
 
 	"context"
 )
@@ -66,7 +66,7 @@ type UserService interface {
 	RefreshToken(ctx context.Context, p *userreq.RefreshTokenRequest) (newAccessToken, newRefreshToken string, err error)
 
 	// GetUserByUsername 根据用户名获取用户信息
-	GetUserByUsername(ctx context.Context, username string) (*model.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
 
 	// Logout 用户登出，清除 Redis 中存储的 Token
 	Logout(ctx context.Context, userID int64) error

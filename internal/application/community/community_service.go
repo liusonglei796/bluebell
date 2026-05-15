@@ -10,9 +10,6 @@ import (
 	// DTO 响应
 	communityResp "bluebell/internal/interfaces/http/dto/response/community"
 
-	// 模型
-	"bluebell/internal/infrastructure/persistence/mysql/model"
-
 	// 错误处理
 	"bluebell/internal/domain/entity"
 
@@ -36,10 +33,10 @@ func NewCommunityService(communityRepo domain.CommunityRepository, userRepo doma
 	}
 }
 
-// toResponse 将 model.Community 转换为 communityResponse.Response
-func toResponse(c *model.Community) *communityResp.Response {
+// toResponse 将 entity.Community 转换为 communityResponse.Response
+func toResponse(c *entity.Community) *communityResp.Response {
 	return &communityResp.Response{
-		ID:           strconv.FormatUint(uint64(c.ID), 10),
+		ID:           strconv.FormatInt(c.ID, 10),
 		Name:         c.CommunityName,
 		Introduction: c.Introduction,
 	}
@@ -80,19 +77,19 @@ func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int6
 // CreateCommunity 创建社区（仅管理员）
 func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, introduction string, userID int64) error {
 	// 1. 校验用户角色是否为管理员
-	role, err := s.userRepo.GetUserRoleByID(ctx, userID)
+	user, err := s.userRepo.CheckUserExistsByID(ctx, userID)
 	if err != nil {
-		zap.L().Error("userRepo.GetUserRoleByID failed",
+		zap.L().Error("userRepo.CheckUserExistsByID failed",
 			zap.Int64("user_id", userID),
 			zap.Error(err))
 		return entity.ErrServerBusy
 	}
-	if role != model.RoleAdmin {
+	if user == nil || !user.IsAdmin() {
 		return entity.ErrForbidden
 	}
 
 	// 2. 创建社区
-	community := &model.Community{
+	community := &entity.Community{
 		CommunityName: name,
 		Introduction:  introduction,
 	}

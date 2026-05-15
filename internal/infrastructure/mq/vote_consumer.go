@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"bluebell/internal/domain"
+	"bluebell/internal/domain/entity"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
@@ -78,12 +79,18 @@ func (c *VoteConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 		return nil
 	}
 
-	if msg.Action != 1 && msg.Action != -1 && msg.Action != 0 {
-		return fmt.Errorf("无效投票动作: %d", msg.Action)
-	}
-
 	userID, _ := strconv.ParseInt(msg.UserID, 10, 64)
 	postID, _ := strconv.ParseInt(msg.PostID, 10, 64)
+
+	// 使用领域模型校验
+	vote := &entity.Vote{
+		UserID:    userID,
+		PostID:    postID,
+		Direction: int8(msg.Action),
+	}
+	if err := vote.Validate(); err != nil {
+		return fmt.Errorf("领域校验失败: %w", err)
+	}
 
 	if err := c.voteRepo.SaveVote(ctx, userID, postID, int8(msg.Action)); err != nil {
 		c.rdb.Del(ctx, dedupKey) // 失败则删除去重 key，允许重试

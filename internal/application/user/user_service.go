@@ -17,9 +17,6 @@ import (
 	"bluebell/internal/infrastructure/jwt"
 	"bluebell/internal/infrastructure/snowflake"
 
-	// 模型
-	"bluebell/internal/infrastructure/persistence/mysql/model"
-
 	// 错误处理
 	"bluebell/internal/domain/entity"
 
@@ -63,11 +60,19 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 	// 1. 生成 UID
 	userID := snowflake.GenID()
 
-	// 2. 构造 User 实例
-	u := &model.User{
+	// 2. 密码加密 (下沉到领域层)
+	hashedPassword, err := entity.HashPassword(p.Password)
+	if err != nil {
+		zap.L().Error("entity.HashPassword failed", zap.Error(err))
+		return entity.ErrServerBusy
+	}
+
+	// 3. 构造 User 领域实体
+	u := &entity.User{
 		UserID:   userID,
 		UserName: p.Username,
-		Passwd:   p.Password,
+		Password: hashedPassword,
+		Role:     entity.RoleUser,
 	}
 
 	err = s.userRepo.InsertUser(ctx, u)
@@ -84,9 +89,9 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 
 // Login 处理用户登录业务逻辑
 func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) (string, string, error) {
-	user := &model.User{
+	user := &entity.User{
 		UserName: p.Username,
-		Passwd:   p.Password,
+		Password: p.Password,
 	}
 
 	err := s.userRepo.VerifyUser(ctx, user)
@@ -197,6 +202,6 @@ func (s *userServiceStruct) Logout(ctx context.Context, userID int64) error {
 }
 
 // GetUserByUsername 根据用户名获取用户信息
-func (s *userServiceStruct) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
+func (s *userServiceStruct) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
 	return s.userRepo.GetUserByUsername(ctx, username)
 }

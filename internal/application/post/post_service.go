@@ -16,9 +16,6 @@ import (
 	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/infrastructure/mq"
 
-	// 模型
-	"bluebell/internal/infrastructure/persistence/mysql/model"
-
 	// 错误处理
 	"bluebell/internal/domain/entity"
 
@@ -62,14 +59,17 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 	postIDInt := snowflake.GenID()
 	postID = strconv.FormatInt(postIDInt, 10)
 
-	post := &model.Post{
-		PostID:   postID,
-		AuthorID: authorID,
-
+	post := &entity.Post{
+		PostID:      postID,
+		AuthorID:    authorID,
 		CommunityID: p.CommunityID,
 		PostTitle:   p.Title,
 		Content:     p.Content,
-		Status:      1,
+		Status:      entity.PostStatusPublished,
+	}
+
+	if !post.IsValid() {
+		return "", entity.ErrInvalidParam
 	}
 
 	err = s.postRepo.CreatePost(ctx, post)
@@ -261,12 +261,13 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 			zap.Error(err))
 		return entity.ErrServerBusy
 	}
-	if post == nil {
+	if !post.IsValid() {
 		return entity.ErrNotFound
 	}
 
-	if post.AuthorID != userID {
-		return entity.ErrForbidden
+	// 权限校验 (下沉到领域层)
+	if err := post.CanBeDeletedBy(userID); err != nil {
+		return err
 	}
 
 	// 1. 删除该帖子的所有评论
@@ -311,6 +312,16 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 
 // VoteForPost 投票业务逻辑 (Situation C: Full Optimization)
 func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
+	// 领域校验
+	vote := &entity.Vote{
+		PostID:    p.PostID,
+		UserID:    userID,
+		Direction: p.Direction,
+	}
+	if err := vote.Validate(); err != nil {
+		return err
+	}
+
 	// 1. 优先从 Redis 检查帖子是否存在
 	exists, _ := s.postCache.CheckPostExists(ctx, p.PostID)
 	if !exists {
@@ -348,15 +359,18 @@ func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkR
 			zap.Error(err))
 		return 0, entity.ErrServerBusy
 	}
-	if post == nil || post.PostID == "" {
+	if !post.IsValid() {
 		return 0, entity.ErrNotFound
 	}
 
-	// 2. 构建评论模型
-	remark := &model.Remark{
+	// 2. 构建评论领域实体
+	remark := &entity.Remark{
 		PostID:   req.PostID,
 		Content:  req.Content,
 		AuthorID: userID,
+	}
+	if err := remark.Validate(); err != nil {
+		return 0, err
 	}
 
 	// 3. 保存到数据库

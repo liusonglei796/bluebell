@@ -1,6 +1,9 @@
 package entity
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 // Remark 评论领域实体
 type Remark struct {
@@ -8,7 +11,7 @@ type Remark struct {
 	PostID    int64
 	Content   string
 	AuthorID  int64
-	CreatedAt string
+	CreatedAt time.Time
 	Author    *User
 }
 

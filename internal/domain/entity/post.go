@@ -7,6 +7,8 @@
 // 4. 是业务逻辑的核心载体
 package entity
 
+import "time"
+
 // 帖子状态常量
 const (
 	PostStatusPublished = 1  // 已发布
@@ -22,7 +24,7 @@ type Post struct {
 	PostTitle   string
 	Content     string
 	Status      int8
-	CreatedAt   string // RFC3339 格式的时间字符串
+	CreatedAt   time.Time
 	Author      *User
 	Community   *Community
 }
