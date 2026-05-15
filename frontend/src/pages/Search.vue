@@ -19,12 +19,13 @@
         @click="goToPost(post.post_id)">
         
         <!-- Highlighted Title -->
-        <h3 class="text-lg font-bold text-gray-900 mb-2" v-if="post.highlight_title" v-html="post.highlight_title[0]"></h3>
-        <h3 class="text-lg font-bold text-gray-900 mb-2" v-else>{{ post.post_title }}</h3>
+        <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors" v-if="post.highlight_title" v-html="post.highlight_title[0]"></h3>
+        <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors" v-else>{{ post.post_title }}</h3>
         
-        <div class="text-xs text-gray-500 mb-3">
-          Posted in <span class="font-medium">Community {{ post.community_id }}</span>
-          &bull; {{ new Date(post.created_at).toLocaleString() }}
+        <div class="text-xs text-gray-500 mb-3 flex items-center gap-2">
+          <span class="px-2 py-0.5 bg-gray-100 rounded text-gray-600">Community {{ post.community_id }}</span>
+          <span>&bull;</span>
+          <span>{{ new Date(post.created_at).toLocaleString() }}</span>
         </div>
 
         <!-- Highlighted Content -->

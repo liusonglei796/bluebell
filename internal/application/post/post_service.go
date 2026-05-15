@@ -413,3 +413,19 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 
 	return resp, nil
 }
+
+// SearchPosts 全文搜索帖子
+func (s *postServiceStruct) SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*es.SearchResponse, error) {
+	if s.esClient == nil {
+		zap.L().Warn("esClient is not initialized")
+		return &es.SearchResponse{Posts: []es.SearchPostDoc{}}, nil
+	}
+
+	esReq := &es.SearchRequest{
+		Keyword:  keyword,
+		Page:     page,
+		PageSize: pageSize,
+	}
+
+	return s.esClient.Search(ctx, esReq)
+}

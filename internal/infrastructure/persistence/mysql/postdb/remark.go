@@ -32,7 +32,7 @@ func fromModelRemark(m *model.Remark) *entity.Remark {
 		PostID:    m.PostID,
 		Content:   m.Content,
 		AuthorID:  m.AuthorID,
-		CreatedAt: m.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt: m.CreatedAt,
 	}
 
 	if m.Author != nil {

@@ -9,6 +9,7 @@ import (
 	postResp "bluebell/internal/interfaces/http/dto/response/post"
 	voteresp "bluebell/internal/interfaces/http/dto/response/vote"
 	"bluebell/internal/domain/entity"
+	"bluebell/internal/infrastructure/es"
 
 	"context"
 )
@@ -50,7 +51,10 @@ type PostService interface {
 	RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error)
 	// GetPostRemarks 获取帖子评论列表
 	GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error)
-	}
+
+	// SearchPosts 全文搜索帖子
+	SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*es.SearchResponse, error)
+}
 
 // ========== User Service 接口 ==========
 

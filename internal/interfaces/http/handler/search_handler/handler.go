@@ -1,8 +1,8 @@
 package search_handler
 
 import (
+	"bluebell/internal/application"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/interfaces/http/render"
 	searchreq "bluebell/internal/interfaces/http/dto/request/search"
 
@@ -11,13 +11,13 @@ import (
 
 // Handler 搜索相关处理器
 type Handler struct {
-	esClient *es.Client
+	postSvc application.PostService
 }
 
 // New 创建搜索处理器实例
-func New(esClient *es.Client) *Handler {
+func New(postSvc application.PostService) *Handler {
 	return &Handler{
-		esClient: esClient,
+		postSvc: postSvc,
 	}
 }
 
@@ -31,13 +31,7 @@ func (h *Handler) SearchHandler(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	esReq := &es.SearchRequest{
-		Keyword:  req.Keyword,
-		Page:     req.Page,
-		PageSize: req.PageSize,
-	}
-
-	resp, err := h.esClient.Search(ctx, esReq)
+	resp, err := h.postSvc.SearchPosts(ctx, req.Keyword, req.Page, req.PageSize)
 	if err != nil {
 		render.HandleError(c, err)
 		return

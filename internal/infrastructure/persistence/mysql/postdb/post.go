@@ -54,7 +54,7 @@ func fromModelPost(m *model.Post) *entity.Post {
 		PostTitle:   m.PostTitle,
 		Content:     m.Content,
 		Status:      m.Status,
-		CreatedAt:   m.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt:   m.CreatedAt,
 	}
 
 	if m.Author != nil {
@@ -93,7 +93,7 @@ func (r *postRepoStruct) GetPostByID(ctx context.Context, pid int64) (*entity.Po
 	err := r.db.WithContext(ctx).Preload("Author").
 		Preload("Community").
 		Where("post_id = ?", pid).
-		Where("status = ?", 1).
+		Where("status = ?", entity.PostStatusPublished).
 		First(m).Error
 
 	if err != nil {
@@ -116,7 +116,7 @@ func (r *postRepoStruct) GetPostListByIDsWithPreload(ctx context.Context, ids []
 	err = r.db.WithContext(ctx).Preload("Author").
 		Preload("Community").
 		Where("post_id IN ?", ids).
-		Where("status = ?", 1).
+		Where("status = ?", entity.PostStatusPublished).
 		Find(&mPosts).Error
 
 	if err != nil {
@@ -144,8 +144,8 @@ func (r *postRepoStruct) DeletePostByAuthor(ctx context.Context, postID, authorI
 	result := r.db.WithContext(ctx).Model(&model.Post{}).
 		Where("post_id = ?", postID).
 		Where("author_id = ?", authorID).
-		Where("status = ?", 1).
-		Update("status", 0)
+		Where("status = ?", entity.PostStatusPublished).
+		Update("status", entity.PostStatusDeleted)
 
 	if result.Error != nil {
 		return fmt.Errorf("删除帖子失败: %w", result.Error)

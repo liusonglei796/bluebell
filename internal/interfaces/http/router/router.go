@@ -69,6 +69,7 @@ func NewRouter(
 		apiV1.GET("/posts", hp.PostHandler.GetPostListHandler)
 		apiV1.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
 		apiV1.GET("/post/:id/remarks", hp.PostHandler.GetPostRemarksHandler)
+		apiV1.GET("/search", hp.SearchHandler.SearchHandler)
 	}
 
 	// 认证路由（需要 JWT 认证）

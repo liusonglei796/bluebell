@@ -7,6 +7,7 @@ import (
 	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/interfaces/http/handler/community_handler"
 	"bluebell/internal/interfaces/http/handler/post_handler"
+	"bluebell/internal/interfaces/http/handler/search_handler"
 	"bluebell/internal/interfaces/http/handler/user_handler"
 )
 
@@ -18,6 +19,7 @@ type Provider struct {
 	UserHandler      *user_handler.Handler
 	PostHandler      *post_handler.Handler
 	CommunityHandler *community_handler.Handler
+	SearchHandler    *search_handler.Handler
 }
 
 // NewProvider 创建 Provider 实例
@@ -32,5 +34,6 @@ func NewProvider(
 		UserHandler:      user_handler.New(userService),
 		PostHandler:      post_handler.New(postService, publisher),
 		CommunityHandler: community_handler.New(communityService),
+		SearchHandler:    search_handler.New(postService),
 	}
 }
