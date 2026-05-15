@@ -1,7 +1,6 @@
 package model
 
 import (
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -31,18 +30,4 @@ type User struct {
 // 为什么：GORM 默认使用复数形式表名(users)，需要显式指定为 user
 func (User) TableName() string {
 	return "user"
-}
-
-// BeforeCreate GORM 钩子，创建前自动处理
-// 为什么：将密码加密逻辑放在 Model 层，DAO 层保持纯粹的数据库操作
-func (u *User) BeforeCreate(tx *gorm.DB) error {
-	// 如果密码不为空，则进行加密
-	if u.Passwd != "" {
-		hash, err := bcrypt.GenerateFromPassword([]byte(u.Passwd), bcryptCost)
-		if err != nil {
-			return err
-		}
-		u.Passwd = string(hash)
-	}
-	return nil
 }

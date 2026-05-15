@@ -14,7 +14,6 @@ import (
 	"errors"
 	"fmt"
 
-	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
@@ -41,19 +40,45 @@ func (r *userRepoStruct) CheckUserExist(ctx context.Context, username string) (e
 	return nil
 }
 
+// toModelUser 将领域实体转换为数据库模型
+func toModelUser(u *entity.User) *model.User {
+	if u == nil {
+		return nil
+	}
+	return &model.User{
+		UserID:   u.UserID,
+		UserName: u.UserName,
+		Passwd:   u.Password,
+		Role:     u.Role,
+	}
+}
+
+// fromModelUser 将数据库模型转换为领域实体
+func fromModelUser(m *model.User) *entity.User {
+	if m == nil {
+		return nil
+	}
+	return &entity.User{
+		UserID:   m.UserID,
+		UserName: m.UserName,
+		Password: m.Passwd,
+		Role:     m.Role,
+	}
+}
+
 // InsertUser 插入新用户
-// 密码加密已移至 Model 的 BeforeCreate 钩子中自动处理
-func (r *userRepoStruct) InsertUser(ctx context.Context, user *model.User) (err error) {
-	err = r.db.WithContext(ctx).Create(user).Error
+func (r *userRepoStruct) InsertUser(ctx context.Context, user *entity.User) (err error) {
+	m := toModelUser(user)
+	err = r.db.WithContext(ctx).Create(m).Error
 	if err != nil {
 		return fmt.Errorf("插入用户失败: %w", err)
 	}
 	return nil
 }
 
-func (r *userRepoStruct) VerifyUser(ctx context.Context, user *model.User) (err error) {
-	oPassword := user.Passwd
-	err = r.db.WithContext(ctx).Where("user_name = ?", user.UserName).First(user).Error
+func (r *userRepoStruct) VerifyUser(ctx context.Context, user *entity.User) (err error) {
+	m := &model.User{}
+	err = r.db.WithContext(ctx).Where("user_name = ?", user.UserName).First(m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return entity.ErrUserNotExist
@@ -61,62 +86,70 @@ func (r *userRepoStruct) VerifyUser(ctx context.Context, user *model.User) (err 
 		return fmt.Errorf("登录失败: %w", err)
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Passwd), []byte(oPassword))
-	if err != nil {
+	if !entity.CheckPassword(user.Password, m.Passwd) {
 		return entity.ErrInvalidPassword
 	}
+
+	// 将查询到的信息填回 entity
+	user.UserID = m.UserID
+	user.Role = m.Role
 	return nil
 }
 
 // CheckUserExistsByID 根据用户ID查询用户信息
-func (r *userRepoStruct) CheckUserExistsByID(ctx context.Context, uid int64) (*model.User, error) {
-	user := &model.User{}
-	err := r.db.WithContext(ctx).Where("user_id = ?", uid).First(user).Error
+func (r *userRepoStruct) CheckUserExistsByID(ctx context.Context, uid int64) (*entity.User, error) {
+	m := &model.User{}
+	err := r.db.WithContext(ctx).Where("user_id = ?", uid).First(m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
-	return user, nil
+	return fromModelUser(m), nil
 }
 
 // GetUsersByIDs 根据用户ID列表批量获取用户信息
-func (r *userRepoStruct) GetUsersByIDs(ctx context.Context, ids []int64) (users []*model.User, err error) {
+func (r *userRepoStruct) GetUsersByIDs(ctx context.Context, ids []int64) (users []*entity.User, err error) {
 	if len(ids) == 0 {
-		return make([]*model.User, 0), nil
+		return make([]*entity.User, 0), nil
 	}
 
-	users = make([]*model.User, 0, len(ids))
-	err = r.db.WithContext(ctx).Where("user_id IN ?", ids).Find(&users).Error
+	var mUsers []*model.User
+	err = r.db.WithContext(ctx).Where("user_id IN ?", ids).Find(&mUsers).Error
 	if err != nil {
 		return nil, fmt.Errorf("批量查询用户失败: %w", err)
+	}
+
+	users = make([]*entity.User, 0, len(mUsers))
+	for _, m := range mUsers {
+		users = append(users, fromModelUser(m))
 	}
 	return users, nil
 }
 
 // GetUserRoleByID 根据用户ID查询用户角色
 func (r *userRepoStruct) GetUserRoleByID(ctx context.Context, uid int64) (int, error) {
-	user := &model.User{}
-	err := r.db.WithContext(ctx).Select("role").Where("user_id = ?", uid).First(user).Error
+	m := &model.User{}
+	err := r.db.WithContext(ctx).Select("role").Where("user_id = ?", uid).First(m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return 0, entity.ErrUserNotExist
 		}
 		return 0, fmt.Errorf("查询用户角色失败: %w", err)
 	}
-	return user.Role, nil
+	return m.Role, nil
 }
 
 // GetUserByUsername 根据用户名获取用户信息
-func (r *userRepoStruct) GetUserByUsername(ctx context.Context, username string) (*model.User, error) {
-	user := &model.User{}
-	err := r.db.WithContext(ctx).Where("user_name = ?", username).First(user).Error
+func (r *userRepoStruct) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
+	m := &model.User{}
+	err := r.db.WithContext(ctx).Where("user_name = ?", username).First(m).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, entity.ErrUserNotExist
 		}
 		return nil, fmt.Errorf("查询用户失败: %w", err)
 	}
-	return user, nil
+	return fromModelUser(m), nil
 }
