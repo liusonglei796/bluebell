@@ -65,14 +65,14 @@ func (c *VoteConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 
 	var msg VoteMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
-		return err
+		return fmt.Errorf("vote_consumer: 反序列化投票消息失败: %w", err)
 	}
 
 	// 幂等检查
 	dedupKey := fmt.Sprintf("bluebell:mq:dedup:vote:%s", msg.MsgID)
 	ok, err := c.rdb.SetNX(ctx, dedupKey, "1", 24*time.Hour).Result()
 	if err != nil {
-		return err
+		return fmt.Errorf("vote_consumer: 幂等检查失败 (msg_id: %s): %w", msg.MsgID, err)
 	}
 	if !ok {
 		log.Printf("重复投票消息，跳过: %s", msg.MsgID)
@@ -94,7 +94,7 @@ func (c *VoteConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 
 	if err := c.voteRepo.SaveVote(ctx, userID, postID, int8(msg.Action)); err != nil {
 		c.rdb.Del(ctx, dedupKey) // 失败则删除去重 key，允许重试
-		return err
+		return fmt.Errorf("vote_consumer: 保存投票数据失败: %w", err)
 	}
 
 	return nil

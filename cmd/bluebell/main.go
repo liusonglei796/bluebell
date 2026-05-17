@@ -10,6 +10,7 @@ import (
 	"bluebell/internal/http_server"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/logger"
+	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
 	database "bluebell/internal/infrastructure/persistence/mysql"
@@ -64,6 +65,15 @@ func main() {
 			fmt.Printf("otel shutdown error: %v\n", err)
 		}
 	}()
+
+	// 初始化自定义业务指标（MeterProvider 已设置，使用 no-op 回退）
+	serviceName := "bluebell"
+	if cfg.Otel != nil {
+		serviceName = cfg.Otel.ServiceName
+	}
+	if err := metrics.Init(serviceName); err != nil {
+		zap.L().Error("init custom metrics failed", zap.Error(err))
+	}
 
 	// 2. 初始化日志（集成 OTel 自动关联）
 	if err := logger.Init(cfg, cfg.App.Mode); err != nil {

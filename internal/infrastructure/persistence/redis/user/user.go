@@ -44,12 +44,20 @@ func (c *userTokenCacheStruct) SetUserToken(ctx context.Context, userID int64, a
 
 // GetUserAccessToken 获取用户的 Access Token
 func (c *userTokenCacheStruct) GetUserAccessToken(ctx context.Context, userID int64) (string, error) {
-	return c.rdb.Get(ctx, getRedisKey(keyUserAccessToken+fmt.Sprint(userID))).Result()
+	token, err := c.rdb.Get(ctx, getRedisKey(keyUserAccessToken+fmt.Sprint(userID))).Result()
+	if err != nil {
+		return "", fmt.Errorf("usercache.GetUserAccessToken failed (user_id: %d): %w", userID, err)
+	}
+	return token, nil
 }
 
 // GetUserRefreshToken 获取用户的 Refresh Token
 func (c *userTokenCacheStruct) GetUserRefreshToken(ctx context.Context, userID int64) (string, error) {
-	return c.rdb.Get(ctx, getRedisKey(keyUserRefreshToken+fmt.Sprint(userID))).Result()
+	token, err := c.rdb.Get(ctx, getRedisKey(keyUserRefreshToken+fmt.Sprint(userID))).Result()
+	if err != nil {
+		return "", fmt.Errorf("usercache.GetUserRefreshToken failed (user_id: %d): %w", userID, err)
+	}
+	return token, nil
 }
 
 // DeleteUserToken 删除用户的 Token (用于登出)

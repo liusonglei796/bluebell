@@ -47,7 +47,7 @@ func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*commu
 	data, err := s.communityRepo.GetCommunityList(ctx)
 	if err != nil {
 		zap.L().Error("communityRepo.GetCommunityList failed", zap.Error(err))
-		return nil, entity.ErrServerBusy
+		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	result := make([]*communityResp.Response, 0, len(data))
@@ -64,7 +64,7 @@ func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int6
 		zap.L().Error("communityRepo.GetCommunityDetailByID failed",
 			zap.Int64("community_id", id),
 			zap.Error(err))
-		return nil, entity.ErrServerBusy
+		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	if data == nil {
@@ -82,7 +82,7 @@ func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, intr
 		zap.L().Error("userRepo.CheckUserExistsByID failed",
 			zap.Int64("user_id", userID),
 			zap.Error(err))
-		return entity.ErrServerBusy
+		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 	if user == nil || !user.IsAdmin() {
 		return entity.ErrForbidden
@@ -97,7 +97,7 @@ func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, intr
 		zap.L().Error("communityRepo.CreateCommunity failed",
 			zap.String("community_name", name),
 			zap.Error(err))
-		return entity.ErrServerBusy
+		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	return nil

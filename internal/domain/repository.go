@@ -26,8 +26,8 @@ type PostCacheRepository interface {
 	GetPostsVoteData(ctx context.Context, ids []string) ([]int64, error)
 	// DeletePost 删除帖子时清理 Redis 缓存（ZSet、Hash、投票记录）
 	DeletePost(ctx context.Context, postID, communityID int64) error
-	// CheckPostExists 检查帖子是否存在
-	CheckPostExists(ctx context.Context, postID int64) (bool, error)
+	// GetPostCommunityID 从 Redis 缓存中获取帖子的社区 ID
+	GetPostCommunityID(ctx context.Context, postID int64) (int64, error)
 }
 
 // UserTokenCacheRepository 用户 Token 缓存仓储接口（Redis）
@@ -50,7 +50,6 @@ type PostRepository interface {
 	GetPostByID(ctx context.Context, pid int64) (*entity.Post, error)
 	GetPostListByIDsWithPreload(ctx context.Context, ids []string) ([]*entity.Post, error)
 	DeletePostByAuthor(ctx context.Context, postID, authorID int64) error
-	UpdatePostStatus(ctx context.Context, postID string, status int8) error
 }
 
 // CommunityRepository 社区数据库仓储接口

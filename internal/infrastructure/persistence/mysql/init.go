@@ -125,7 +125,7 @@ func seedData(db *gorm.DB) error {
 			{CommunityName: "React", Introduction: "Build user interfaces with React."},
 		}
 		if err := db.Create(&communities).Error; err != nil {
-			return err
+			return fmt.Errorf("seed communities failed: %w", err)
 		}
 		zap.L().Info("seed communities success")
 	}
@@ -141,7 +141,7 @@ func seedData(db *gorm.DB) error {
 			Role:     model.RoleAdmin,
 		}
 		if err := db.Create(adminUser).Error; err != nil {
-			return err
+			return fmt.Errorf("seed admin user failed: %w", err)
 		}
 		zap.L().Info("seed admin user success", zap.String("username", "admin"))
 	}

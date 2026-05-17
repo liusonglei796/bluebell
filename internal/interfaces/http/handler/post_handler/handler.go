@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"bluebell/internal/application"
+	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/infrastructure/persistence/mysql/model"
 	"bluebell/internal/infrastructure/translate"
@@ -72,6 +73,7 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 		}
 	}
 
+	metrics.RecordSuccess(ctx, metrics.PostsCreated)
 	render.HandleSuccess(c, nil)
 }
 
@@ -198,10 +200,16 @@ func (h *Handler) PostVoteHandler(c *gin.Context) {
 
 	ctx := c.Request.Context()
 	if err := h.postService.VoteForPost(ctx, userID.(int64), p); err != nil {
+		if errors.Is(err, entity.ErrVoteRepeated) {
+			// 重复投票不记录成功指标，避免虚增
+			render.HandleSuccess(c, nil)
+			return
+		}
 		render.HandleError(c, err)
 		return
 	}
 
+	metrics.RecordSuccess(ctx, metrics.Votes)
 	render.HandleSuccess(c, nil)
 }
 
@@ -232,6 +240,7 @@ func (h *Handler) PostRemarkHandler(c *gin.Context) {
 		return
 	}
 
+	metrics.RecordSuccess(ctx, metrics.Comments)
 	render.HandleSuccess(c, nil)
 }
 

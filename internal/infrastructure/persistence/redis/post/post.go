@@ -363,15 +363,17 @@ func (c *cacheStruct) DeletePost(ctx context.Context, postID, communityID int64)
 	return nil
 }
 
-// CheckPostExists 检查帖子是否存在
-func (c *cacheStruct) CheckPostExists(ctx context.Context, postID int64) (bool, error) {
+// GetPostCommunityID 从 Redis 帖子元数据 Hash 中获取社区 ID
+func (c *cacheStruct) GetPostCommunityID(ctx context.Context, postID int64) (int64, error) {
 	postIDStr := strconv.FormatInt(postID, 10)
-	// 使用 EXISTS 命令检查元数据 Hash 是否存在
-	// 为什么用这个：EXISTS 是 O(1) 操作，且只返回 0 或 1，网络负载极低
-	n, err := c.rdb.Exists(ctx, redisKey(keyPostMetaPrefix+postIDStr)).Result()
+	val, err := c.rdb.HGet(ctx, redisKey(keyPostMetaPrefix+postIDStr), "community").Result()
 	if err != nil {
-		return false, fmt.Errorf("redis EXISTS failed (post_id: %d): %w", postID, err)
+		return 0, fmt.Errorf("get community id failed (post_id: %s): %w", postIDStr, err)
 	}
-	return n > 0, nil
+	communityID, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("parse community id failed (post_id: %s): %w", postIDStr, err)
+	}
+	return communityID, nil
 }
 

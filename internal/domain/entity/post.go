@@ -7,13 +7,15 @@
 // 4. 是业务逻辑的核心载体
 package entity
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // 帖子状态常量
 const (
 	PostStatusPublished = 1  // 已发布
 	PostStatusDeleted   = 0  // 已删除（软删除）
-	PostStatusRejected  = -1 // 审核失败
 )
 
 // Post 帖子领域实体
@@ -29,10 +31,20 @@ type Post struct {
 	Community   *Community
 }
 
-// IsValid 检查帖子数据完整性
-// 用于替代 Service 层散落的 nil 检查逻辑
+// Validate 校验帖子内容是否合法
+func (p *Post) Validate() error {
+	if p == nil || p.PostID == "" {
+		return ErrInvalidParam
+	}
+	if strings.TrimSpace(p.PostTitle) == "" || strings.TrimSpace(p.Content) == "" {
+		return ErrInvalidParam
+	}
+	return nil
+}
+
+// IsValid 检查帖子数据完整性（保留以兼容旧代码）
 func (p *Post) IsValid() bool {
-	return p != nil && p.PostID != ""
+	return p.Validate() == nil
 }
 
 // HasAuthor 检查帖子是否有关联的作者信息

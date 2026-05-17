@@ -69,7 +69,7 @@ func (c *SyncConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 	switch msg.Action {
 	case "delete":
 		if err := c.client.DeleteDocument(ctx, es.IndexPost, msg.PostID); err != nil {
-			return err
+			return fmt.Errorf("es_consumer: 删除ES文档失败 (post_id: %s): %w", msg.PostID, err)
 		}
 	default:
 		doc := map[string]interface{}{
@@ -86,7 +86,7 @@ func (c *SyncConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 			return fmt.Errorf("序列化文档失败: %w", err)
 		}
 		if err := c.client.IndexDocument(ctx, es.IndexPost, msg.PostID, bytes.NewReader(body)); err != nil {
-			return err
+			return fmt.Errorf("es_consumer: 索引ES文档失败 (post_id: %s): %w", msg.PostID, err)
 		}
 	}
 

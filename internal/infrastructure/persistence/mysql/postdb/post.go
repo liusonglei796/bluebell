@@ -156,20 +156,6 @@ func (r *postRepoStruct) DeletePostByAuthor(ctx context.Context, postID, authorI
 	return nil
 }
 
-// UpdatePostStatus 更新帖子状态（用于审核不通过时隐藏帖子）
-func (r *postRepoStruct) UpdatePostStatus(ctx context.Context, postID string, status int8) error {
-	result := r.db.WithContext(ctx).Model(&model.Post{}).
-		Where("post_id = ?", postID).
-		Update("status", status)
-
-	if result.Error != nil {
-		return fmt.Errorf("更新帖子状态失败: %w", result.Error)
-	}
-	if result.RowsAffected == 0 {
-		return entity.ErrNotFound
-	}
-	return nil
-}
 
 // DB 返回底层 GORM DB 实例，用于事务操作
 func (r *postRepoStruct) DB() *gorm.DB {

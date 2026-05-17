@@ -2,6 +2,7 @@ package postcache
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"sync"
@@ -129,7 +130,10 @@ func (r *HotScoreRefresher) batchRefreshGravityScores(ctx context.Context, postI
 
 	// [防御] Pipeline 即使为空 Exec 是安全的
 	_, err := pipe.Exec(ctx)
-	return err
+	if err != nil {
+		return fmt.Errorf("hotscore_refresher: pipeline exec failed: %w", err)
+	}
+	return nil
 }
 
 func (r *HotScoreRefresher) Stop() {

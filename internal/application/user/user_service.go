@@ -54,7 +54,7 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 		zap.L().Error("userRepo.CheckUserExist failed",
 			zap.String("username", p.Username),
 			zap.Error(err))
-		return entity.ErrServerBusy
+		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	// 1. 生成 UID
@@ -64,7 +64,7 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 	hashedPassword, err := entity.HashPassword(p.Password)
 	if err != nil {
 		zap.L().Error("entity.HashPassword failed", zap.Error(err))
-		return entity.ErrServerBusy
+		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	// 3. 构造 User 领域实体
@@ -81,7 +81,7 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 			zap.Int64("user_id", u.UserID),
 			zap.String("username", p.Username),
 			zap.Error(err))
-		return entity.ErrServerBusy
+		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	return nil
@@ -102,7 +102,7 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 		zap.L().Error("userRepo.CheckLogin failed",
 			zap.String("username", p.Username),
 			zap.Error(err))
-		return "", "", entity.ErrServerBusy
+		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	aToken, rToken, err := jwt.GenToken(s.jwtCfg, user.UserID)
@@ -110,7 +110,7 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 		zap.L().Error("jwt.GenToken failed",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
-		return "", "", entity.ErrServerBusy
+		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	accessTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
@@ -129,7 +129,7 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 		zap.L().Error("tokenCache.SetUserToken failed",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
-		return "", "", entity.ErrServerBusy
+		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	return aToken, rToken, nil
@@ -156,7 +156,7 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 		zap.L().Error("userRepo.CheckUserExistsByID failed",
 			zap.Int64("user_id", userID),
 			zap.Error(err))
-		return "", "", entity.ErrServerBusy
+		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	newAToken, newRToken, err = jwt.GenToken(s.jwtCfg, user.UserID)
@@ -164,7 +164,7 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 		zap.L().Error("jwt.GenToken failed in refresh",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
-		return "", "", entity.ErrServerBusy
+		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	accessTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
@@ -183,7 +183,7 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 		zap.L().Error("tokenCache.SetUserToken failed in refresh",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
-		return "", "", entity.ErrServerBusy
+		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	return newAToken, newRToken, nil
@@ -195,7 +195,7 @@ func (s *userServiceStruct) Logout(ctx context.Context, userID int64) error {
 		zap.L().Error("tokenCache.DeleteUserToken failed",
 			zap.Int64("user_id", userID),
 			zap.Error(err))
-		return entity.ErrServerBusy
+		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	return nil
@@ -203,5 +203,9 @@ func (s *userServiceStruct) Logout(ctx context.Context, userID int64) error {
 
 // GetUserByUsername 根据用户名获取用户信息
 func (s *userServiceStruct) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
-	return s.userRepo.GetUserByUsername(ctx, username)
+	user, err := s.userRepo.GetUserByUsername(ctx, username)
+	if err != nil {
+		return nil, entity.Wrap(entity.ErrServerBusy, err)
+	}
+	return user, nil
 }

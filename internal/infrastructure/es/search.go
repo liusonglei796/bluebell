@@ -36,7 +36,7 @@ type SearchPostDoc struct {
 	CommunityID      int64    `json:"community_id"`                // 所属社区 ID
 	PostTitle        string   `json:"post_title"`                  // 帖子标题（原始文本）
 	Content          string   `json:"content"`                     // 帖子内容（原始文本）
-	Status           int8     `json:"status"`                      // 帖子状态（1=已发布，-1=审核失败）
+	Status           int8     `json:"status"`                      // 帖子状态（1=已发布，0=已删除）
 	CreatedAt        string   `json:"created_at"`                  // 创建时间（RFC3339 格式）
 	HighlightTitle   []string `json:"highlight_title,omitempty"`   // 标题高亮片段（omitempty 表示为空时不返回）
 	HighlightContent []string `json:"highlight_content,omitempty"` // 内容高亮片段（omitempty 表示为空时不返回）

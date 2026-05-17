@@ -82,6 +82,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: bluebell_app
+    ports:
+      - "8080:8080"
     depends_on:
       mysql:
         condition: service_healthy
