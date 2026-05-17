@@ -121,6 +121,84 @@ services:
       - bluebell_net
     restart: always
 
+  # ====== 可观测性基础设施 ======
+
+  # OpenTelemetry Collector — 统一收集入口
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: bluebell_otel_collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # Prometheus exporter
+    depends_on:
+      - jaeger
+      - loki
+    networks:
+      - bluebell_net
+    restart: always
+
+  # Jaeger — 分布式追踪后端 (All-in-one)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: bluebell_jaeger
+    ports:
+      - "16686:16686" # UI
+      - "4317"       # OTLP gRPC
+    networks:
+      - bluebell_net
+    restart: always
+
+  # Loki — 日志聚合后端
+  loki:
+    image: grafana/loki:latest
+    container_name: bluebell_loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+    ports:
+      - "3100:3100"
+    networks:
+      - bluebell_net
+    restart: always
+
+  # Prometheus — 指标后端（从 OTel Collector 拉取）
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: bluebell_prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+    networks:
+      - bluebell_net
+    restart: always
+
+  # Grafana — 统一可视化仪表盘
+  grafana:
+    image: grafana/grafana:latest
+    container_name: bluebell_grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./grafana-provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana-dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - jaeger
+      - loki
+      - prometheus
+    networks:
+      - bluebell_net
+    restart: always
 
 networks:
   bluebell_net:
