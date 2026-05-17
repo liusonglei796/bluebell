@@ -24,7 +24,6 @@ exporters:
     endpoint: 0.0.0.0:8889
 
   logging:
-    verbosity: basic
 
 service:
   pipelines:
