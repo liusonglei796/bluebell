@@ -23,7 +23,7 @@ exporters:
   prometheus:
     endpoint: 0.0.0.0:8889
 
-  debug:
+  logging:
     verbosity: basic
 
 service:
@@ -31,12 +31,12 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, debug]
+      exporters: [otlp, logging]
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheus, debug]
+      exporters: [prometheus, logging]
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlphttp/loki, debug]
+      exporters: [otlphttp/loki, logging]
