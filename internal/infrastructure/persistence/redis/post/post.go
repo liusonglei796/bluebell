@@ -271,6 +271,92 @@ func (c *cacheStruct) VoteForPost(ctx context.Context, userID, postID, community
 	return nil
 }
 
+// BatchVoteForPost 批量为帖子投票 (Architecture D+: Local Buffer + Redis Pipeline)
+// 1. 批量 ZADD/ZREM 更新投票记录 ZSet
+// 2. 批量 ZCOUNT 获取赞成/反对票数
+// 3. 批量 HSET 更新元数据，重新计算 Gravity 分数并更新排行榜
+func (c *cacheStruct) BatchVoteForPost(ctx context.Context, votes map[string]int8) error {
+	if len(votes) == 0 {
+		return nil
+	}
+
+	// 1. 分组统计每个帖子的投票变化
+	postVotes := make(map[string]map[string]int8) // postID -> userID -> direction
+	uniquePostIDs := make(map[string]struct{})
+	for key, direction := range votes {
+		parts := strings.Split(key, ":")
+		if len(parts) != 2 {
+			continue
+		}
+		postID, userID := parts[0], parts[1]
+		if _, ok := postVotes[postID]; !ok {
+			postVotes[postID] = make(map[string]int8)
+		}
+		postVotes[postID][userID] = direction
+		uniquePostIDs[postID] = struct{}{}
+	}
+
+	// 2. 第一阶段：批量更新投票记录 ZSet
+	pipe := c.rdb.Pipeline()
+	for postID, users := range postVotes {
+		key := redisKey(keyPostVotedZSetPrefix + postID)
+		for userID, direction := range users {
+			if direction == 0 {
+				pipe.ZRem(ctx, key, userID)
+			} else {
+				pipe.ZAdd(ctx, key, redis.Z{Score: float64(direction), Member: userID})
+			}
+		}
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		return fmt.Errorf("batch vote stage 1 (ZAdd) failed: %w", err)
+	}
+
+	// 3. 第二阶段：批量获取最新投票数并查询元数据
+	pipe = c.rdb.Pipeline()
+	upCmds := make(map[string]*redis.IntCmd)
+	downCmds := make(map[string]*redis.IntCmd)
+	metaCmds := make(map[string]*redis.MapStringStringCmd)
+
+	for postID := range uniquePostIDs {
+		key := redisKey(keyPostVotedZSetPrefix + postID)
+		upCmds[postID] = pipe.ZCount(ctx, key, "1", "1")
+		downCmds[postID] = pipe.ZCount(ctx, key, "-1", "-1")
+		metaCmds[postID] = pipe.HGetAll(ctx, redisKey(keyPostMetaPrefix+postID))
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		return fmt.Errorf("batch vote stage 2 (ZCount/HGetAll) failed: %w", err)
+	}
+
+	// 4. 第三阶段：批量更新元数据与分数
+	pipe = c.rdb.Pipeline()
+	for postID := range uniquePostIDs {
+		up, _ := upCmds[postID].Result()
+		down, _ := downCmds[postID].Result()
+		meta, _ := metaCmds[postID].Result()
+
+		// 更新 Hash
+		pipe.HSet(ctx, redisKey(keyPostMetaPrefix+postID), "vote_up", up, "vote_down", down)
+
+		// 重新计算分数
+		createTimeUnix, _ := strconv.ParseInt(meta["create_time"], 10, 64)
+		communityID := meta["community"]
+		score := CalculateGravityScore(up, down, time.Unix(createTimeUnix, 0))
+
+		// 更新全局热度榜
+		pipe.ZAdd(ctx, redisKey(keyPostScoreZSet), redis.Z{Score: score, Member: postID})
+		// 更新社区热度榜
+		if communityID != "" {
+			pipe.ZAdd(ctx, redisKey(keyCommunityPostScorePrefix+communityID), redis.Z{Score: score, Member: postID})
+		}
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		return fmt.Errorf("batch vote stage 3 (HSet/ZAdd) failed: %w", err)
+	}
+
+	return nil
+}
+
 // GetPostsVoteData 批量获取多个帖子的投票数（净投票数 = vote_up - vote_down）
 // 直接从“原始账本” ZSet 中统计，确保数据绝对准确（但性能略低于从 Hash 直接读取）
 func (c *cacheStruct) GetPostsVoteData(ctx context.Context, ids []string) ([]int64, error) {
