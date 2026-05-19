@@ -52,7 +52,7 @@
         </div>
         <div v-else-if="communities.length === 0" class="text-gray-400 text-sm py-6 text-center italic">No communities found</div>
         
-        <button class="w-full mt-6 py-4 px-4 rounded-2xl bg-black text-white font-black hover:bg-gray-800 transition-all duration-300 shadow-xl shadow-black/10 active:scale-95 uppercase tracking-wider text-sm">
+        <button class="w-full mt-6 py-4 px-4 rounded-2xl bg-black text-white font-black hover:bg-gray-800 transition-all duration-300 shadow-lg active:scale-95 uppercase tracking-wider text-sm">
           Explore All
         </button>
       </div>

@@ -1,5 +1,5 @@
 <template>
-  <div class="glass rounded-[24px] p-6 hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl" @click="goToPost">
+  <div class="glass rounded-[24px] p-6 hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm" @click="goToPost">
     <div class="flex gap-6">
       <!-- Voting Sidebar -->
       <div class="flex flex-col items-center bg-black/5 rounded-2xl p-2 h-fit" @click.stop>

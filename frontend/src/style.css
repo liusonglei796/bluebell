@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --glass-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.2);
   --blur-amount: 20px;
   --accent-gradient: linear-gradient(135deg, #000000 0%, #4a4a4a 100%);
 }
@@ -12,6 +12,9 @@
   backdrop-filter: blur(var(--blur-amount));
   -webkit-backdrop-filter: blur(var(--blur-amount));
   border: 1px solid var(--glass-border);
+  /* Force GPU rendering to prevent white flash on hover transitions */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 body {
