@@ -1,24 +1,31 @@
 <template>
-  <div class="bg-white p-4 border border-gray-200 rounded-lg shadow-sm hover:border-gray-300 transition-colors cursor-pointer" @click="goToPost">
-    <div class="flex">
-      <div class="flex flex-col items-center mr-4" @click.stop>
-        <button @click="vote(1)" class="text-gray-400 hover:text-indigo-600 focus:outline-none">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+  <div class="glass rounded-[24px] p-6 hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl" @click="goToPost">
+    <div class="flex gap-6">
+      <!-- Voting Sidebar -->
+      <div class="flex flex-col items-center bg-white/20 rounded-2xl p-2 h-fit" @click.stop>
+        <button @click="vote(1)" class="text-gray-500 hover:text-indigo-600 transition-colors focus:outline-none p-1">
+          <ArrowBigUpIcon :stroke-width="2.5" class="w-6 h-6" />
         </button>
-        <span class="font-bold text-gray-700 my-1">{{ post.score || 0 }}</span>
-        <button @click="vote(-1)" class="text-gray-400 hover:text-red-600 focus:outline-none">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <span class="font-bold text-indigo-900 my-1 text-base">{{ post.score || 0 }}</span>
+        <button @click="vote(-1)" class="text-gray-500 hover:text-red-500 transition-colors focus:outline-none p-1">
+          <ArrowBigDownIcon :stroke-width="2.5" class="w-6 h-6" />
         </button>
       </div>
+
+      <!-- Content -->
       <div class="flex-grow">
-        <div class="text-xs text-gray-500 mb-1">
-          Posted by <span class="font-medium">{{ post.author_name }}</span> in 
-          <router-link :to="`/community/${post.community_id}`" class="font-medium hover:underline" @click.stop>
-            {{ post.community?.name || `Community ${post.community_id}` }}
-          </router-link>
+        <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
+          <span class="bg-indigo-50 px-2 py-0.5 rounded-full text-indigo-700 font-semibold" 
+                style="background-image: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; border: 1px solid rgba(99, 102, 241, 0.2);">
+            <router-link :to="`/community/${post.community_id}`" class="hover:underline" @click.stop>
+              c/{{ post.community?.name || `Community ${post.community_id}` }}
+            </router-link>
+          </span>
+          <span>•</span>
+          <span>Posted by <span class="font-medium text-gray-700">u/{{ post.author_name }}</span></span>
         </div>
-        <h3 class="text-lg font-bold text-gray-900 mb-2">{{ post.title }}</h3>
-        <p class="text-sm text-gray-700 line-clamp-3">{{ post.content }}</p>
+        <h3 class="text-xl font-bold text-[#1e1b4b] mb-2 leading-tight">{{ post.title }}</h3>
+        <p class="text-gray-600 line-clamp-3 leading-relaxed text-sm">{{ post.content }}</p>
       </div>
     </div>
   </div>
@@ -26,6 +33,7 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { ArrowBigUpIcon, ArrowBigDownIcon } from 'lucide-vue-next';
 import request from '../api/request';
 
 const props = defineProps<{
