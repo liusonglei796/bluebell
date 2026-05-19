@@ -62,12 +62,12 @@ type CommunityRepository interface {
 // UserRepository 用户数据库仓储接口
 type UserRepository interface {
 	CheckUserExist(ctx context.Context, username string) error
-	InsertUser(ctx context.Context, user *entity.User) error
+	CreateUser(ctx context.Context, user *entity.User) error
 	VerifyUser(ctx context.Context, user *entity.User) error
-	CheckUserExistsByID(ctx context.Context, uid int64) (*entity.User, error)
+	GetUserByID(ctx context.Context, uid int64) (*entity.User, error)
 	GetUsersByIDs(ctx context.Context, ids []int64) ([]*entity.User, error)
 	GetUserRoleByID(ctx context.Context, uid int64) (int, error)
-	GetUserByUsername(ctx context.Context, username string) (*entity.User, error)
+	GetUserByName(ctx context.Context, username string) (*entity.User, error)
 }
 
 // VoteRepository 投票数据库仓储接口

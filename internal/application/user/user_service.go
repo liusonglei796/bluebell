@@ -27,6 +27,9 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+
+	// 日志
+	"bluebell/internal/infrastructure/logger"
 )
 
 // userServiceStruct 用户业务逻辑服务
@@ -51,7 +54,7 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 		if errors.Is(err, entity.ErrUserExist) {
 			return err
 		}
-		zap.L().Error("userRepo.CheckUserExist failed",
+		logger.WithContext(ctx).Error("userRepo.CheckUserExist failed",
 			zap.String("username", p.Username),
 			zap.Error(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
@@ -63,7 +66,7 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 	// 2. 密码加密 (下沉到领域层)
 	hashedPassword, err := entity.HashPassword(p.Password)
 	if err != nil {
-		zap.L().Error("entity.HashPassword failed", zap.Error(err))
+		logger.WithContext(ctx).Error("entity.HashPassword failed", zap.Error(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -75,9 +78,9 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 		Role:     entity.RoleUser,
 	}
 
-	err = s.userRepo.InsertUser(ctx, u)
+	err = s.userRepo.CreateUser(ctx, u)
 	if err != nil {
-		zap.L().Error("userRepo.InsertUser failed",
+		logger.WithContext(ctx).Error("userRepo.CreateUser failed",
 			zap.Int64("user_id", u.UserID),
 			zap.String("username", p.Username),
 			zap.Error(err))
@@ -99,7 +102,7 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 		if errors.Is(err, entity.ErrUserNotExist) || errors.Is(err, entity.ErrInvalidPassword) {
 			return "", "", err
 		}
-		zap.L().Error("userRepo.CheckLogin failed",
+		logger.WithContext(ctx).Error("userRepo.CheckLogin failed",
 			zap.String("username", p.Username),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
@@ -107,7 +110,7 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 
 	aToken, rToken, err := jwt.GenToken(s.jwtCfg, user.UserID)
 	if err != nil {
-		zap.L().Error("jwt.GenToken failed",
+		logger.WithContext(ctx).Error("jwt.GenToken failed",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
@@ -115,18 +118,18 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 
 	accessTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
 	if err != nil {
-		zap.L().Error("parse access token expiry failed", zap.Error(err))
+		logger.WithContext(ctx).Error("parse access token expiry failed", zap.Error(err))
 		accessTokenExp = 2 * time.Hour // 默认 2 小时
 	}
 	refreshTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
 	if err != nil {
-		zap.L().Error("parse refresh token expiry failed", zap.Error(err))
+		logger.WithContext(ctx).Error("parse refresh token expiry failed", zap.Error(err))
 		refreshTokenExp = 7 * 24 * time.Hour // 默认 7 天
 	}
 
 	err = s.tokenCache.SetUserToken(ctx, user.UserID, aToken, rToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
-		zap.L().Error("tokenCache.SetUserToken failed",
+		logger.WithContext(ctx).Error("tokenCache.SetUserToken failed",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
@@ -151,9 +154,9 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 	}
 
 	// 3. 检查用户是否存在
-	user, err := s.userRepo.CheckUserExistsByID(ctx, userID)
+	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil || user == nil {
-		zap.L().Error("userRepo.CheckUserExistsByID failed",
+		logger.WithContext(ctx).Error("userRepo.GetUserByID failed",
 			zap.Int64("user_id", userID),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
@@ -161,7 +164,7 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 
 	newAToken, newRToken, err = jwt.GenToken(s.jwtCfg, user.UserID)
 	if err != nil {
-		zap.L().Error("jwt.GenToken failed in refresh",
+		logger.WithContext(ctx).Error("jwt.GenToken failed in refresh",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
@@ -169,18 +172,18 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 
 	accessTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
 	if err != nil {
-		zap.L().Error("parse access token expiry failed in refresh", zap.Error(err))
+		logger.WithContext(ctx).Error("parse access token expiry failed in refresh", zap.Error(err))
 		accessTokenExp = 2 * time.Hour // 默认 2 小时
 	}
 	refreshTokenExp, err := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
 	if err != nil {
-		zap.L().Error("parse refresh token expiry failed in refresh", zap.Error(err))
+		logger.WithContext(ctx).Error("parse refresh token expiry failed in refresh", zap.Error(err))
 		refreshTokenExp = 7 * 24 * time.Hour // 默认 7 天
 	}
 
 	err = s.tokenCache.SetUserToken(ctx, user.UserID, newAToken, newRToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
-		zap.L().Error("tokenCache.SetUserToken failed in refresh",
+		logger.WithContext(ctx).Error("tokenCache.SetUserToken failed in refresh",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
@@ -192,7 +195,7 @@ func (s *userServiceStruct) RefreshToken(ctx context.Context, p *userreq.Refresh
 // Logout 用户登出，清除 Redis 中的 Token
 func (s *userServiceStruct) Logout(ctx context.Context, userID int64) error {
 	if err := s.tokenCache.DeleteUserToken(ctx, userID); err != nil {
-		zap.L().Error("tokenCache.DeleteUserToken failed",
+		logger.WithContext(ctx).Error("tokenCache.DeleteUserToken failed",
 			zap.Int64("user_id", userID),
 			zap.Error(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
@@ -203,7 +206,7 @@ func (s *userServiceStruct) Logout(ctx context.Context, userID int64) error {
 
 // GetUserByUsername 根据用户名获取用户信息
 func (s *userServiceStruct) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
-	user, err := s.userRepo.GetUserByUsername(ctx, username)
+	user, err := s.userRepo.GetUserByName(ctx, username)
 	if err != nil {
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}

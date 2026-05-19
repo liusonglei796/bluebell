@@ -40,19 +40,6 @@ func (r *userRepoStruct) CheckUserExist(ctx context.Context, username string) (e
 	return nil
 }
 
-// toModelUser 将领域实体转换为数据库模型
-func toModelUser(u *entity.User) *model.User {
-	if u == nil {
-		return nil
-	}
-	return &model.User{
-		UserID:   u.UserID,
-		UserName: u.UserName,
-		Passwd:   u.Password,
-		Role:     u.Role,
-	}
-}
-
 // fromModelUser 将数据库模型转换为领域实体
 func fromModelUser(m *model.User) *entity.User {
 	if m == nil {
@@ -66,10 +53,15 @@ func fromModelUser(m *model.User) *entity.User {
 	}
 }
 
-// InsertUser 插入新用户
-func (r *userRepoStruct) InsertUser(ctx context.Context, user *entity.User) (err error) {
-	m := toModelUser(user)
-	err = r.db.WithContext(ctx).Create(m).Error
+// CreateUser 插入新用户
+func (r *userRepoStruct) CreateUser(ctx context.Context, user *entity.User) error {
+	m := &model.User{
+		UserID:   user.UserID,
+		UserName: user.UserName,
+		Passwd:   user.Password,
+		Role:     user.Role,
+	}
+	err := r.db.WithContext(ctx).Create(m).Error
 	if err != nil {
 		return fmt.Errorf("插入用户失败: %w", err)
 	}
@@ -96,8 +88,8 @@ func (r *userRepoStruct) VerifyUser(ctx context.Context, user *entity.User) (err
 	return nil
 }
 
-// CheckUserExistsByID 根据用户ID查询用户信息
-func (r *userRepoStruct) CheckUserExistsByID(ctx context.Context, uid int64) (*entity.User, error) {
+// GetUserByID 根据用户ID查询用户信息
+func (r *userRepoStruct) GetUserByID(ctx context.Context, uid int64) (*entity.User, error) {
 	m := &model.User{}
 	err := r.db.WithContext(ctx).Where("user_id = ?", uid).First(m).Error
 	if err != nil {
@@ -141,8 +133,8 @@ func (r *userRepoStruct) GetUserRoleByID(ctx context.Context, uid int64) (int, e
 	return m.Role, nil
 }
 
-// GetUserByUsername 根据用户名获取用户信息
-func (r *userRepoStruct) GetUserByUsername(ctx context.Context, username string) (*entity.User, error) {
+// GetUserByName 根据用户名获取用户信息
+func (r *userRepoStruct) GetUserByName(ctx context.Context, username string) (*entity.User, error) {
 	m := &model.User{}
 	err := r.db.WithContext(ctx).Where("user_name = ?", username).First(m).Error
 	if err != nil {

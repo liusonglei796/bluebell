@@ -17,6 +17,9 @@ import (
 	"strconv"
 
 	"go.uber.org/zap"
+
+	// 日志
+	"bluebell/internal/infrastructure/logger"
 )
 
 // communityServiceStruct 社区业务逻辑服务
@@ -46,7 +49,7 @@ func toResponse(c *entity.Community) *communityResp.Response {
 func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*communityResp.Response, error) {
 	data, err := s.communityRepo.GetCommunityList(ctx)
 	if err != nil {
-		zap.L().Error("communityRepo.GetCommunityList failed", zap.Error(err))
+		logger.WithContext(ctx).Error("communityRepo.GetCommunityList failed", zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -61,7 +64,7 @@ func (s *communityServiceStruct) GetCommunityList(ctx context.Context) ([]*commu
 func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int64) (*communityResp.Response, error) {
 	data, err := s.communityRepo.GetCommunityDetailByID(ctx, id)
 	if err != nil {
-		zap.L().Error("communityRepo.GetCommunityDetailByID failed",
+		logger.WithContext(ctx).Error("communityRepo.GetCommunityDetailByID failed",
 			zap.Int64("community_id", id),
 			zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
@@ -77,9 +80,9 @@ func (s *communityServiceStruct) GetCommunityDetail(ctx context.Context, id int6
 // CreateCommunity 创建社区（仅管理员）
 func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, introduction string, userID int64) error {
 	// 1. 校验用户角色是否为管理员
-	user, err := s.userRepo.CheckUserExistsByID(ctx, userID)
+	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
-		zap.L().Error("userRepo.CheckUserExistsByID failed",
+		logger.WithContext(ctx).Error("userRepo.GetUserByID failed",
 			zap.Int64("user_id", userID),
 			zap.Error(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
@@ -94,7 +97,7 @@ func (s *communityServiceStruct) CreateCommunity(ctx context.Context, name, intr
 		Introduction:  introduction,
 	}
 	if err := s.communityRepo.CreateCommunity(ctx, community); err != nil {
-		zap.L().Error("communityRepo.CreateCommunity failed",
+		logger.WithContext(ctx).Error("communityRepo.CreateCommunity failed",
 			zap.String("community_name", name),
 			zap.Error(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
