@@ -1,0 +1,134 @@
+# ============================================
+# Bluebell Prometheus Alerting Rules
+# 指标流: OTel SDK → OTel Collector → Prometheus
+# OTel Collector Prometheus exporter 默认将
+# 指标名中的点(.)转换为下划线(_)
+# ============================================
+
+groups:
+  - name: bluebell
+    rules:
+      # ---------------------------------------------------------------
+      # 1. 高错误率
+      # 监控 HTTP 5xx + 业务错误占总请求的比例
+      # otelgin Middleware 提供 http_server_request_count 指标
+      # ---------------------------------------------------------------
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(bluebell_errors_total[5m])
+            /
+            rate(bluebell_http_request_duration_seconds_count[5m])
+            * 100
+          ) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP error rate ({{ $value | humanize }}%)"
+          description: |
+            Error rate is {{ $value | humanize }}% over 5 minutes (threshold: 5%).
+
+      # ---------------------------------------------------------------
+      # 2. P95 请求延迟 > 1s
+      # ---------------------------------------------------------------
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, rate(bluebell_http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 request latency ({{ $value | humanize }}s)"
+          description: |
+            P95 latency is {{ $value | humanize }}s over 5 minutes (threshold: 1s).
+
+      # ---------------------------------------------------------------
+      # 3. P99 请求延迟 > 3s
+      # ---------------------------------------------------------------
+      - alert: HighLatencyP99
+        expr: histogram_quantile(0.99, rate(bluebell_http_request_duration_seconds_bucket[5m])) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High P99 request latency ({{ $value | humanize }}s)"
+          description: |
+            P99 latency is {{ $value | humanize }}s over 5 minutes (threshold: 3s).
+
+      # ---------------------------------------------------------------
+      # 4. 服务宕机
+      # Prometheus 的 up 指标检测 OTel Collector 是否可达
+      # OTel Collector 宕机意味着全部 bluebell 指标断流
+      # ---------------------------------------------------------------
+      - alert: ServiceDown
+        expr: up{job="otel-collector"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Bluebell service is down"
+          description: |
+            Service has been unreachable for more than 1 minute.
+            OTel Collector job="otel-collector" is not responding.
+
+      # ---------------------------------------------------------------
+      # 5. Goroutine 数量过多
+      # OTel Go SDK 自动导出 process.runtime.go.goroutines
+      # Prometheus 指标名: process_runtime_go_goroutines
+      # ---------------------------------------------------------------
+      - alert: HighGoroutineCount
+        expr: process_runtime_go_goroutines > 10000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High goroutine count ({{ $value }})"
+          description: |
+            Goroutine count is {{ $value }} over 5 minutes (threshold: 10,000).
+
+      # ---------------------------------------------------------------
+      # 6. Go 内存使用过高
+      # OTel Go SDK 自动导出 process.runtime.go.mem.heap_alloc
+      # Prometheus 指标名: process_runtime_go_mem_heap_alloc_bytes
+      # ---------------------------------------------------------------
+      - alert: HighMemoryUsage
+        expr: process_runtime_go_mem_heap_alloc_bytes > 1e9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage ({{ $value | humanize }}B)"
+          description: |
+            Go heap memory is {{ $value | humanize }}B over 5 minutes (threshold: 1GB).
+
+      # ---------------------------------------------------------------
+      # 7. 数据库连接失败
+      # bluebell.errors.total{error_type="system"} 表示系统级错误
+      # 通常由数据库连接失败、超时等引起
+      # ---------------------------------------------------------------
+      - alert: DatabaseConnectionFailure
+        expr: rate(bluebell_errors_total{error_type="system"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database connection failures detected"
+          description: |
+            System-level errors detected over 2 minutes.
+            Possible causes: MySQL connection failure, timeout, or pool exhaustion.
+
+      # ---------------------------------------------------------------
+      # 8. Redis 连接失败
+      # redisotel.InstrumentMetrics 提供 redis 客户端指标
+      # redis_client_errors_total 来自 Redis OTel 插件的自动指标
+      # ---------------------------------------------------------------
+      - alert: RedisConnectionFailure
+        expr: rate(redis_client_errors_total[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis connection failures detected"
+          description: |
+            Redis client errors detected over 2 minutes.
+            Possible causes: Redis instance down, network partition, or connection pool exhaustion.

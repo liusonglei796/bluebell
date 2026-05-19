@@ -34,6 +34,11 @@ var TokenRefreshes metric.Int64Counter
 // Errors 按类型区分的错误总数
 var Errors metric.Int64Counter
 
+// ====== HTTP Request Duration Histogram ======
+
+// HTTPRequestDuration HTTP 请求延迟直方图（秒）
+var HTTPRequestDuration metric.Float64Histogram
+
 // Init 初始化自定义业务指标。
 // 必须在 InitOTEL 之后调用，以确保全局 MeterProvider 已设置。
 func Init(serviceName string) error {
@@ -90,6 +95,15 @@ func Init(serviceName string) error {
 		return fmt.Errorf("create errors counter: %w", err)
 	}
 
+	HTTPRequestDuration, err = meter.Float64Histogram("bluebell.http.request.duration.seconds",
+		metric.WithDescription("HTTP 请求延迟（秒）"),
+		metric.WithUnit("s"),
+		metric.WithExplicitBucketBoundaries(0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
+	)
+	if err != nil {
+		return fmt.Errorf("create http_request_duration histogram: %w", err)
+	}
+
 	return nil
 }
 
@@ -103,4 +117,12 @@ func RecordError(ctx context.Context, errorType string) {
 // RecordSuccess 便捷函数：记录不受限的业务 counter
 func RecordSuccess(ctx context.Context, counter metric.Int64Counter) {
 	counter.Add(ctx, 1)
+}
+
+// RecordHTTPDuration 便捷函数：记录 HTTP 请求延迟到 Histogram
+func RecordHTTPDuration(ctx context.Context, duration float64, method string, statusCode int) {
+	HTTPRequestDuration.Record(ctx, duration, metric.WithAttributes(
+		AttributeHTTPMethod.String(method),
+		AttributeHTTPStatus.Int(statusCode),
+	))
 }

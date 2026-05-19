@@ -47,6 +47,10 @@ func NewRouter(
 		middleware.TimeoutMiddleware(timeout),
 	)
 
+	// Health check 端点（根路径，无需认证）
+	r.GET("/healthz", hp.HealthHandler.Healthz)
+	r.GET("/readyz", hp.HealthHandler.Readyz)
+
 	// Swagger & PProf (仅在非生产环境)
 	if mode != gin.ReleaseMode {
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

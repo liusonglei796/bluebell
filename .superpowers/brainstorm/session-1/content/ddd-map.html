@@ -1,0 +1,44 @@
+<h3>Backend Architecture: DDD Decoupling</h3>
+<p class="subtitle">Moving from Anemic to Rich Domain Model</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Current (Mixed Responsibilities)</div>
+    <div class="mockup-body">
+      <ul class="list-disc pl-5 space-y-2 text-sm">
+        <li><code>model/user.go</code> handles hashing via GORM hooks.</li>
+        <li><code>UserService</code> performs validation logic.</li>
+        <li>Repositories return ORM models directly.</li>
+        <li class="text-red-500 font-bold">Risk: Business logic leaks into Infra.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header text-green-600">Target (Strict DDD)</div>
+    <div class="mockup-body">
+      <ul class="list-disc pl-5 space-y-2 text-sm">
+        <li><code>entity/user.go</code> owns <code>HashPassword()</code>.</li>
+        <li><code>entity</code> types are returned by Repositories.</li>
+        <li>Application Layer only orchestrates.</li>
+        <li class="text-green-600 font-bold">Benefit: Testable, technology-agnostic logic.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="remove-hooks" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Remove GORM Hooks</h3>
+      <p>Clean up <code>model/user.go</code> and shift hashing to <code>UserService</code> via <code>entity</code>.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="entity-mapping" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Enforce Entity Mapping</h3>
+      <p>Ensure all DB repositories map 100% to Domain Entities before returning data.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,49 @@
+<h3>High-Concurrency Voting Strategy</h3>
+<p class="subtitle">Handling 10,000+ TPS with Redis & Local Buffering</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Current: Direct Lua</div>
+    <div class="mockup-body">
+      <ul class="list-disc pl-5 space-y-2 text-sm">
+        <li>Every vote triggers a Lua script in Redis.</li>
+        <li>Single-threaded Redis might bottle-neck at 10k+ TPS.</li>
+        <li>Network overhead for every single operation.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header text-blue-600">Proposed: Local Buffering</div>
+    <div class="mockup-body">
+      <ul class="list-disc pl-5 space-y-2 text-sm">
+        <li>Aggregate votes in App memory for 100ms.</li>
+        <li>Batch update Redis using Pipeline or Bulk Lua.</li>
+        <li>Reduces Redis CPU usage by ~80%.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="redis-cluster" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Redis Cluster / Sharding</h3>
+      <p>Distribute post score ZSets across multiple Redis nodes to spread the load.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="local-agg" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Local Aggregation (Buffering)</h3>
+      <p>Use a Go worker to batch votes before hitting Redis. Best for "Hot" posts.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="rate-limit" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Adaptive Rate Limiting</h3>
+      <p>Dynamic backoff at the client/API level when Redis latency spikes.</p>
+    </div>
+  </div>
+</div>

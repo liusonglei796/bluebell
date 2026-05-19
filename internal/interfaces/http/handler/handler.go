@@ -4,11 +4,16 @@ package handler
 
 import (
 	"bluebell/internal/application"
+	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/interfaces/http/handler/community_handler"
+	"bluebell/internal/interfaces/http/handler/health"
 	"bluebell/internal/interfaces/http/handler/post_handler"
 	"bluebell/internal/interfaces/http/handler/search_handler"
 	"bluebell/internal/interfaces/http/handler/user_handler"
+
+	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // ========== Handler Provider ==========
@@ -20,6 +25,7 @@ type Provider struct {
 	PostHandler      *post_handler.Handler
 	CommunityHandler *community_handler.Handler
 	SearchHandler    *search_handler.Handler
+	HealthHandler    *health.Handler
 }
 
 // NewProvider 创建 Provider 实例
@@ -29,11 +35,15 @@ func NewProvider(
 	postService application.PostService,
 	communityService application.CommunityService,
 	publisher *mq.Publisher,
+	db *gorm.DB,
+	rdb *redis.Client,
+	esClient *es.Client,
 ) *Provider {
 	return &Provider{
 		UserHandler:      user_handler.New(userService),
 		PostHandler:      post_handler.New(postService, publisher),
 		CommunityHandler: community_handler.New(communityService),
 		SearchHandler:    search_handler.New(postService),
+		HealthHandler:    health.New(db, rdb, esClient),
 	}
 }

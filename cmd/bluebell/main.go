@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"time"
 
 	"bluebell/internal/config"
 	"bluebell/internal/di"
@@ -125,10 +126,10 @@ func main() {
 
 	// ====== 基础设施层：ES / MQ ======
 
-	// 初始化 Elasticsearch 客户端
-	esClient, err := es.NewClient(cfg)
+	// 初始化 Elasticsearch 客户端（带重试，最多等 30 秒）
+	esClient, err := initESWithRetry(ctx, cfg, 30*time.Second, 3*time.Second)
 	if err != nil {
-		zap.L().Error("init ES client failed", zap.Error(err))
+		zap.L().Warn("init ES client failed after retry, running without ES", zap.Error(err))
 		esClient = nil
 	} else {
 		if err := esClient.CreatePostIndex(ctx); err != nil {
@@ -174,6 +175,9 @@ func main() {
 		services.Post,
 		services.Community,
 		publisher,
+		gormDB,
+		rdb,
+		esClient,
 	)
 
 	// 4) 创建并启动 MQ 消费者
@@ -220,4 +224,26 @@ func main() {
 	if conn != nil {
 		conn.Close()
 	}
+}
+
+// initESWithRetry 初始化 ES 客户端，失败时按间隔重试，最多持续 maxDuration
+func initESWithRetry(ctx context.Context, cfg *config.Config, maxDuration, interval time.Duration) (*es.Client, error) {
+	deadline := time.Now().Add(maxDuration)
+	var lastErr error
+
+	for time.Now().Before(deadline) {
+		client, err := es.NewClient(cfg)
+		if err == nil {
+			return client, nil
+		}
+		lastErr = err
+		zap.L().Warn("ES client init failed, retrying...", zap.Error(err), zap.Time("deadline", deadline))
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(interval):
+		}
+	}
+	return nil, fmt.Errorf("ES init failed after %v retries: %w", maxDuration, lastErr)
 }

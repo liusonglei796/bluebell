@@ -1,0 +1,13 @@
+name = "bluebell"
+mode = "dev"
+version = "0.1.0"
+port = 8080
+
+[jwt]
+secret = "secret"
+access_expiry = "2h"
+refresh_expiry = "7d"
+
+[snowflake]
+start_time = 1546300800000
+machine_id = 1

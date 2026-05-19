@@ -1,0 +1,48 @@
+<h2>Bluebell Optimization Roadmap</h2>
+<p class="subtitle">Improving Architecture, Performance, and User Experience</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="ddd" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>DDD Architecture</h3>
+      <p>Decouple infrastructure from domain. Remove <code>BeforeCreate</code> hooks and shift password hashing/validation to domain entities.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="perf" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Performance & Scaling</h3>
+      <p>Optimize Redis Lua scripts for voting, implement cache warming, and refine Elasticsearch indexing for faster search results.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="ux" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>UI/UX Pro Max</h3>
+      <p>Modernize the <code>Home.vue</code> layout, add skeleton loaders, and improve the voting interaction with immediate visual feedback.</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Strategy Overview</h3>
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>Benefits</h4>
+      <ul>
+        <li>Better maintainability through DDD</li>
+        <li>Sub-millisecond latency for high-traffic paths</li>
+        <li>Professional, "alive" feel for end-users</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>Complexity</h4>
+      <ul>
+        <li>Breaking changes in repository layers</li>
+        <li>Cache consistency challenges</li>
+        <li>Frontend refactoring required</li>
+      </ul>
+    </div>
+  </div>
+</div>
