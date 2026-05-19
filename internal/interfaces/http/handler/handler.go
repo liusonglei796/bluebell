@@ -10,6 +10,7 @@ import (
 	"bluebell/internal/interfaces/http/handler/health"
 	"bluebell/internal/interfaces/http/handler/post_handler"
 	"bluebell/internal/interfaces/http/handler/search_handler"
+	"bluebell/internal/interfaces/http/handler/social_handler"
 	"bluebell/internal/interfaces/http/handler/user_handler"
 
 	"github.com/redis/go-redis/v9"
@@ -24,6 +25,7 @@ type Provider struct {
 	UserHandler      *user_handler.Handler
 	PostHandler      *post_handler.Handler
 	CommunityHandler *community_handler.Handler
+	SocialHandler    *social_handler.Handler
 	SearchHandler    *search_handler.Handler
 	HealthHandler    *health.Handler
 }
@@ -34,6 +36,7 @@ func NewProvider(
 	userService application.UserService,
 	postService application.PostService,
 	communityService application.CommunityService,
+	socialService application.SocialService,
 	publisher *mq.Publisher,
 	db *gorm.DB,
 	rdb *redis.Client,
@@ -43,6 +46,7 @@ func NewProvider(
 		UserHandler:      user_handler.New(userService),
 		PostHandler:      post_handler.New(postService, publisher),
 		CommunityHandler: community_handler.New(communityService),
+		SocialHandler:    social_handler.New(socialService),
 		SearchHandler:    search_handler.New(postService),
 		HealthHandler:    health.New(db, rdb, esClient),
 	}

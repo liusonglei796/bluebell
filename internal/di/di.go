@@ -3,9 +3,10 @@ package di
 
 import (
 	"bluebell/internal/application"
-	"bluebell/internal/application/community"
-	"bluebell/internal/application/post"
-	"bluebell/internal/application/user"
+	communitysvc "bluebell/internal/application/community"
+	postsvc "bluebell/internal/application/post"
+	socialsvc "bluebell/internal/application/social"
+	usersvc "bluebell/internal/application/user"
 	"bluebell/internal/config"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/mq"
@@ -23,6 +24,7 @@ type Services struct {
 	Post      application.PostService
 	Community application.CommunityService
 	User      application.UserService
+	Social    application.SocialService
 }
 
 // NewServices 创建并注入所有 Service 实例
@@ -76,5 +78,6 @@ func NewServices(
 		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher, esClient, voteBuffer),
 		Community: communitysvc.NewCommunityService(dbRepos.Community, dbRepos.User),
 		User:      usersvc.NewUserService(dbRepos.User, cacheRepos.TokenCache, cfg),
+		Social:    socialsvc.NewSocialService(dbRepos.Social, dbRepos.User, publisher),
 	}
 }

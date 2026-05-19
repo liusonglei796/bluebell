@@ -74,6 +74,10 @@ func NewRouter(
 		apiV1.GET("/post/:id", hp.PostHandler.GetPostDetailHandler)
 		apiV1.GET("/post/:id/remarks", hp.PostHandler.GetPostRemarksHandler)
 		apiV1.GET("/search", hp.SearchHandler.SearchHandler)
+
+		// 社交与个人资料 (公开)
+		apiV1.GET("/user/:id", hp.SocialHandler.GetProfileHandler)
+		apiV1.GET("/user/:id/activities", hp.SocialHandler.GetActivitiesHandler)
 	}
 
 	// 认证路由（需要 JWT 认证）
@@ -92,6 +96,10 @@ func NewRouter(
 		authGroup.DELETE("/post/:id", hp.PostHandler.DeletePostHandler)
 		authGroup.POST("/vote", hp.PostHandler.PostVoteHandler)
 		authGroup.POST("/remark", hp.PostHandler.PostRemarkHandler)
+
+		// 关注/取消关注
+		authGroup.POST("/follow/:id", hp.SocialHandler.FollowHandler)
+		authGroup.DELETE("/follow/:id", hp.SocialHandler.UnfollowHandler)
 	}
 
 	// 404

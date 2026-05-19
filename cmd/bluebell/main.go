@@ -171,15 +171,15 @@ func main() {
 
 	// 3) 表现层：创建 Handler 实例
 	handlerProvider := handler.NewProvider(
-		services.User,
-		services.Post,
-		services.Community,
-		publisher,
-		gormDB,
-		rdb,
-		esClient,
+	        services.User,
+	        services.Post,
+	        services.Community,
+	        services.Social,
+	        publisher,
+	        gormDB,
+	        rdb,
+	        esClient,
 	)
-
 	// 4) 创建并启动 MQ 消费者
 	if conn != nil {
 		// 消费信道：给投票消费者用
@@ -209,6 +209,19 @@ func main() {
 				}
 			}()
 		}
+
+		// 消费信道：给用户动态消费用
+		activityCh, err := conn.Channel()
+		if err != nil {
+			zap.L().Fatal("create activity consumer channel failed", zap.Error(err))
+		}
+		defer activityCh.Close()
+		activityConsumer := mq.NewActivityConsumer(activityCh, repositoriesUOW.Social)
+		go func() {
+			if err := activityConsumer.Start(ctx); err != nil {
+				zap.L().Error("activity consumer exited", zap.Error(err))
+			}
+		}()
 	}
 
 	// 5) 路由层：初始化路由，注入 Handler
