@@ -36,6 +36,15 @@ func TestHashPassword(t *testing.T) {
 	assert.Equal(t, ErrInvalidParam, err)
 }
 
+func TestUser_Password(t *testing.T) {
+	password := "test123456"
+	hashed, err := HashPassword(password)
+	assert.Nil(t, err)
+	assert.NotEqual(t, password, hashed)
+	assert.True(t, CheckPassword(password, hashed))
+	assert.False(t, CheckPassword("wrong", hashed))
+}
+
 func TestPost_CanBeDeletedBy(t *testing.T) {
 	p := &Post{AuthorID: 123}
 	assert.Nil(t, p.CanBeDeletedBy(123))
@@ -48,6 +57,8 @@ func TestPost_IsValid(t *testing.T) {
 	p = &Post{PostID: ""}
 	assert.False(t, p.IsValid())
 	p.PostID = "123"
+	p.PostTitle = "test title"
+	p.Content = "test content"
 	assert.True(t, p.IsValid())
 }
 
