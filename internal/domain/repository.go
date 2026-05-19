@@ -22,6 +22,8 @@ type PostCacheRepository interface {
 	GetCommunityPostIDsInOrder(ctx context.Context, communityID int64, orderKey string, page, size int64) ([]string, error)
 	// VoteForPost 为帖子投票
 	VoteForPost(ctx context.Context, userID, postID, communityID string, value float64) error
+	// BatchVoteForPost 批量为帖子投票 (用于高并发聚合)
+	BatchVoteForPost(ctx context.Context, votes map[string]int8) error
 	// GetPostsVoteData 批量获取多个帖子的投票数（赞成票数）
 	GetPostsVoteData(ctx context.Context, ids []string) ([]int64, error)
 	// DeletePost 删除帖子时清理 Redis 缓存（ZSet、Hash、投票记录）

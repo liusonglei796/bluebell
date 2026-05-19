@@ -20,10 +20,12 @@ import (
 	"bluebell/internal/domain/entity"
 
 	"context"
-	"errors"
 	"strconv"
 
 	"go.uber.org/zap"
+
+	// 日志
+	"bluebell/internal/infrastructure/logger"
 )
 
 // postServiceStruct 帖子业务逻辑服务
@@ -32,8 +34,9 @@ type postServiceStruct struct {
 	postCache  domain.PostCacheRepository
 	voteRepo   domain.VoteRepository
 	remarkRepo domain.RemarkRepository
-	publisher *mq.Publisher
+	publisher  *mq.Publisher
 	esClient   *es.Client
+	voteBuffer *mq.VoteBuffer
 }
 
 // NewPostService 创建帖子服务实例
@@ -44,6 +47,7 @@ func NewPostService(
 	remarkRepo domain.RemarkRepository,
 	publisher *mq.Publisher,
 	esClient *es.Client,
+	voteBuffer *mq.VoteBuffer,
 ) application.PostService {
 	return &postServiceStruct{
 		postRepo:   postRepo,
@@ -52,6 +56,7 @@ func NewPostService(
 		remarkRepo: remarkRepo,
 		publisher:  publisher,
 		esClient:   esClient,
+		voteBuffer: voteBuffer,
 	}
 }
 
@@ -75,7 +80,7 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 
 	err = s.postRepo.CreatePost(ctx, post)
 	if err != nil {
-		zap.L().Error("postRepo.CreatePost failed",
+		logger.WithContext(ctx).Error("postRepo.CreatePost failed",
 			zap.Int64("post_id", postIDInt),
 			zap.Error(err))
 		return "", entity.Wrap(entity.ErrServerBusy, err)
@@ -84,7 +89,7 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 	// 同步到 Redis
 	err = s.postCache.CreatePost(ctx, postIDInt, p.CommunityID)
 	if err != nil {
-		zap.L().Error("postCache.CreatePost failed",
+		logger.WithContext(ctx).Error("postCache.CreatePost failed",
 			zap.Int64("post_id", postIDInt),
 			zap.Error(err))
 	}
@@ -96,7 +101,7 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *postResp.DetailResponse, err error) {
 	post, err := s.postRepo.GetPostByID(ctx, pid)
 	if err != nil {
-		zap.L().Error("postRepo.GetPostByID failed",
+		logger.WithContext(ctx).Error("postRepo.GetPostByID failed",
 			zap.Int64("post_id", pid),
 			zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
@@ -107,14 +112,14 @@ func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *p
 	}
 
 	if post.Author == nil || post.Author.UserID == 0 {
-		zap.L().Warn("author not found for post",
+		logger.WithContext(ctx).Warn("author not found for post",
 			zap.Int64("post_id", pid),
 			zap.Int64("author_id", post.AuthorID))
 		return nil, entity.ErrNotFound
 	}
 
 	if post.Community == nil || post.Community.ID == 0 {
-		zap.L().Warn("community not found for post",
+		logger.WithContext(ctx).Warn("community not found for post",
 			zap.Int64("post_id", pid),
 			zap.Int64("community_id", post.CommunityID))
 		return nil, entity.ErrNotFound
@@ -138,31 +143,31 @@ func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *p
 func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
 	ids, err := s.postCache.GetPostIDsInOrder(ctx, p.Order, p.Page, p.Size)
 	if err != nil {
-		zap.L().Error("postCache.GetPostIDsInOrder failed",
+		logger.WithContext(ctx).Error("postCache.GetPostIDsInOrder failed",
 			zap.String("order", p.Order),
 			zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	if len(ids) == 0 {
-		zap.L().Warn("postCache.GetPostIDsInOrder() return 0 data")
+		logger.WithContext(ctx).Warn("postCache.GetPostIDsInOrder() return 0 data")
 		data = make([]*postResp.DetailResponse, 0)
 		return
 	}
 
-	zap.L().Debug("GetPostList", zap.Any("ids", ids))
+	logger.WithContext(ctx).Debug("GetPostList", zap.Any("ids", ids))
 
 	posts, err := s.postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
-		zap.L().Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
+		logger.WithContext(ctx).Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	zap.L().Debug("GetPostListByIDsWithPreload", zap.Any("posts", posts))
+	logger.WithContext(ctx).Debug("GetPostListByIDsWithPreload", zap.Any("posts", posts))
 
 	voteData, err := s.postCache.GetPostsVoteData(ctx, ids)
 	if err != nil {
-		zap.L().Error("postCache.GetPostsVoteData failed", zap.Error(err))
+		logger.WithContext(ctx).Error("postCache.GetPostsVoteData failed", zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -171,7 +176,7 @@ func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostList
 		if post.Author != nil {
 			authorName = post.Author.UserName
 		} else {
-			zap.L().Error("author not preloaded for post",
+			logger.WithContext(ctx).Error("author not preloaded for post",
 				zap.String("post_id", post.PostID),
 				zap.Int64("author_id", post.AuthorID))
 		}
@@ -197,7 +202,7 @@ func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostList
 func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
 	ids, err := s.postCache.GetCommunityPostIDsInOrder(ctx, p.CommunityID, p.Order, p.Page, p.Size)
 	if err != nil {
-		zap.L().Error("postCache.GetCommunityPostIDsInOrder failed",
+		logger.WithContext(ctx).Error("postCache.GetCommunityPostIDsInOrder failed",
 			zap.Int64("community_id", p.CommunityID),
 			zap.String("order", p.Order),
 			zap.Error(err))
@@ -205,23 +210,23 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 	}
 
 	if len(ids) == 0 {
-		zap.L().Info("GetCommunityPostList: no posts found",
+		logger.WithContext(ctx).Info("GetCommunityPostList: no posts found",
 			zap.Int64("community_id", p.CommunityID))
 		data = make([]*postResp.DetailResponse, 0)
 		return data, nil
 	}
 
-	zap.L().Debug("GetCommunityPostList", zap.Any("ids", ids))
+	logger.WithContext(ctx).Debug("GetCommunityPostList", zap.Any("ids", ids))
 
 	posts, err := s.postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
-		zap.L().Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
+		logger.WithContext(ctx).Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	voteData, err := s.postCache.GetPostsVoteData(ctx, ids)
 	if err != nil {
-		zap.L().Error("postCache.GetPostsVoteData failed", zap.Error(err))
+		logger.WithContext(ctx).Error("postCache.GetPostsVoteData failed", zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -231,7 +236,7 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 		if post.Author != nil {
 			authorName = post.Author.UserName
 		} else {
-			zap.L().Error("author not preloaded for post",
+			logger.WithContext(ctx).Error("author not preloaded for post",
 				zap.String("post_id", post.PostID),
 				zap.Int64("author_id", post.AuthorID))
 		}
@@ -257,7 +262,7 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID int64) error {
 	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
-		zap.L().Error("postRepo.GetPostByID failed",
+		logger.WithContext(ctx).Error("postRepo.GetPostByID failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
@@ -273,7 +278,7 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 
 	// 1. 删除该帖子的所有评论
 	if err := s.remarkRepo.DeleteRemarksByPostID(ctx, postID); err != nil {
-		zap.L().Error("remarkRepo.DeleteRemarksByPostID failed",
+		logger.WithContext(ctx).Error("remarkRepo.DeleteRemarksByPostID failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
@@ -282,7 +287,7 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 	// 2. 软删除帖子 (status = 0)
 	err = s.postRepo.DeletePostByAuthor(ctx, postID, userID)
 	if err != nil {
-		zap.L().Error("postRepo.DeletePostByAuthor failed",
+		logger.WithContext(ctx).Error("postRepo.DeletePostByAuthor failed",
 			zap.Int64("post_id", postID),
 			zap.Int64("user_id", userID),
 			zap.Error(err))
@@ -293,7 +298,7 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 	if s.esClient != nil {
 		postIDStr := strconv.FormatInt(postID, 10)
 		if err := s.esClient.DeleteDocument(ctx, es.IndexPost, postIDStr); err != nil {
-			zap.L().Error("esClient.DeleteDocument failed",
+			logger.WithContext(ctx).Error("esClient.DeleteDocument failed",
 				zap.Int64("post_id", postID),
 				zap.Error(err))
 			// ES 删除失败不影响主流程，仅记录日志
@@ -302,7 +307,7 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 
 	// 清理 Redis 缓存
 	if err := s.postCache.DeletePost(ctx, postID, post.CommunityID); err != nil {
-		zap.L().Error("postCache.DeletePost failed",
+		logger.WithContext(ctx).Error("postCache.DeletePost failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
 		// 缓存清理失败不影响主流程，仅记录日志
@@ -311,12 +316,12 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 	return nil
 }
 
-// VoteForPost 投票业务逻辑 (Architecture D: Redis Lua + MQ 持久化)
+// VoteForPost 投票业务逻辑 (Architecture E: Local Buffer + Batch Redis Pipeline + MQ 持久化)
 //
-//	请求 → Redis Lua 原子更新(ZSet+Hash+Gravity score) → 发 MQ → 返回
-//	                                                    → Consumer → MySQL UPSERT(持久化兜底)
+//	请求 → 领域校验 → 加入本地缓冲区 (VoteBuffer) → 返回
+//	VoteBuffer (100ms) → Batch Redis Pipeline (ZAdd+HSet+Score) → 发 MQ → 消费者持久化
 func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
-	// 领域校验
+	// 1. 领域校验
 	vote := &entity.Vote{
 		PostID:    p.PostID,
 		UserID:    userID,
@@ -329,54 +334,8 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 	postIDStr := strconv.FormatInt(p.PostID, 10)
 	userIDStr := strconv.FormatInt(userID, 10)
 
-	// 1. 获取 community_id (优先 Redis → 回退 MySQL)
-	communityID, err := s.postCache.GetPostCommunityID(ctx, p.PostID)
-	if err != nil {
-		// Redis 缓存缺失，回退到 MySQL 查找帖子
-		post, err := s.postRepo.GetPostByID(ctx, p.PostID)
-		if err != nil {
-			return entity.Wrap(entity.ErrServerBusy, err)
-		}
-		if post == nil {
-			return entity.ErrNotFound
-		}
-		communityID = post.CommunityID
-		// 引导 Redis 缓存，让后续投票走快路径
-		if err := s.postCache.CreatePost(ctx, p.PostID, communityID); err != nil {
-			zap.L().Error("postCache.CreatePost bootstrap failed", zap.Error(err))
-		}
-	}
-	communityIDStr := strconv.FormatInt(communityID, 10)
-
-	// 2. Redis Lua 原子更新 (ZSet + Hash + Gravity score)
-	err = s.postCache.VoteForPost(ctx, userIDStr, postIDStr, communityIDStr, float64(p.Direction))
-	if err != nil {
-		if errors.Is(err, entity.ErrVoteTimeExpire) {
-			return err
-		}
-		if errors.Is(err, entity.ErrVoteRepeated) {
-			// 重复投票是幂等操作，不报错
-			return nil
-		}
-		// Lua 执行失败（如 Redis 宕机），记录日志但继续发 MQ 让消费者兜底
-		zap.L().Error("postCache.VoteForPost failed, fallback to MQ persistence",
-			zap.String("post_id", postIDStr),
-			zap.String("user_id", userIDStr),
-			zap.Error(err))
-	}
-
-	// 3. 异步入队 (MQ) — MySQL 异步持久化兜底
-	if s.publisher != nil {
-		msg := &mq.VoteMessage{
-			MsgID:  strconv.FormatInt(snowflake.GenID(), 10),
-			PostID: postIDStr,
-			UserID: userIDStr,
-			Action: int(p.Direction),
-		}
-		if err := s.publisher.PublishVote(ctx, msg); err != nil {
-			zap.L().Error("publish vote message failed", zap.Error(err))
-		}
-	}
+	// 2. 加入本地缓冲区 (聚合后批量写入 Redis 和 MQ)
+	s.voteBuffer.AddVote(postIDStr, userIDStr, p.Direction)
 
 	return nil
 }
@@ -385,7 +344,7 @@ func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkR
 	// 1. 校验帖子是否存在
 	post, err := s.postRepo.GetPostByID(ctx, req.PostID)
 	if err != nil {
-		zap.L().Error("remarkPost: postRepo.GetPostByID failed",
+		logger.WithContext(ctx).Error("remarkPost: postRepo.GetPostByID failed",
 			zap.Int64("post_id", req.PostID),
 			zap.Error(err))
 		return 0, entity.Wrap(entity.ErrServerBusy, err)
@@ -406,7 +365,7 @@ func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkR
 
 	// 3. 保存到数据库
 	if err := s.remarkRepo.CreateRemark(ctx, remark); err != nil {
-		zap.L().Error("remarkPost: remarkRepo.CreateRemark failed",
+		logger.WithContext(ctx).Error("remarkPost: remarkRepo.CreateRemark failed",
 			zap.Int64("post_id", req.PostID),
 			zap.Int64("author_id", userID),
 			zap.Error(err))
@@ -421,7 +380,7 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 	// 1. 获取原始评论列表
 	remarks, err := s.remarkRepo.GetRemarksByPostID(ctx, postID)
 	if err != nil {
-		zap.L().Error("getPostRemarks: remarkRepo.GetRemarksByPostID failed",
+		logger.WithContext(ctx).Error("getPostRemarks: remarkRepo.GetRemarksByPostID failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
@@ -448,7 +407,7 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 // SearchPosts 全文搜索帖子
 func (s *postServiceStruct) SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*es.SearchResponse, error) {
 	if s.esClient == nil {
-		zap.L().Warn("esClient is not initialized")
+		logger.WithContext(ctx).Warn("esClient is not initialized")
 		return &es.SearchResponse{Posts: []es.SearchPostDoc{}}, nil
 	}
 
