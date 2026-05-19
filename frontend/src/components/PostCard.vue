@@ -21,7 +21,11 @@
             </router-link>
           </span>
           <span>•</span>
-          <span>Posted by <span class="font-medium text-black">u/{{ post.author_name }}</span></span>
+          <span>Posted by 
+            <router-link :to="`/user/${post.author_id}`" class="font-medium text-black hover:underline" @click.stop>
+              u/{{ post.author_name }}
+            </router-link>
+          </span>
         </div>
         <h3 class="text-xl font-black text-black mb-2 leading-tight tracking-tight">{{ post.title }}</h3>
         <p class="text-gray-600 line-clamp-3 leading-relaxed text-sm">{{ post.content }}</p>

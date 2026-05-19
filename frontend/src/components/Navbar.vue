@@ -25,7 +25,9 @@
           </div>
           <div class="flex items-center space-x-6">
             <template v-if="authStore.token">
-              <span class="text-sm font-semibold text-black">Welcome, {{ authStore.user?.username }}</span>
+              <router-link :to="`/user/${authStore.user?.user_id}`" class="text-sm font-semibold text-black hover:underline">
+                Welcome, {{ authStore.user?.username }}
+              </router-link>
               <router-link
                 v-if="authStore.isAdmin()"
                 to="/create-community"

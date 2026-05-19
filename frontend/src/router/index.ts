@@ -45,6 +45,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/CreateCommunity.vue'),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
+  {
+    path: '/user/:id',
+    name: 'Profile',
+    component: () => import('../pages/Profile.vue'),
+  },
 ];
 
 const router = createRouter({
