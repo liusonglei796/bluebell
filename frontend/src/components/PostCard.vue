@@ -2,12 +2,12 @@
   <div class="glass rounded-[24px] p-6 hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm hover:shadow-xl" @click="goToPost">
     <div class="flex gap-6">
       <!-- Voting Sidebar -->
-      <div class="flex flex-col items-center bg-white/20 rounded-2xl p-2 h-fit" @click.stop>
-        <button @click="vote(1)" class="text-gray-500 hover:text-indigo-600 transition-colors focus:outline-none p-1">
+      <div class="flex flex-col items-center bg-black/5 rounded-2xl p-2 h-fit" @click.stop>
+        <button @click="vote(1)" class="text-gray-400 hover:text-black transition-colors focus:outline-none p-1">
           <ArrowBigUpIcon :stroke-width="2.5" class="w-6 h-6" />
         </button>
-        <span class="font-bold text-indigo-900 my-1 text-base">{{ post.score || 0 }}</span>
-        <button @click="vote(-1)" class="text-gray-500 hover:text-red-500 transition-colors focus:outline-none p-1">
+        <span class="font-bold text-black my-1 text-base">{{ post.score || 0 }}</span>
+        <button @click="vote(-1)" class="text-gray-400 hover:text-black transition-colors focus:outline-none p-1">
           <ArrowBigDownIcon :stroke-width="2.5" class="w-6 h-6" />
         </button>
       </div>
@@ -15,16 +15,15 @@
       <!-- Content -->
       <div class="flex-grow">
         <div class="flex items-center gap-2 text-xs text-gray-500 mb-2">
-          <span class="bg-indigo-50 px-2 py-0.5 rounded-full text-indigo-700 font-semibold" 
-                style="background-image: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; color: transparent; border: 1px solid rgba(99, 102, 241, 0.2);">
+          <span class="bg-black/5 px-2 py-0.5 rounded-full text-black font-bold border border-black/5">
             <router-link :to="`/community/${post.community_id}`" class="hover:underline" @click.stop>
               c/{{ post.community?.name || `Community ${post.community_id}` }}
             </router-link>
           </span>
           <span>•</span>
-          <span>Posted by <span class="font-medium text-gray-700">u/{{ post.author_name }}</span></span>
+          <span>Posted by <span class="font-medium text-black">u/{{ post.author_name }}</span></span>
         </div>
-        <h3 class="text-xl font-bold text-[#1e1b4b] mb-2 leading-tight">{{ post.title }}</h3>
+        <h3 class="text-xl font-black text-black mb-2 leading-tight tracking-tight">{{ post.title }}</h3>
         <p class="text-gray-600 line-clamp-3 leading-relaxed text-sm">{{ post.content }}</p>
       </div>
     </div>

@@ -1,0 +1,176 @@
+<style>
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --blur-amount: 20px;
+    --accent-black: #1a1a1a;
+    --accent-gray: #4a4a4a;
+    --bg-gradient: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+  }
+  
+  .glass-body {
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    min-height: 80vh;
+    padding: 2rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--accent-black);
+  }
+  
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--blur-amount));
+    -webkit-backdrop-filter: blur(var(--blur-amount));
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .glass-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  }
+  
+  .nav-glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(30px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 100px; /* Pill shape */
+    margin-bottom: 2.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.03);
+  }
+  
+  .logo-black {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #000;
+    letter-spacing: -1px;
+  }
+  
+  .vote-sidebar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 12px;
+    padding: 0.6rem;
+    margin-right: 1.5rem;
+  }
+  
+  .post-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #000;
+    margin-bottom: 0.5rem;
+  }
+  
+  .btn-black {
+    background: #000;
+    color: #fff;
+    padding: 0.6rem 1.4rem;
+    border-radius: 50px;
+    font-weight: 600;
+    border: none;
+    transition: opacity 0.2s;
+  }
+  
+  .btn-black:hover {
+    opacity: 0.8;
+  }
+
+  .tag-mono {
+    background: rgba(0, 0, 0, 0.05);
+    color: #4a4a4a;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+</style>
+
+<div class="glass-body">
+  <div class="nav-glass">
+    <div class="logo-black">BLUEBELL</div>
+    <div style="display: flex; gap: 2rem; align-items: center;">
+      <span style="font-weight: 700; color: #000; border-bottom: 2px solid #000;">Home</span>
+      <span style="color: #666; font-weight: 500;">Trending</span>
+      <button class="btn-black">Create</button>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 2.5fr 1fr; gap: 2.5rem;">
+    <div>
+      <div class="glass-card">
+        <div style="display: flex;">
+          <div class="vote-sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+            <span style="font-weight: 800; color: #000; margin: 6px 0;">1.2k</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div style="flex-grow: 1;">
+            <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+              <span class="tag-mono">Engineering</span>
+              <span style="color: #888; font-size: 0.8rem;">by <b>alex_dev</b> • 1h</span>
+            </div>
+            <div class="post-title">Monochrome Design: Why Less is More</div>
+            <p style="color: #555; line-height: 1.6; font-size: 1rem;">
+              The transition to a black and white palette provides a canvas for high-quality content while using translucency to add depth without noise...
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card">
+        <div style="display: flex;">
+          <div class="vote-sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+            <span style="font-weight: 800; color: #000; margin: 6px 0;">856</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div style="flex-grow: 1;">
+            <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+              <span class="tag-mono">Architecture</span>
+              <span style="color: #888; font-size: 0.8rem;">by <b>sarah_arch</b> • 4h</span>
+            </div>
+            <div class="post-title">Handling Extreme Bursts in Go with Local Buffering</div>
+            <p style="color: #555; line-height: 1.6; font-size: 1rem;">
+              By aggregating events in memory for just 100ms, we can drastically reduce the write pressure on our storage layer...
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="glass-card">
+        <h3 style="margin-top:0; font-weight: 800; letter-spacing: -0.5px;">Communities</h3>
+        <div style="margin-top: 1.5rem;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+              <div style="width: 32px; height: 32px; border-radius: 10px; background: #000;"></div>
+              <span style="font-weight: 600;">r/Golang</span>
+            </div>
+            <span style="color: #888; font-size: 0.8rem;">12k</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem;">
+              <div style="width: 32px; height: 32px; border-radius: 10px; background: #333;"></div>
+              <span style="font-weight: 600;">r/TypeScript</span>
+            </div>
+            <span style="color: #888; font-size: 0.8rem;">8k</span>
+          </div>
+        </div>
+        <button style="width: 100%; padding: 0.8rem; border-radius: 12px; border: 1.5px solid #000; background: transparent; font-weight: 700; margin-top: 1rem;">Discover All</button>
+      </div>
+    </div>
+  </div>
+</div>

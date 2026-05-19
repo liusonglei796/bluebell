@@ -2,45 +2,45 @@
   <div class="flex flex-col md:flex-row gap-8">
     <div class="flex-grow space-y-6 md:w-2/3">
       <div class="flex justify-between items-center mb-4">
-        <h1 class="text-3xl font-extrabold text-[#1e1b4b] tracking-tight">Popular Posts</h1>
-        <div class="flex p-1 bg-white/30 backdrop-blur-md rounded-xl border border-white/20">
+        <h1 class="text-3xl font-black text-black tracking-tighter">POPULAR POSTS</h1>
+        <div class="flex p-1 bg-white/50 backdrop-blur-md rounded-xl border border-black/5">
           <button @click="changeOrder('score')" 
-                  :class="['px-4 py-1.5 text-sm font-semibold rounded-lg transition-all duration-200', 
-                           order === 'score' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600 hover:text-indigo-600']">
-            Hot
+                  :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-all duration-200', 
+                           order === 'score' ? 'bg-black text-white shadow-sm' : 'text-gray-500 hover:text-black']">
+            HOT
           </button>
           <button @click="changeOrder('time')" 
-                  :class="['px-4 py-1.5 text-sm font-semibold rounded-lg transition-all duration-200', 
-                           order === 'time' ? 'bg-white text-indigo-700 shadow-sm' : 'text-gray-600 hover:text-indigo-600']">
-            New
+                  :class="['px-4 py-1.5 text-sm font-bold rounded-lg transition-all duration-200', 
+                           order === 'time' ? 'bg-black text-white shadow-sm' : 'text-gray-500 hover:text-black']">
+            NEW
           </button>
         </div>
       </div>
       
       <div v-if="loading" class="flex flex-col items-center justify-center py-20 space-y-4">
-        <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-        <span class="text-indigo-900/60 font-medium">Loading posts...</span>
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+        <span class="text-black/60 font-bold uppercase tracking-widest text-xs">Loading posts...</span>
       </div>
       
       <template v-else>
         <PostCard v-for="post in posts" :key="post.id" :post="post" />
         <div v-if="posts.length === 0" class="glass rounded-[24px] p-10 text-center">
-          <span class="text-gray-500 text-lg">No posts found in this universe.</span>
+          <span class="text-gray-400 font-medium">No posts found in this universe.</span>
         </div>
       </template>
     </div>
     
     <div class="md:w-1/3">
       <div class="glass rounded-[24px] p-6 sticky top-24 shadow-sm">
-        <h2 class="text-xl font-bold text-[#1e1b4b] mb-6 flex items-center gap-2">
-          <UsersIcon class="w-5 h-5 text-indigo-600" />
-          Communities
+        <h2 class="text-xl font-black text-black mb-6 flex items-center gap-2 tracking-tight">
+          <UsersIcon class="w-5 h-5 text-black" />
+          COMMUNITIES
         </h2>
         <ul class="space-y-2">
           <li v-for="community in communities" :key="community.id">
             <router-link :to="`/community/${community.id}`" 
-                         class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/40 transition-all duration-200 text-gray-700 hover:text-indigo-700 font-medium group border border-transparent hover:border-white/40">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center text-xs text-indigo-600 font-bold group-hover:scale-110 transition-transform">
+                         class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-black/5 transition-all duration-200 text-gray-600 hover:text-black font-bold group border border-transparent">
+              <div class="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center text-xs text-black font-black group-hover:scale-110 transition-transform">
                 {{ community.name.substring(0, 1).toUpperCase() }}
               </div>
               {{ community.name }}
@@ -48,11 +48,11 @@
           </li>
         </ul>
         <div v-if="loadingCommunities" class="flex items-center justify-center py-6">
-          <div class="w-6 h-6 border-2 border-indigo-100 border-t-indigo-500 rounded-full animate-spin"></div>
+          <div class="w-6 h-6 border-2 border-gray-100 border-t-black rounded-full animate-spin"></div>
         </div>
         <div v-else-if="communities.length === 0" class="text-gray-400 text-sm py-6 text-center italic">No communities found</div>
         
-        <button class="w-full mt-6 py-3 px-4 rounded-2xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-all duration-300 shadow-lg shadow-indigo-200 hover:shadow-indigo-300">
+        <button class="w-full mt-6 py-4 px-4 rounded-2xl bg-black text-white font-black hover:bg-gray-800 transition-all duration-300 shadow-xl shadow-black/10 active:scale-95 uppercase tracking-wider text-sm">
           Explore All
         </button>
       </div>
