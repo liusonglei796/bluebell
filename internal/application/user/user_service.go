@@ -92,26 +92,25 @@ func (s *userServiceStruct) SignUp(ctx context.Context, p *userreq.SignUpRequest
 
 // Login 处理用户登录业务逻辑
 func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) (string, string, error) {
-	user := &entity.User{
-		UserName: p.Username,
-		Password: p.Password,
-	}
-
-	err := s.userRepo.VerifyUser(ctx, user)
+	u, err := s.userRepo.GetUserByName(ctx, p.Username)
 	if err != nil {
-		if errors.Is(err, entity.ErrUserNotExist) || errors.Is(err, entity.ErrInvalidPassword) {
+		if errors.Is(err, entity.ErrUserNotExist) {
 			return "", "", err
 		}
-		logger.WithContext(ctx).Error("userRepo.CheckLogin failed",
+		logger.WithContext(ctx).Error("userRepo.GetUserByName failed",
 			zap.String("username", p.Username),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	aToken, rToken, err := jwt.GenToken(s.jwtCfg, user.UserID)
+	if !entity.CheckPassword(p.Password, u.Password) {
+		return "", "", entity.ErrInvalidPassword
+	}
+
+	aToken, rToken, err := jwt.GenToken(s.jwtCfg, u.UserID)
 	if err != nil {
 		logger.WithContext(ctx).Error("jwt.GenToken failed",
-			zap.Int64("user_id", user.UserID),
+			zap.Int64("user_id", u.UserID),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
@@ -127,10 +126,10 @@ func (s *userServiceStruct) Login(ctx context.Context, p *userreq.LoginRequest) 
 		refreshTokenExp = 7 * 24 * time.Hour // 默认 7 天
 	}
 
-	err = s.tokenCache.SetUserToken(ctx, user.UserID, aToken, rToken, accessTokenExp, refreshTokenExp)
+	err = s.tokenCache.SetUserToken(ctx, u.UserID, aToken, rToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
 		logger.WithContext(ctx).Error("tokenCache.SetUserToken failed",
-			zap.Int64("user_id", user.UserID),
+			zap.Int64("user_id", u.UserID),
 			zap.Error(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
