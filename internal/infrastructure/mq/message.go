@@ -21,3 +21,12 @@ type SyncMessage struct {
 	CreatedAt   string `json:"created_at"`
 	Action      string `json:"action"` // "index" or "delete"
 }
+
+// ActivityMessage 用户动态消息
+type ActivityMessage struct {
+	UserID     int64  `json:"user_id"`
+	Type       string `json:"type"` // "post_created", "vote_up", "vote_down", "follow", etc.
+	TargetID   string `json:"target_id"`
+	TargetName string `json:"target_name"`
+	Timestamp  int64  `json:"timestamp"`
+}

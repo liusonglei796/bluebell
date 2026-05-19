@@ -21,6 +21,7 @@ import (
 
 	"context"
 	"strconv"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -86,13 +87,22 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 		return "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	// 同步到 Redis
+	// 清理 Redis 缓存
 	err = s.postCache.CreatePost(ctx, postIDInt, p.CommunityID)
 	if err != nil {
 		logger.WithContext(ctx).Error("postCache.CreatePost failed",
 			zap.Int64("post_id", postIDInt),
 			zap.Error(err))
 	}
+
+	// 4. 发送用户动态消息
+	_ = s.publisher.PublishActivity(ctx, &mq.ActivityMessage{
+		UserID:     authorID,
+		Type:       "post_created",
+		TargetID:   postID,
+		TargetName: p.Title,
+		Timestamp:  time.Now().Unix(),
+	})
 
 	return postID, nil
 }

@@ -55,3 +55,8 @@ func (p *Publisher) PublishVote(ctx context.Context, msg *VoteMessage) error {
 func (p *Publisher) PublishSearch(ctx context.Context, msg interface{}) error {
 	return p.Send(ctx, ExchangeSearch, RoutingKeySearch, msg)
 }
+
+// PublishActivity 发布用户动态消息
+func (p *Publisher) PublishActivity(ctx context.Context, msg *ActivityMessage) error {
+	return p.Send(ctx, ExchangeActivity, RoutingKeyActivity, msg)
+}

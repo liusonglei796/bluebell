@@ -17,6 +17,10 @@ const (
 	ExchangeSearch   = "search.exchange"
 	QueueSearch      = "search.queue"
 	RoutingKeySearch = "search.sync"
+
+	ExchangeActivity   = "activity.exchange"
+	QueueActivity      = "activity.queue"
+	RoutingKeyActivity = "activity.event"
 )
 
 // ==================== 手动挡工厂方法 ====================
@@ -37,6 +41,7 @@ func SetupResources(ch *amqp.Channel) error {
 	exchanges := []struct{ Name, Kind string }{
 		{ExchangeVote, "direct"},
 		{ExchangeSearch, "direct"},
+		{ExchangeActivity, "direct"},
 	}
 	for _, ex := range exchanges {
 		if err := ch.ExchangeDeclare(ex.Name, ex.Kind, true, false, false, false, nil); err != nil {
@@ -51,6 +56,7 @@ func SetupResources(ch *amqp.Channel) error {
 	}{
 		{QueueVote, ExchangeVote, RoutingKeyVote},
 		{QueueSearch, ExchangeSearch, RoutingKeySearch},
+		{QueueActivity, ExchangeActivity, RoutingKeyActivity},
 	}
 	for _, q := range queues {
 		if _, err := ch.QueueDeclare(q.Name, true, false, false, false, nil); err != nil {

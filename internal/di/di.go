@@ -52,6 +52,19 @@ func NewServices(
 				Action: int(direction),
 			}
 			_ = publisher.PublishVote(ctx, msg)
+
+			// 3. 发送用户动态消息
+			userID, _ := strconv.ParseInt(parts[1], 10, 64)
+			activityType := "vote_up"
+			if direction < 0 {
+				activityType = "vote_down"
+			}
+			_ = publisher.PublishActivity(ctx, &mq.ActivityMessage{
+				UserID:    userID,
+				Type:      activityType,
+				TargetID:  parts[0],
+				Timestamp: time.Now().Unix(),
+			})
 		}
 		return nil
 	}
