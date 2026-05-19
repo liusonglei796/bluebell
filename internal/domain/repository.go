@@ -84,3 +84,16 @@ type RemarkRepository interface {
 	DeleteRemarkByID(ctx context.Context, remarkID uint) error
 	DeleteRemarksByPostID(ctx context.Context, postID int64) error
 }
+
+// SocialRepository 社交功能数据库仓储接口
+type SocialRepository interface {
+	GetUserProfile(ctx context.Context, userID int64) (*entity.UserProfile, error)
+	SaveUserProfile(ctx context.Context, profile *entity.UserProfile) error
+	FollowUser(ctx context.Context, followerID, followingID int64) error
+	UnfollowUser(ctx context.Context, followerID, followingID int64) error
+	IsFollowing(ctx context.Context, followerID, followingID int64) (bool, error)
+	GetFollowerCount(ctx context.Context, userID int64) (int64, error)
+	GetFollowingCount(ctx context.Context, userID int64) (int64, error)
+	CreateActivity(ctx context.Context, activity *entity.Activity) error
+	GetActivitiesByUserID(ctx context.Context, userID int64, page, size int) ([]*entity.Activity, error)
+}
