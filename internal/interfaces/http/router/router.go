@@ -78,6 +78,10 @@ func NewRouter(
 		// 社交与个人资料 (公开)
 		apiV1.GET("/user/:id", hp.SocialHandler.GetProfileHandler)
 		apiV1.GET("/user/:id/activities", hp.SocialHandler.GetActivitiesHandler)
+
+		// GitHub OAuth
+		apiV1.GET("/auth/github/login", hp.UserHandler.GitHubLoginHandler)
+		apiV1.GET("/auth/github/callback", hp.UserHandler.GitHubCallbackHandler)
 	}
 
 	// 认证路由（需要 JWT 认证）

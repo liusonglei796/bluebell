@@ -55,6 +55,12 @@ type rabbitmqConfig struct {
 	URL string `mapstructure:"url"`
 }
 
+type GitHubConfig struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	RedirectURL  string `mapstructure:"redirect_url"`
+}
+
 type SnowflakeConfig struct {
 	StartTime int64 `mapstructure:"start_time"`
 	MachineID int64 `mapstructure:"machine_id"`
@@ -94,6 +100,7 @@ type Config struct {
 	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
 	ES        *esConfig        `mapstructure:"es"`
 	Otel      *OtelConfig      `mapstructure:"otel"`
+	GitHub    *GitHubConfig    `mapstructure:"github"`
 }
 
 var atva atomic.Value

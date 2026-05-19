@@ -88,6 +88,7 @@ type RemarkRepository interface {
 // SocialRepository 社交功能数据库仓储接口
 type SocialRepository interface {
 	GetUserProfile(ctx context.Context, userID int64) (*entity.UserProfile, error)
+	GetProfileByGitHubID(ctx context.Context, githubID string) (*entity.UserProfile, error)
 	SaveUserProfile(ctx context.Context, profile *entity.UserProfile) error
 	FollowUser(ctx context.Context, followerID, followingID int64) error
 	UnfollowUser(ctx context.Context, followerID, followingID int64) error

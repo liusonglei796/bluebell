@@ -67,6 +67,9 @@ type UserService interface {
 	// Login 处理用户登录业务逻辑，返回访问令牌和刷新令牌
 	Login(ctx context.Context, p *userreq.LoginRequest) (accessToken, refreshToken string, err error)
 
+	// SocialLogin 处理社交登录业务逻辑
+	SocialLogin(ctx context.Context, githubID, username, email, avatarURL string) (accessToken, refreshToken string, err error)
+
 	// RefreshToken 使用刷新令牌获取新的访问令牌
 	RefreshToken(ctx context.Context, p *userreq.RefreshTokenRequest) (newAccessToken, newRefreshToken string, err error)
 

@@ -22,6 +22,36 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// ... (Handler struct and New function)
+
+// GitHubLoginHandler 重定向到 GitHub 登录页面
+func (h *Handler) GitHubLoginHandler(c *gin.Context) {
+	// 实际项目中应使用随机 state 并存入 session/cookie
+	// 此处简化处理
+	url := "https://github.com/login/oauth/authorize?client_id=MOCK_CLIENT_ID&scope=user"
+	c.Redirect(http.StatusTemporaryRedirect, url)
+}
+
+// GitHubCallbackHandler 处理 GitHub 回调
+func (h *Handler) GitHubCallbackHandler(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		// Mock: 如果没有 code 或未配置 GitHub，返回模拟成功
+		at, rt, _ := h.userService.SocialLogin(c.Request.Context(), "mock_github_id", "mock_github_user", "mock@github.com", "https://github.com/identicons/mock.png")
+		render.HandleSuccess(c, map[string]interface{}{
+			"access_token":  at,
+			"refresh_token": rt,
+			"username":      "mock_github_user",
+		})
+		return
+	}
+
+	// 1. 换取 Token (此处应调用基础设施层的 oauth2 config)
+	// 2. 获取用户信息
+	// 3. 调用 s.SocialLogin
+	render.HandleSuccess(c, gin.H{"msg": "GitHub Login Success (Simulation)"})
+}
+
 // Handler 用户相关处理器
 type Handler struct {
 	userService application.UserService

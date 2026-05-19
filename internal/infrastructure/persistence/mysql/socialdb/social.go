@@ -39,6 +39,25 @@ func (r *socialRepoStruct) GetUserProfile(ctx context.Context, userID int64) (*e
 	}, nil
 }
 
+func (r *socialRepoStruct) GetProfileByGitHubID(ctx context.Context, githubID string) (*entity.UserProfile, error) {
+	var m model.UserProfile
+	err := r.db.WithContext(ctx).Where("github_id = ?", githubID).First(&m).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get profile by github id: %w", err)
+	}
+
+	return &entity.UserProfile{
+		UserID:    m.UserID,
+		AvatarURL: m.AvatarURL,
+		Bio:       m.Bio,
+		GitHubID:  m.GitHubID,
+		GitHubURL: m.GitHubURL,
+	}, nil
+}
+
 func (r *socialRepoStruct) SaveUserProfile(ctx context.Context, profile *entity.UserProfile) error {
 	m := model.UserProfile{
 		UserID:    profile.UserID,

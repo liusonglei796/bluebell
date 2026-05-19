@@ -35,17 +35,66 @@ import (
 // userServiceStruct 用户业务逻辑服务
 type userServiceStruct struct {
 	userRepo   domain.UserRepository
+	socialRepo domain.SocialRepository
 	tokenCache domain.UserTokenCacheRepository
 	jwtCfg     *config.Config
 }
 
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo domain.UserRepository, tokenCache domain.UserTokenCacheRepository, jwtCfg *config.Config) application.UserService {
+func NewUserService(userRepo domain.UserRepository, socialRepo domain.SocialRepository, tokenCache domain.UserTokenCacheRepository, jwtCfg *config.Config) application.UserService {
 	return &userServiceStruct{
 		userRepo:   userRepo,
+		socialRepo: socialRepo,
 		tokenCache: tokenCache,
 		jwtCfg:     jwtCfg,
 	}
+}
+
+// SocialLogin 处理社交账号登录 (如 GitHub)
+func (s *userServiceStruct) SocialLogin(ctx context.Context, githubID, username, email, avatarURL string) (string, string, error) {
+	// 1. 检查是否存在该 GitHub 账号的 Profile
+	profile, err := s.socialRepo.GetProfileByGitHubID(ctx, githubID)
+	var userID int64
+
+	if err != nil {
+		// 2. 如果不存在，创建新用户和 Profile
+		userID = snowflake.GenID()
+		u := &entity.User{
+			UserID:   userID,
+			UserName: username,
+			Password: "", // 社交登录用户没有初始密码
+			Role:     entity.RoleUser,
+		}
+		if err := s.userRepo.CreateUser(ctx, u); err != nil {
+			return "", "", entity.Wrap(entity.ErrServerBusy, err)
+		}
+
+		profile = &entity.UserProfile{
+			UserID:    userID,
+			AvatarURL: avatarURL,
+			Bio:       "GitHub User",
+			GitHubID:  githubID,
+			GitHubURL: fmt.Sprintf("https://github.com/%s", username),
+		}
+		if err := s.socialRepo.SaveUserProfile(ctx, profile); err != nil {
+			return "", "", entity.Wrap(entity.ErrServerBusy, err)
+		}
+	} else {
+		userID = profile.UserID
+	}
+
+	// 3. 生成 Token
+	aToken, rToken, err := jwt.GenToken(s.jwtCfg, userID)
+	if err != nil {
+		return "", "", entity.Wrap(entity.ErrServerBusy, err)
+	}
+
+	// 4. 缓存 Token (复用 Login 中的过期逻辑)
+	accessTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.AccessExpiry)
+	refreshTokenExp, _ := time.ParseDuration(s.jwtCfg.JWT.RefreshExpiry)
+	_ = s.tokenCache.SetUserToken(ctx, userID, aToken, rToken, accessTokenExp, refreshTokenExp)
+
+	return aToken, rToken, nil
 }
 
 // SignUp 处理用户注册业务逻辑

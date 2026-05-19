@@ -77,7 +77,7 @@ func NewServices(
 	return &Services{
 		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher, esClient, voteBuffer),
 		Community: communitysvc.NewCommunityService(dbRepos.Community, dbRepos.User),
-		User:      usersvc.NewUserService(dbRepos.User, cacheRepos.TokenCache, cfg),
+		User:      usersvc.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, cfg),
 		Social:    socialsvc.NewSocialService(dbRepos.Social, dbRepos.User, publisher),
 	}
 }
