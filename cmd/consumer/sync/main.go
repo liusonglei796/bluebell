@@ -13,6 +13,7 @@ import (
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
+	"bluebell/internal/infrastructure/profiler"
 	"bluebell/internal/infrastructure/snowflake"
 
 	"go.uber.org/zap"
@@ -51,6 +52,20 @@ func main() {
 			fmt.Printf("otel shutdown error: %v\n", err)
 		}
 	}()
+
+	// ====== 基础设施层：Pyroscope Profiler ======
+	if cfg.Pyroscope != nil {
+		pyroShutdown, err := profiler.Init(cfg.Pyroscope)
+		if err != nil {
+			fmt.Printf("init pyroscope failed, err:%v\n", err)
+		} else {
+			defer func() {
+				if err := pyroShutdown(); err != nil {
+					fmt.Printf("pyroscope shutdown error: %v\n", err)
+				}
+			}()
+		}
+	}
 
 	// 4. 初始化分布式 ID 生成器 Snowflake
 	if err := snowflake.Init(cfg); err != nil {

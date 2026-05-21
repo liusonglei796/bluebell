@@ -10,8 +10,13 @@ processors:
   batch:
 
 exporters:
-  otlp:
-    endpoint: jaeger:4317
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  prometheusremotewrite:
+    endpoint: http://mimir:9009/api/v1/push
     tls:
       insecure: true
 
@@ -20,9 +25,6 @@ exporters:
     tls:
       insecure: true
 
-  prometheus:
-    endpoint: 0.0.0.0:8889
-
   debug:
 
 service:
@@ -30,11 +32,11 @@ service:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp, debug]
+      exporters: [otlp/tempo, debug]
     metrics:
       receivers: [otlp]
       processors: [batch]
-      exporters: [prometheus, debug]
+      exporters: [prometheusremotewrite, debug]
     logs:
       receivers: [otlp]
       processors: [batch]

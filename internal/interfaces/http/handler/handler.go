@@ -44,7 +44,7 @@ func NewProvider(
 ) *Provider {
 	return &Provider{
 		UserHandler:      user_handler.New(userService),
-		PostHandler:      post_handler.New(postService, publisher),
+		PostHandler:      post_handler.New(postService),
 		CommunityHandler: community_handler.New(communityService),
 		SocialHandler:    social_handler.New(socialService),
 		SearchHandler:    search_handler.New(postService),

@@ -1,10 +1,8 @@
 package middleware
 
 import (
-	"bluebell/internal/config"
 	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/jwt"
 	"net/http"
 	"strings"
 
@@ -12,7 +10,7 @@ import (
 )
 
 // JWTAuthMiddleware 基于JWT的认证中间件，包含 SSO 校验
-func JWTAuthMiddleware(cfg *config.Config, tokenRepo domain.UserTokenCacheRepository) gin.HandlerFunc {
+func JWTAuthMiddleware(tokenService domain.TokenService, tokenRepo domain.UserTokenCacheRepository) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 1. 获取 Authorization Header
 		authHeader := c.Request.Header.Get("Authorization")
@@ -32,7 +30,7 @@ func JWTAuthMiddleware(cfg *config.Config, tokenRepo domain.UserTokenCacheReposi
 		tokenStr := parts[1]
 
 		// 3. 解析并校验 aToken
-		userID, err := jwt.ParseToken(cfg, tokenStr, jwt.AccessTokenType)
+		userID, err := tokenService.ParseToken(tokenStr, "access")
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": entity.ErrInvalidToken.Error()})
 			c.Abort()

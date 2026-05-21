@@ -3,6 +3,7 @@ package jwt
 
 import (
 	"bluebell/internal/config"
+	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
 	"fmt"
 	"strconv"
@@ -34,11 +35,21 @@ func mustParseDuration(s string) time.Duration {
 	return d
 }
 
+// jwtService 实现了 domain.TokenService 接口
+type jwtService struct {
+	cfg *config.Config
+}
+
+// NewJWTService 创建一个 domain.TokenService 实例
+func NewJWTService(cfg *config.Config) domain.TokenService {
+	return &jwtService{cfg: cfg}
+}
+
 // ParseToken 解析并验证 Token，返回 userID 并校验 token 类型
-func ParseToken(cfg *config.Config, tokenString string, expectedType TokenType) (userID int64, err error) {
+func (s *jwtService) ParseToken(tokenString string, expectedType string) (userID int64, err error) {
 	claims := new(CustomClaims)
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(cfg.JWT.Secret), nil
+		return []byte(s.cfg.JWT.Secret), nil
 	})
 	if err != nil {
 		return 0, fmt.Errorf("token 解析失败: %w", err)
@@ -47,7 +58,7 @@ func ParseToken(cfg *config.Config, tokenString string, expectedType TokenType) 
 		return 0, entity.ErrInvalidToken
 	}
 
-	if claims.TokenType != expectedType {
+	if string(claims.TokenType) != expectedType {
 		return 0, entity.ErrInvalidToken
 	}
 
@@ -63,16 +74,16 @@ func ParseToken(cfg *config.Config, tokenString string, expectedType TokenType) 
 }
 
 // GenToken 生成 Access Token 和 Refresh Token
-func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err error) {
+func (s *jwtService) GenToken(userID int64) (aToken, rToken string, err error) {
 	aClaims := CustomClaims{
 		TokenType: AccessTokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   fmt.Sprintf("%d", userID),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.JWT.AccessExpiry))),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(s.cfg.JWT.AccessExpiry))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString([]byte(cfg.JWT.Secret))
+	aToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, aClaims).SignedString([]byte(s.cfg.JWT.Secret))
 	if err != nil {
 		return "", "", fmt.Errorf("生成 AccessToken 失败: %w", err)
 	}
@@ -81,14 +92,24 @@ func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err erro
 		TokenType: RefreshTokenType,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   fmt.Sprintf("%d", userID),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(cfg.JWT.RefreshExpiry))),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(mustParseDuration(s.cfg.JWT.RefreshExpiry))),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
-	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString([]byte(cfg.JWT.Secret))
+	rToken, err = jwt.NewWithClaims(jwt.SigningMethodHS256, rClaims).SignedString([]byte(s.cfg.JWT.Secret))
 	if err != nil {
 		return "", "", fmt.Errorf("生成 RefreshToken 失败: %w", err)
 	}
 
 	return aToken, rToken, nil
+}
+
+// GetAccessExpiry 获取 Access Token 过期时间
+func (s *jwtService) GetAccessExpiry() time.Duration {
+	return mustParseDuration(s.cfg.JWT.AccessExpiry)
+}
+
+// GetRefreshExpiry 获取 Refresh Token 过期时间
+func (s *jwtService) GetRefreshExpiry() time.Duration {
+	return mustParseDuration(s.cfg.JWT.RefreshExpiry)
 }

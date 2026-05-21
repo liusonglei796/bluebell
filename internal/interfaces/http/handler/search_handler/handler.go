@@ -4,7 +4,7 @@ import (
 	"bluebell/internal/application"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/interfaces/http/render"
-	searchreq "bluebell/internal/interfaces/http/dto/request/search"
+	searchreq "bluebell/internal/application/dto/request/search"
 
 	"github.com/gin-gonic/gin"
 )

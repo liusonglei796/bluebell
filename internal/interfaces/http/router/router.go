@@ -1,3 +1,12 @@
+// Package router 实现 HTTP 接口层（Interface Layer）
+//
+// Why Interface Layer?
+// 按照 DDD 原则，接口层负责与外部系统（用户、其他服务）进行通信。
+// 1. 它负责具体的通信协议实现（此处为 HTTP/Gin）。
+// 2. 它将外部输入（JSON/Query）转化为应用层需要的 DTO/参数。
+// 3. 它将应用层的返回结果（Entity/Error）转化为外部需要的响应格式（JSON/HTTP Code）。
+// 4. 关键：接口层隔离了具体的技术栈。如果我们要增加 gRPC 接口，
+//    只需要新开一个 grpc/server.go，而 Application 和 Domain 层完全不用动。
 package router
 
 import (
@@ -18,11 +27,14 @@ import (
 )
 
 // NewRouter 初始化路由配置
-// 接收 Provider（DI 容器）作为参数
+// 为什么要把配置和 Handler 都传进来？
+// 接口层不应该自己去构造业务对象，而是通过依赖注入（DI）接收。
+// 这样我们在测试路由逻辑时，可以注入 Mock 的 Handler。
 func NewRouter(
 	mode string,
 	hp *handler.Provider,
 	cfg *config.Config,
+	tokenService domain.TokenService,
 	tokenCache domain.UserTokenCacheRepository,
 ) (*gin.Engine, error) {
 
@@ -85,8 +97,10 @@ func NewRouter(
 	}
 
 	// 认证路由（需要 JWT 认证）
+	// 为什么中间件也在这里？
+	// 认证和限流属于“接入规则”，是接口层的一部分。
 	authGroup := apiV1.Group("")
-	authGroup.Use(middleware.JWTAuthMiddleware(cfg, tokenCache))
+	authGroup.Use(middleware.JWTAuthMiddleware(tokenService, tokenCache))
 	{
 		// 社区管理
 		authGroup.GET("/community/:id", hp.CommunityHandler.GetCommunityDetailHandler)

@@ -8,6 +8,7 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
+	"bluebell/internal/domain/entity"
 )
 
 // Publisher 生产者：只认信道，不认连接
@@ -60,3 +61,28 @@ func (p *Publisher) PublishSearch(ctx context.Context, msg interface{}) error {
 func (p *Publisher) PublishActivity(ctx context.Context, msg *ActivityMessage) error {
 	return p.Send(ctx, ExchangeActivity, RoutingKeyActivity, msg)
 }
+
+// SyncPostIndex 实现了 domain.PostSearchSyncRepository 接口
+func (p *Publisher) SyncPostIndex(ctx context.Context, post *entity.Post) error {
+	syncMsg := &SyncMessage{
+		PostID:      post.PostID,
+		AuthorID:    post.AuthorID,
+		CommunityID: post.CommunityID,
+		PostTitle:   post.PostTitle,
+		Content:     post.Content,
+		Status:      post.Status,
+		CreatedAt:   post.CreatedAt.Format(time.RFC3339),
+		Action:      "index",
+	}
+	return p.PublishSearch(ctx, syncMsg)
+}
+
+// DeletePostIndex 实现了 domain.PostSearchSyncRepository 接口
+func (p *Publisher) DeletePostIndex(ctx context.Context, postID string) error {
+	syncMsg := map[string]interface{}{
+		"post_id": postID,
+		"action":  "delete",
+	}
+	return p.PublishSearch(ctx, syncMsg)
+}
+

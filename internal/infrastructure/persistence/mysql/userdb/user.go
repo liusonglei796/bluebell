@@ -1,3 +1,10 @@
+// Package userdb 实现 MySQL 基础设施层（Infrastructure Layer）
+//
+// Why Infrastructure Layer?
+// 按照 DDD 原则，基础设施层负责具体的技术实现。
+// 1. 它实现了领域层定义的 Repository 接口。
+// 2. 它处理与具体技术栈（如 GORM, MySQL）相关的细节。
+// 3. 它通过“数据模型（Model）”与“领域实体（Entity）”的转换，保持领域层的纯净。
 package userdb
 
 import (
@@ -13,11 +20,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 )
 
 // userRepoStruct 用户数据访问实现
+// 为什么持有 *gorm.DB？
+// 基础设施层是允许直接依赖具体技术的。
+// 这个结构体隐藏了所有 MySQL 操作细节，向上（领域/应用层）只暴露抽象接口。
 type userRepoStruct struct {
 	db *gorm.DB
 }
@@ -41,6 +52,10 @@ func (r *userRepoStruct) CheckUserExist(ctx context.Context, username string) (e
 }
 
 // fromModelUser 将数据库模型转换为领域实体
+// 为什么需要转换？
+// 数据库模型（model.User）通常带有数据库标签（gorm:"..."），这属于技术细节。
+// 领域实体（entity.User）应该只包含业务属性。
+// 这种转换保证了即便数据库表结构发生细微调整，只要业务含义没变，领域层就无需修改。
 func fromModelUser(m *model.User) *entity.User {
 	if m == nil {
 		return nil
@@ -63,10 +78,25 @@ func (r *userRepoStruct) CreateUser(ctx context.Context, user *entity.User) erro
 	}
 	err := r.db.WithContext(ctx).Create(m).Error
 	if err != nil {
+		// 检查是否为唯一键冲突错误 (MySQL Error 1062)
+		// 这样就不需要先 SELECT 检查是否存在，保证了高并发下的原子性
+		if isDuplicateEntryError(err) {
+			return entity.ErrUserExist
+		}
 		return fmt.Errorf("插入用户失败: %w", err)
 	}
 	return nil
 }
+
+// isDuplicateEntryError 检查错误是否为 MySQL 唯一键冲突
+func isDuplicateEntryError(err error) bool {
+	if err == nil {
+		return false
+	}
+	// 常见的 MySQL 驱动错误检查方式
+	return strings.Contains(err.Error(), "1062") || strings.Contains(err.Error(), "Duplicate entry")
+}
+
 
 func (r *userRepoStruct) VerifyUser(ctx context.Context, user *entity.User) (err error) {
 	m := &model.User{}

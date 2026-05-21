@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -82,7 +83,19 @@ func (r *communityRepoStruct) CreateCommunity(ctx context.Context, community *en
 	m := toModelCommunity(community)
 	err := r.db.WithContext(ctx).Create(m).Error
 	if err != nil {
+		if isDuplicateEntryError(err) {
+			return entity.ErrCommunityExist
+		}
 		return fmt.Errorf("创建社区失败: %w", err)
 	}
 	return nil
 }
+
+// isDuplicateEntryError 检查错误是否为 MySQL 唯一键冲突
+func isDuplicateEntryError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "1062") || strings.Contains(err.Error(), "Duplicate entry")
+}
+

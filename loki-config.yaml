@@ -1,31 +1,58 @@
+# 禁用身份验证，允许任何客户端连接而无需认证
 auth_enabled: false
 
+# 服务器配置：定义 HTTP 和 gRPC 监听端口
 server:
+  # HTTP 服务器监听端口
   http_listen_port: 3100
+  # gRPC 服务器监听端口
   grpc_listen_port: 9096
 
+# 通用配置
 common:
+  # Loki 数据和规则的存储路径前缀
   path_prefix: /loki
+  # 存储后端配置
   storage:
+    # 使用本地文件系统存储
     filesystem:
+      # 存储日志块的目录
       chunks_directory: /loki/chunks
+      # 存储告警规则的目录
       rules_directory: /loki/rules
+  # 副本因子为 1，表示单实例部署，无冗余
   replication_factor: 1
+  # 分布式哈希表（Ring）配置，用于实例发现
   ring:
+    # 键值存储配置
     kvstore:
+      # 使用内存存储，适合开发和测试环境
       store: inmemory
 
+# 数据库架构配置
 schema_config:
+  # 多个架构配置列表，支持版本升级
   configs:
+    # 从此日期开始应用此架构配置
     - from: 2020-10-24
+      # 使用时间序列数据库（TSDB）存储索引
       store: tsdb
+      # 使用文件系统作为对象存储后端
       object_store: filesystem
+      # 使用 Loki 架构版本 v13
       schema: v13
+      # 索引相关配置
       index:
+        # 索引文件名前缀
         prefix: index_
+        # 索引周期为 24 小时，每天生成一个新索引
         period: 24h
 
+# 限制和配置
 limits_config:
+  # 启用拒绝过期样本，防止接收太旧的日志
   reject_old_samples: true
+  # 拒绝超过 168 小时（7 天）前的样本
   reject_old_samples_max_age: 168h
+  # 允许结构化元数据附加到日志中
   allow_structured_metadata: true

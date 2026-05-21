@@ -2,6 +2,10 @@ package entity
 
 import "errors"
 
+// 领域层错误定义 (Domain Errors)
+// DDD 定义：这些错误代表了业务规则的违反，属于业务语言的一部分。
+// 它们被所有层级共享，Application 层捕获基础设施错误并将其映射为这些领域错误。
+
 // wrappedError wraps a sentinel error with a cause, preserving the sentinel's
 // Error() message for external consumers while allowing errors.Is/Unwrap to
 // traverse the full chain for internal debugging.
@@ -36,6 +40,7 @@ var (
 	// 业务级错误
 	ErrInvalidParam      = errors.New("invalid parameters")
 	ErrUserExist         = errors.New("user already exists")
+	ErrCommunityExist    = errors.New("community already exists")
 	ErrUserNotExist      = errors.New("user does not exist")
 	ErrInvalidPassword   = errors.New("invalid password")
 	ErrServerBusy        = errors.New("server is busy")

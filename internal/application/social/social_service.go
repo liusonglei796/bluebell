@@ -1,3 +1,9 @@
+// Package social 实现社交应用服务
+//
+// Why Application Layer?
+// 社交服务的应用层负责处理“社交交互流”：
+// 1. 聚合多维数据：获取用户信息、个人资料、关注状态等。
+// 2. 协调异步行为：在执行关注/取消关注后，负责向消息队列（MQ）发送动态。
 package social
 
 import (
@@ -5,12 +11,16 @@ import (
 	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/infrastructure/mq"
-	socialResp "bluebell/internal/interfaces/http/dto/response/social"
+	socialResp "bluebell/internal/application/dto/response/social"
 	"context"
 	"fmt"
 	"time"
 )
 
+// socialService 社交业务逻辑服务
+// 为什么它持有 Publisher？
+// 应用层负责处理业务流程产生的副效应（Side Effects），如发送异步消息。
+// 领域层只负责逻辑判断，而发送消息属于“流程”的一部分。
 type socialService struct {
 	socialRepo domain.SocialRepository
 	userRepo   domain.UserRepository
@@ -25,6 +35,10 @@ func NewSocialService(socialRepo domain.SocialRepository, userRepo domain.UserRe
 	}
 }
 
+// GetProfile 获取用户个人资料
+// 为什么这个逻辑在应用层？
+// 这是一个数据聚合过程：它从 UserRepo 获取核心信息，从 SocialRepo 获取资料和统计数据。
+// 应用层负责将这些散落在各处的数据拼装成一个完整的 Profile 视图返回。
 func (s *socialService) GetProfile(ctx context.Context, userID, currentUserID int64) (*socialResp.ProfileResponse, error) {
 	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
@@ -57,6 +71,12 @@ func (s *socialService) GetProfile(ctx context.Context, userID, currentUserID in
 	}, nil
 }
 
+// FollowUser 关注用户
+// 为什么在这里处理 MQ 发送？
+// 关注动作是一个完整的用例：
+// 1. 持久化关系 (Infrastructure)
+// 2. 发送动态消息 (MQ/Infrastructure)
+// 应用层保证了这两个步骤的顺序执行。
 func (s *socialService) FollowUser(ctx context.Context, followerID, followingID int64) error {
 	if followerID == followingID {
 		return fmt.Errorf("cannot follow yourself")

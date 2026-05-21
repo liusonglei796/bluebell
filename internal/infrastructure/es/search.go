@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"            // 提供 I/O 操作接口
 
+	"bluebell/internal/domain/entity"
+
 	"github.com/elastic/go-elasticsearch/v8/esapi" // ES 官方 Go 客户端 API 类型定义
 	"go.uber.org/zap"                              // 高性能日志库
 )
@@ -19,33 +21,15 @@ type SearchRequest struct {
 	PageSize int    `json:"page_size"`                  // 每页条数（默认 20，最大 50）
 }
 
-// SearchResponse 搜索响应结构体
-// 返回给前端的标准化搜索结果
-type SearchResponse struct {
-	Total    int64           `json:"total"`     // 符合条件的总文档数
-	Page     int             `json:"page"`      // 当前页码
-	PageSize int             `json:"page_size"` // 每页条数
-	Posts    []SearchPostDoc `json:"posts"`     // 搜索结果文档列表
-}
-
-// SearchPostDoc 搜索结果文档结构体
-// 表示 ES 中返回的单条帖子文档，包含原始字段和高亮字段
-type SearchPostDoc struct {
-	PostID           string   `json:"post_id"`                     // 帖子唯一 ID
-	AuthorID         int64    `json:"author_id"`                   // 作者用户 ID
-	CommunityID      int64    `json:"community_id"`                // 所属社区 ID
-	PostTitle        string   `json:"post_title"`                  // 帖子标题（原始文本）
-	Content          string   `json:"content"`                     // 帖子内容（原始文本）
-	Status           int8     `json:"status"`                      // 帖子状态（1=已发布，0=已删除）
-	CreatedAt        string   `json:"created_at"`                  // 创建时间（RFC3339 格式）
-	HighlightTitle   []string `json:"highlight_title,omitempty"`   // 标题高亮片段（omitempty 表示为空时不返回）
-	HighlightContent []string `json:"highlight_content,omitempty"` // 内容高亮片段（omitempty 表示为空时不返回）
-}
-
 // Search 执行全文搜索，支持高亮和分页
 // 这是 ES 搜索功能的核心入口方法
-func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
+func (c *Client) Search(ctx context.Context, keyword string, page, pageSize int) (*entity.SearchResponse, error) {
 	// ====== 第一步：参数校验和默认值处理 ======
+	req := &SearchRequest{
+		Keyword:  keyword,
+		Page:     page,
+		PageSize: pageSize,
+	}
 	if req.Page < 1 {
 		req.Page = 1
 	}
@@ -155,7 +139,7 @@ func buildSearchQuery(req *SearchRequest) map[string]interface{} {
 }
 
 // parseSearchResponse 解析 ES 搜索响应
-func parseSearchResponse(res *esapi.Response) (*SearchResponse, error) {
+func parseSearchResponse(res *esapi.Response) (*entity.SearchResponse, error) {
 	var result struct {
 		Hits struct {
 			Total struct {
@@ -177,12 +161,12 @@ func parseSearchResponse(res *esapi.Response) (*SearchResponse, error) {
 		return nil, fmt.Errorf("unmarshal search response failed: %w", err)
 	}
 
-	resp := &SearchResponse{
+	resp := &entity.SearchResponse{
 		Total: result.Hits.Total.Value,
 	}
 
 	for _, hit := range result.Hits.Hits {
-		var doc SearchPostDoc
+		var doc entity.SearchPostDoc
 		if err := json.Unmarshal(hit.Source, &doc); err != nil {
 			zap.L().Warn("Failed to parse search hit", zap.Error(err))
 			continue

@@ -8,7 +8,7 @@ import (
 	"bluebell/internal/application"
 
 	// DTO 请求
-	userreq "bluebell/internal/interfaces/http/dto/request/user"
+	userreq "bluebell/internal/application/dto/request/user"
 
 	// 基础设施 - 参数校验
 	"bluebell/internal/infrastructure/translate"

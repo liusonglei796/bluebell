@@ -1,26 +1,44 @@
+# 工作目录，"." 代表当前目录
 root = "."
+# 临时文件目录，用于存放构建后的二进制文件等临时文件
 tmp_dir = "tmp"
 
 [build]
-cmd = "go build -o ./tmp/bluebell_dev.exe ./cmd/bluebell/"
-bin = "./tmp/bluebell_dev.exe"
-args = ["-conf", "./config.yaml"]
-include_ext = ["go", "tpl", "tmpl", "html", "yaml"]
-exclude_dir = ["assets", "tmp", "vendor", "frontend/node_modules", "教学文档", ".git", "data", "docs", "design-system", "sql", "node_modules", "bin", "pkg", "frontend"]
-exclude_file = ["bluebell.log", "web_app.log", "GEMINI.md"]
-delay = 1000
-stop_on_error = true
-log = "air_errors.log"
-include_dir = ["cmd", "internal", "config"]
+  # 构建命令，编译项目，生成可执行文件到 tmp 目录，使用 cmd/bluebell 作为入口
+  cmd = "go build -o ./tmp/bluebell_dev.exe ./cmd/bluebell/"
+  # 运行构建后生成的二进制可执行文件的路径
+  bin = "./tmp/bluebell_dev.exe"
+  # 运行二进制文件时传入的命令行参数，此处指定配置文件路径为 ./config.yaml
+  args = ["-conf", "./config.yaml"]
+  # Air 监听并触发热重载的文件扩展名列表
+  include_ext = ["go", "tpl", "tmpl", "html", "yaml"]
+  # 排除监听的目录列表，避免这些目录中的文件变化触发频繁且不必要的重建
+  exclude_dir = ["assets", "tmp", "vendor", "frontend/node_modules", "教学文档", ".git", "data", "docs", "design-system", "sql", "node_modules", "bin", "pkg", "frontend"]
+  # 排除监听的具体文件列表
+  exclude_file = ["bluebell.log", "web_app.log", "GEMINI.md"]
+  # 文件更改后延迟多久再触发构建，单位为毫秒（1000 毫秒 = 1 秒），防止频繁保存导致频繁构建
+  delay = 1000
+  # 构建出错时是否停止运行旧的二进制文件
+  stop_on_error = true
+  # 构建错误日志输出到的文件名（存放在 tmp_dir 目录下）
+  log = "air_errors.log"
+  # 明确需要监听并包含的目录列表
+  include_dir = ["cmd", "internal", "config"]
 
 [log]
-time = true
+  # 在日志中是否显示时间戳
+  time = true
 
 [color]
-main = "magenta"
-watcher = "cyan"
-build = "yellow"
-runner = "green"
+  # Air 核心系统日志的显示颜色
+  main = "magenta"
+  # 文件监听器 (Watcher) 日志的显示颜色
+  watcher = "cyan"
+  # 构建过程 (Build) 日志的显示颜色
+  build = "yellow"
+  # 运行程序 (Runner) 日志的显示颜色
+  runner = "green"
 
 [misc]
-clean_on_exit = true
+  # 退出 Air 时是否清理 tmp 目录（如删除生成的临时二进制文件）
+  clean_on_exit = true

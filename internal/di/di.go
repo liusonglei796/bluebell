@@ -8,7 +8,7 @@ import (
 	socialsvc "bluebell/internal/application/social"
 	usersvc "bluebell/internal/application/user"
 	"bluebell/internal/config"
-	"bluebell/internal/infrastructure/es"
+	"bluebell/internal/domain"
 	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/infrastructure/snowflake"
 	mysqlrepo "bluebell/internal/infrastructure/persistence/mysql"
@@ -31,8 +31,10 @@ type Services struct {
 func NewServices(
 	dbRepos *mysqlrepo.Repositories,
 	cacheRepos *redisrepo.Repositories,
+	tokenService domain.TokenService,
+	searchRepo domain.PostSearchRepository,
+	searchSyncRepo domain.PostSearchSyncRepository,
 	publisher *mq.Publisher,
-	esClient *es.Client,
 	cfg *config.Config,
 ) *Services {
 	// 初始化投票缓冲区 (100ms 聚合窗口)
@@ -75,9 +77,9 @@ func NewServices(
 	go voteBuffer.Start(context.Background())
 
 	return &Services{
-		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher, esClient, voteBuffer),
+		Post:      postsvc.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher, searchRepo, searchSyncRepo, voteBuffer),
 		Community: communitysvc.NewCommunityService(dbRepos.Community, dbRepos.User),
-		User:      usersvc.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, cfg),
+		User:      usersvc.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService),
 		Social:    socialsvc.NewSocialService(dbRepos.Social, dbRepos.User, publisher),
 	}
 }

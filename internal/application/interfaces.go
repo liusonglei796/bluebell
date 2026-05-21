@@ -2,15 +2,15 @@ package application
 
 import (
 	// DTO
-	postreq "bluebell/internal/interfaces/http/dto/request/post"
-	userreq "bluebell/internal/interfaces/http/dto/request/user"
-	votereq "bluebell/internal/interfaces/http/dto/request/vote"
-	communityResp "bluebell/internal/interfaces/http/dto/response/community"
-	postResp "bluebell/internal/interfaces/http/dto/response/post"
-	socialResp "bluebell/internal/interfaces/http/dto/response/social"
-	voteresp "bluebell/internal/interfaces/http/dto/response/vote"
+	postreq "bluebell/internal/application/dto/request/post"
+	userreq "bluebell/internal/application/dto/request/user"
+	votereq "bluebell/internal/application/dto/request/vote"
+	communityResp "bluebell/internal/application/dto/response/community"
+	postResp "bluebell/internal/application/dto/response/post"
+	socialResp "bluebell/internal/application/dto/response/social"
+	voteresp "bluebell/internal/application/dto/response/vote"
+	searchResp "bluebell/internal/application/dto/response/search"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/es"
 
 	"context"
 )
@@ -54,7 +54,7 @@ type PostService interface {
 	GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error)
 
 	// SearchPosts 全文搜索帖子
-	SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*es.SearchResponse, error)
+	SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*searchResp.SearchResponse, error)
 }
 
 // ========== User Service 接口 ==========

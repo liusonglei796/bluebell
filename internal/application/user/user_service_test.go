@@ -4,7 +4,7 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/infrastructure/snowflake"
-	userreq "bluebell/internal/interfaces/http/dto/request/user"
+	userreq "bluebell/internal/application/dto/request/user"
 	"context"
 	"testing"
 	"time"
@@ -64,6 +64,25 @@ func (m *MockTokenCacheRepository) DeleteUserToken(ctx context.Context, userID i
 	return m.DeleteUserTokenFunc(ctx, userID)
 }
 
+// MockTokenService is a manual mock for domain.TokenService
+type MockTokenService struct {
+	GenTokenFunc func(userID int64) (string, string, error)
+	ParseTokenFunc func(tokenString string, expectedType string) (int64, error)
+}
+
+func (m *MockTokenService) GenToken(userID int64) (string, string, error) {
+	return m.GenTokenFunc(userID)
+}
+func (m *MockTokenService) ParseToken(tokenString string, expectedType string) (int64, error) {
+	return m.ParseTokenFunc(tokenString, expectedType)
+}
+func (m *MockTokenService) GetAccessExpiry() time.Duration {
+	return 2 * time.Hour
+}
+func (m *MockTokenService) GetRefreshExpiry() time.Duration {
+	return 7 * 24 * time.Hour
+}
+
 func TestUserService_SignUp(t *testing.T) {
 	// Initialize snowflake for tests to avoid nil pointer dereference
 	snowflake.Init(&config.Config{
@@ -87,10 +106,15 @@ func TestUserService_SignUp(t *testing.T) {
 			return nil
 		},
 	}
-	s := NewUserService(mockRepo, nil, nil)
+	mockTokenService := &MockTokenService{
+		GenTokenFunc: func(userID int64) (string, string, error) {
+			return "access", "refresh", nil
+		},
+	}
+	s := NewUserService(mockRepo, nil, nil, mockTokenService)
 	err := s.SignUp(context.Background(), &userreq.SignUpRequest{
-		Username: "testuser",
-		Password: "password123",
+		Username:   "testuser",
+		Password:   "password123",
 		RePassword: "password123",
 	})
 	if err != nil {

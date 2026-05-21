@@ -85,6 +85,12 @@ type OtelConfig struct {
 	ServiceName string `mapstructure:"service_name"`
 }
 
+// PyroscopeConfig continuous profiling configuration
+type PyroscopeConfig struct {
+	Enabled     bool   `mapstructure:"enabled"`
+	Endpoint    string `mapstructure:"endpoint"`
+	ServiceName string `mapstructure:"service_name"`
+}
 
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
@@ -100,6 +106,7 @@ type Config struct {
 	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
 	ES        *esConfig        `mapstructure:"es"`
 	Otel      *OtelConfig      `mapstructure:"otel"`
+	Pyroscope *PyroscopeConfig `mapstructure:"pyroscope"`
 	GitHub    *GitHubConfig    `mapstructure:"github"`
 }
 

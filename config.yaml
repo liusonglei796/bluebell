@@ -56,3 +56,8 @@ otel:
   enabled: true
   endpoint: "localhost:4317"
   service_name: "bluebell"
+
+pyroscope:
+  enabled: true
+  endpoint: "http://localhost:4040"
+  service_name: "bluebell"

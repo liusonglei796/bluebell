@@ -12,6 +12,7 @@ import (
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
+	"bluebell/internal/infrastructure/profiler"
 	database "bluebell/internal/infrastructure/persistence/mysql"
 	redisrepo "bluebell/internal/infrastructure/persistence/redis"
 	"bluebell/internal/infrastructure/snowflake"
@@ -48,6 +49,20 @@ func main() {
 			fmt.Printf("otel shutdown error: %v\n", err)
 		}
 	}()
+
+	// ====== 基础设施层：Pyroscope Profiler ======
+	if cfg.Pyroscope != nil {
+		pyroShutdown, err := profiler.Init(cfg.Pyroscope)
+		if err != nil {
+			fmt.Printf("init pyroscope failed, err:%v\n", err)
+		} else {
+			defer func() {
+				if err := pyroShutdown(); err != nil {
+					fmt.Printf("pyroscope shutdown error: %v\n", err)
+				}
+			}()
+		}
+	}
 
 	if err := snowflake.Init(cfg); err != nil {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))

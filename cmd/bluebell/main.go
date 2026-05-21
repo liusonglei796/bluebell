@@ -8,12 +8,15 @@ import (
 
 	"bluebell/internal/config"
 	"bluebell/internal/di"
+	"bluebell/internal/domain"
 	"bluebell/internal/http_server"
+	"bluebell/internal/infrastructure/jwt"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
+	"bluebell/internal/infrastructure/profiler"
 	database "bluebell/internal/infrastructure/persistence/mysql"
 	redisrepo "bluebell/internal/infrastructure/persistence/redis"
 	"bluebell/internal/infrastructure/snowflake"
@@ -66,6 +69,20 @@ func main() {
 			fmt.Printf("otel shutdown error: %v\n", err)
 		}
 	}()
+
+	// ====== 基础设施层：Pyroscope Profiler ======
+	if cfg.Pyroscope != nil {
+		pyroShutdown, err := profiler.Init(cfg.Pyroscope)
+		if err != nil {
+			fmt.Printf("init pyroscope failed, err:%v\n", err)
+		} else {
+			defer func() {
+				if err := pyroShutdown(); err != nil {
+					fmt.Printf("pyroscope shutdown error: %v\n", err)
+				}
+			}()
+		}
+	}
 
 	// 初始化自定义业务指标（MeterProvider 已设置，使用 no-op 回退）
 	serviceName := "bluebell"
@@ -167,7 +184,16 @@ func main() {
 	}
 
 	// 2) 业务逻辑层：创建 Service 实例
-	services := di.NewServices(repositoriesUOW, cacheRepos, publisher, esClient, cfg)
+	tokenService := jwt.NewJWTService(cfg)
+	var searchRepo domain.PostSearchRepository
+	if esClient != nil {
+		searchRepo = esClient
+	}
+	var searchSyncRepo domain.PostSearchSyncRepository
+	if publisher != nil {
+		searchSyncRepo = publisher
+	}
+	services := di.NewServices(repositoriesUOW, cacheRepos, tokenService, searchRepo, searchSyncRepo, publisher, cfg)
 
 	// 3) 表现层：创建 Handler 实例
 	handlerProvider := handler.NewProvider(
@@ -225,7 +251,7 @@ func main() {
 	}
 
 	// 5) 路由层：初始化路由，注入 Handler
-	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg, cacheRepos.TokenCache)
+	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg, tokenService, cacheRepos.TokenCache)
 	if err != nil {
 		zap.L().Fatal("init router failed", zap.Error(err))
 	}

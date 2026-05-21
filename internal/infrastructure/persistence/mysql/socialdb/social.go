@@ -10,6 +10,7 @@ import (
 	"bluebell/internal/infrastructure/persistence/mysql/model"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type socialRepoStruct struct {
@@ -67,31 +68,37 @@ func (r *socialRepoStruct) SaveUserProfile(ctx context.Context, profile *entity.
 		GitHubURL: profile.GitHubURL,
 	}
 
-	// Use Save to update or create
-	var existing model.UserProfile
-	err := r.db.WithContext(ctx).Where("user_id = ?", profile.UserID).First(&existing).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return r.db.WithContext(ctx).Create(&m).Error
-		}
-		return err
-	}
+	// 使用 ON DUPLICATE KEY UPDATE (Upsert) 保证原子性
+	// 针对 user_id 冲突时，更新除 ID 外的所有字段
+	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "user_id"}},
+		DoUpdates: clause.AssignmentColumns([]string{"avatar_url", "bio", "github_id", "github_url", "updated_at"}),
+	}).Create(&m).Error
 
-	m.ID = existing.ID // Keep existing ID
-	return r.db.WithContext(ctx).Save(&m).Error
+	if err != nil {
+		return fmt.Errorf("failed to save user profile: %w", err)
+	}
+	return nil
 }
+
 
 func (r *socialRepoStruct) FollowUser(ctx context.Context, followerID, followingID int64) error {
 	m := model.Follow{
 		FollowerID:  followerID,
 		FollowingID: followingID,
 	}
-	err := r.db.WithContext(ctx).Create(&m).Error
+	// 使用 OnConflict DoNothing 保证幂等性
+	// 针对 (follower_id, following_id) 联合唯一键冲突时，不做任何操作，不返回错误
+	err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
+		DoNothing: true,
+	}).Create(&m).Error
+
 	if err != nil {
 		return fmt.Errorf("failed to follow user: %w", err)
 	}
 	return nil
 }
+
 
 func (r *socialRepoStruct) UnfollowUser(ctx context.Context, followerID, followingID int64) error {
 	err := r.db.WithContext(ctx).Where("follower_id = ? AND following_id = ?", followerID, followingID).Delete(&model.Follow{}).Error

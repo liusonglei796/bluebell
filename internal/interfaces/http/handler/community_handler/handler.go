@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"bluebell/internal/application"
-	communityreq "bluebell/internal/interfaces/http/dto/request/community"
-	communityResp "bluebell/internal/interfaces/http/dto/response/community"
+	communityreq "bluebell/internal/application/dto/request/community"
+	communityResp "bluebell/internal/application/dto/response/community"
 	"bluebell/internal/infrastructure/translate"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/interfaces/http/render"

@@ -1,7 +1,8 @@
 // Package domain 提供领域层仓储接口定义
 //
-// DDD: 仓储接口属于领域层，实现属于基础设施层
-// 通过依赖倒置原则，领域层定义接口，基础设施层提供实现
+// 仓储接口 (Repository Interfaces)
+// DDD 定义：仓储是持久化实体的抽象，表现得像是一个内存中的集合。
+// 接口定义在领域层，体现了“依赖倒置原则”：领域层不依赖外部实现，而是定义契约，由基础设施层去适配。
 package domain
 
 import (
@@ -13,6 +14,8 @@ import (
 // ========== 缓存层仓储接口 ==========
 
 // PostCacheRepository 帖子缓存仓储接口（Redis）
+// 虽然缓存通常被视为技术细节，但在高性能社交系统中，
+// “如何缓存及如何维护排序数据”本身就是一种关键的业务支撑需求。
 type PostCacheRepository interface {
 	// CreatePost 创建帖子时初始化 Redis 数据（时间排序、分数排序）
 	CreatePost(ctx context.Context, postID, communityID int64) error
@@ -33,6 +36,7 @@ type PostCacheRepository interface {
 }
 
 // UserTokenCacheRepository 用户 Token 缓存仓储接口（Redis）
+// 将 Token 存储抽象为领域需求，是因为 Token 的生命周期和安全性是用户管理的业务边界。
 type UserTokenCacheRepository interface {
 	// SetUserToken 存储用户的 Access Token 和 Refresh Token
 	SetUserToken(ctx context.Context, userID int64, aToken, rToken string, aExp, rExp time.Duration) error

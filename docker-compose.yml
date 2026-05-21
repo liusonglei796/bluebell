@@ -133,21 +133,23 @@ services:
     ports:
       - "4317:4317"   # OTLP gRPC
       - "4318:4318"   # OTLP HTTP
-      - "8889:8889"   # Prometheus exporter
     depends_on:
-      - jaeger
+      - tempo
       - loki
+      - mimir
     networks:
       - bluebell_net
     restart: always
 
-  # Jaeger — 分布式追踪后端 (All-in-one)
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: bluebell_jaeger
+  # Tempo — 分布式追踪后端
+  tempo:
+    image: grafana/tempo:2.10.4
+    container_name: bluebell_tempo
+    command: ["-config.file=/etc/tempo/tempo-config.yaml"]
+    volumes:
+      - ./tempo-config.yaml:/etc/tempo/tempo-config.yaml:ro
     ports:
-      - "16686:16686" # UI
-      - "4317"       # OTLP gRPC
+      - "3200:3200"
     networks:
       - bluebell_net
     restart: always
@@ -165,17 +167,25 @@ services:
       - bluebell_net
     restart: always
 
-  # Prometheus — 指标后端（从 OTel Collector 拉取）
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: bluebell_prometheus
+  # Mimir — 指标后端
+  mimir:
+    image: grafana/mimir:latest
+    container_name: bluebell_mimir
+    command: ["-config.file=/etc/mimir/mimir-config.yaml"]
     volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml:ro
+      - ./mimir-config.yaml:/etc/mimir/mimir-config.yaml:ro
     ports:
-      - "9090:9090"
-    depends_on:
-      - otel-collector
+      - "9009:9009"
+    networks:
+      - bluebell_net
+    restart: always
+
+  # Pyroscope — 持续性能剖析后端
+  pyroscope:
+    image: grafana/pyroscope:latest
+    container_name: bluebell_pyroscope
+    ports:
+      - "4040:4040"
     networks:
       - bluebell_net
     restart: always
@@ -194,9 +204,10 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - jaeger
+      - tempo
       - loki
-      - prometheus
+      - mimir
+      - pyroscope
     networks:
       - bluebell_net
     restart: always

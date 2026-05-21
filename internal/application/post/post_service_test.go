@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"bluebell/internal/domain/entity"
-	postreq "bluebell/internal/interfaces/http/dto/request/post"
+	postreq "bluebell/internal/application/dto/request/post"
 	"bluebell/internal/infrastructure/mq"
 )
 
@@ -75,7 +75,7 @@ func TestVoteForPost_Consistency(t *testing.T) {
 	defer cancel()
 	go buffer.Start(ctx)
 
-	svc := NewPostService(&MockPostRepository{}, mockCache, &MockVoteRepository{}, &MockRemarkRepository{}, nil, nil, buffer)
+	svc := NewPostService(&MockPostRepository{}, mockCache, &MockVoteRepository{}, &MockRemarkRepository{}, nil, nil, nil, buffer)
 
 	const (
 		numUsers = 100
@@ -121,7 +121,7 @@ func BenchmarkVoteForPost(b *testing.B) {
 	// though flushing happens in background and shouldn't block AddVote much due to mutex.
 	buffer := mq.NewVoteBuffer(time.Hour, mockCache.BatchVoteForPost)
 	
-	svc := NewPostService(&MockPostRepository{}, mockCache, &MockVoteRepository{}, &MockRemarkRepository{}, nil, nil, buffer)
+	svc := NewPostService(&MockPostRepository{}, mockCache, &MockVoteRepository{}, &MockRemarkRepository{}, nil, nil, nil, buffer)
 
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {

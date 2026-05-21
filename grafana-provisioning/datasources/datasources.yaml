@@ -4,7 +4,7 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    url: http://prometheus:9090
+    url: http://mimir:9009/prometheus
 
   - name: Loki
     type: loki
@@ -12,13 +12,19 @@ datasources:
     url: http://loki:3100
     jsonData:
       derivedFields:
-        - datasourceUid: jaeger
+        - datasourceUid: tempo
           matcherRegex: "trace_id\":\"(\\w+)\""
           name: TraceID
           url: "$${__value.raw}"
 
-  - name: Jaeger
-    type: jaeger
-    uid: jaeger
+  - name: Tempo
+    type: tempo
+    uid: tempo
     access: proxy
-    url: http://jaeger:16686
+    url: http://tempo:3200
+
+  - name: Pyroscope
+    type: pyroscope
+    uid: pyroscope
+    access: proxy
+    url: http://pyroscope:4040

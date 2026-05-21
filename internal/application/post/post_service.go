@@ -1,3 +1,10 @@
+// Package postsvc 实现帖子应用层服务
+//
+// Why Application Layer?
+// 按照 DDD 原则，应用层服务（Application Service）是“指挥官”。
+// 1. 它不包含核心业务规则（规则在 Domain）。
+// 2. 它负责编排流程：调用仓储加载数据 -> 调用领域对象执行逻辑 -> 调用仓储保存数据。
+// 3. 它处理跨切面逻辑：事务管理、日志记录、发送消息等。
 package postsvc
 
 import (
@@ -8,11 +15,11 @@ import (
 	"bluebell/internal/application"
 
 	// DTO
-	postreq "bluebell/internal/interfaces/http/dto/request/post"
-	postResp "bluebell/internal/interfaces/http/dto/response/post"
+	postreq "bluebell/internal/application/dto/request/post"
+	postResp "bluebell/internal/application/dto/response/post"
+	searchResp "bluebell/internal/application/dto/response/search"
 
 	// 基础设施
-	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/infrastructure/mq"
 
@@ -29,15 +36,19 @@ import (
 	"bluebell/internal/infrastructure/logger"
 )
 
-// postServiceStruct 帖子业务逻辑服务
+// postServiceStruct 帖子应用服务 (Application Service)
+// DDD 定义：应用服务负责表达用例（Use Case）并协调各种基础设施。
+// 帖子是一个复杂的聚合，它的生命周期涉及到：数据库、缓存、搜索索引、消息通知。
+// 应用层服务将这些分散的技术能力聚合起来，向外提供一个统一 of 业务操作入口。
 type postServiceStruct struct {
-	postRepo   domain.PostRepository
-	postCache  domain.PostCacheRepository
-	voteRepo   domain.VoteRepository
-	remarkRepo domain.RemarkRepository
-	publisher  *mq.Publisher
-	esClient   *es.Client
-	voteBuffer *mq.VoteBuffer
+	postRepo       domain.PostRepository
+	postCache      domain.PostCacheRepository
+	voteRepo       domain.VoteRepository
+	remarkRepo     domain.RemarkRepository
+	publisher      *mq.Publisher
+	searchRepo     domain.PostSearchRepository
+	searchSyncRepo domain.PostSearchSyncRepository
+	voteBuffer     *mq.VoteBuffer
 }
 
 // NewPostService 创建帖子服务实例
@@ -47,21 +58,30 @@ func NewPostService(
 	voteRepo domain.VoteRepository,
 	remarkRepo domain.RemarkRepository,
 	publisher *mq.Publisher,
-	esClient *es.Client,
+	searchRepo domain.PostSearchRepository,
+	searchSyncRepo domain.PostSearchSyncRepository,
 	voteBuffer *mq.VoteBuffer,
 ) application.PostService {
 	return &postServiceStruct{
-		postRepo:   postRepo,
-		postCache:  postCache,
-		voteRepo:   voteRepo,
-		remarkRepo: remarkRepo,
-		publisher:  publisher,
-		esClient:   esClient,
-		voteBuffer: voteBuffer,
+		postRepo:       postRepo,
+		postCache:      postCache,
+		voteRepo:       voteRepo,
+		remarkRepo:     remarkRepo,
+		publisher:      publisher,
+		searchRepo:     searchRepo,
+		searchSyncRepo: searchSyncRepo,
+		voteBuffer:     voteBuffer,
 	}
 }
 
 // CreatePost 创建帖子
+// 为什么这个流程在应用层？
+// 这是一个典型的多系统协同流程：
+// 1. 生成 ID
+// 2. 构造并校验实体 (Domain)
+// 3. 持久化到数据库 (Infrastructure)
+// 4. 同步到缓存 (Infrastructure)
+// 5. 发送异步通知 (Infrastructure)
 func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error) {
 	postIDInt := snowflake.GenID()
 	postID = strconv.FormatInt(postIDInt, 10)
@@ -103,6 +123,15 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 		TargetName: p.Title,
 		Timestamp:  time.Now().Unix(),
 	})
+
+	// 5. 发送搜索索引同步消息
+	if s.searchSyncRepo != nil {
+		if err := s.searchSyncRepo.SyncPostIndex(ctx, post); err != nil {
+			logger.WithContext(ctx).Warn("searchSyncRepo.SyncPostIndex failed",
+				zap.String("post_id", post.PostID),
+				zap.Error(err))
+		}
+	}
 
 	return postID, nil
 }
@@ -304,11 +333,11 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	// 3. 删除 ES 中的帖子文档
-	if s.esClient != nil {
+	// 3. 删除 ES 中的帖子文档 (通过 PostSearchSyncRepository)
+	if s.searchSyncRepo != nil {
 		postIDStr := strconv.FormatInt(postID, 10)
-		if err := s.esClient.DeleteDocument(ctx, es.IndexPost, postIDStr); err != nil {
-			logger.WithContext(ctx).Error("esClient.DeleteDocument failed",
+		if err := s.searchSyncRepo.DeletePostIndex(ctx, postIDStr); err != nil {
+			logger.WithContext(ctx).Error("searchSyncRepo.DeletePostIndex failed",
 				zap.Int64("post_id", postID),
 				zap.Error(err))
 			// ES 删除失败不影响主流程，仅记录日志
@@ -415,17 +444,36 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 }
 
 // SearchPosts 全文搜索帖子
-func (s *postServiceStruct) SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*es.SearchResponse, error) {
-	if s.esClient == nil {
-		logger.WithContext(ctx).Warn("esClient is not initialized")
-		return &es.SearchResponse{Posts: []es.SearchPostDoc{}}, nil
+func (s *postServiceStruct) SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*searchResp.SearchResponse, error) {
+	if s.searchRepo == nil {
+		logger.WithContext(ctx).Warn("searchRepo is not initialized")
+		return &searchResp.SearchResponse{Posts: []searchResp.SearchPostDoc{}}, nil
 	}
 
-	esReq := &es.SearchRequest{
-		Keyword:  keyword,
-		Page:     page,
-		PageSize: pageSize,
+	res, err := s.searchRepo.Search(ctx, keyword, page, pageSize)
+	if err != nil {
+		return nil, err
 	}
 
-	return s.esClient.Search(ctx, esReq)
+	// 转换为 DTO
+	resp := &searchResp.SearchResponse{
+		Total:    res.Total,
+		Page:     res.Page,
+		PageSize: res.PageSize,
+		Posts:    make([]searchResp.SearchPostDoc, 0, len(res.Posts)),
+	}
+	for _, p := range res.Posts {
+		resp.Posts = append(resp.Posts, searchResp.SearchPostDoc{
+			PostID:           p.PostID,
+			AuthorID:         p.AuthorID,
+			CommunityID:      p.CommunityID,
+			PostTitle:        p.PostTitle,
+			Content:          p.Content,
+			Status:           p.Status,
+			CreatedAt:        p.CreatedAt,
+			HighlightTitle:   p.HighlightTitle,
+			HighlightContent: p.HighlightContent,
+		})
+	}
+	return resp, nil
 }

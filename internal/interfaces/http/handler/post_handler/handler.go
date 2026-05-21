@@ -4,15 +4,12 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"bluebell/internal/application"
 	"bluebell/internal/infrastructure/metrics"
-	"bluebell/internal/infrastructure/mq"
-	"bluebell/internal/infrastructure/persistence/mysql/model"
 	"bluebell/internal/infrastructure/translate"
-	"bluebell/internal/interfaces/http/dto/request/post"
-	"bluebell/internal/interfaces/http/dto/response/post"
+	postreq "bluebell/internal/application/dto/request/post"
+	postResp "bluebell/internal/application/dto/response/post"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/interfaces/http/render"
 
@@ -23,13 +20,11 @@ import (
 
 type Handler struct {
 	postService application.PostService
-	publisher   *mq.Publisher
 }
 
-func New(postService application.PostService, publisher *mq.Publisher) *Handler {
-	return &Handler{postService: postService, publisher: publisher}
+func New(postService application.PostService) *Handler {
+	return &Handler{postService: postService}
 }
-
 
 func (h *Handler) CreatePostHandler(c *gin.Context) {
 	userID, exist := c.Get("UserIDKey")
@@ -51,26 +46,10 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	postID, err := h.postService.CreatePost(ctx, p, userID.(int64))
+	_, err := h.postService.CreatePost(ctx, p, userID.(int64))
 	if err != nil {
 		render.HandleError(c, err)
 		return
-	}
-
-	if h.publisher != nil {
-		syncMsg := &mq.SyncMessage{
-			PostID:      postID,
-			AuthorID:    userID.(int64),
-			CommunityID: p.CommunityID,
-			PostTitle:   p.Title,
-			Content:     p.Content,
-			Status:      model.PostStatusPublished,
-			CreatedAt:   time.Now().Format(time.RFC3339),
-			Action:      "index",
-		}
-		if err := h.publisher.PublishSearch(ctx, syncMsg); err != nil {
-			zap.L().Warn("publish search index message failed", zap.Error(err))
-		}
 	}
 
 	metrics.RecordSuccess(ctx, metrics.PostsCreated)
@@ -163,16 +142,6 @@ func (h *Handler) DeletePostHandler(c *gin.Context) {
 	if err := h.postService.DeletePost(ctx, postID, userID.(int64)); err != nil {
 		render.HandleError(c, err)
 		return
-	}
-
-	if h.publisher != nil {
-		syncMsg := map[string]interface{}{
-			"post_id": strconv.FormatInt(postID, 10),
-			"action":  "delete",
-		}
-		if err := h.publisher.PublishSearch(ctx, syncMsg); err != nil {
-			zap.L().Warn("publish search sync message failed", zap.Error(err))
-		}
 	}
 
 	render.HandleSuccess(c, nil)
