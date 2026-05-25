@@ -1,32 +1,35 @@
 <template>
   <div class="max-w-4xl mx-auto">
-    <div v-if="loading" class="text-center py-10">
-      <span class="text-gray-500">Loading post...</span>
+    <div v-if="loading" class="flex flex-col items-center justify-center py-20 space-y-4">
+      <div class="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+      <span class="text-black/60 font-bold uppercase tracking-widest text-xs">Loading...</span>
     </div>
 
-    <div v-else-if="post" class="bg-white p-6 border border-gray-200 rounded-lg shadow-sm">
+    <div v-else-if="post" class="glass rounded-3xl p-8">
       <div class="flex">
         <div class="flex flex-col items-center mr-6">
-          <button @click="vote(1)" class="text-gray-400 hover:text-indigo-600 focus:outline-none">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
-          </button>
-          <span class="text-xl font-bold text-gray-700 my-2">{{ post.vote_num || 0 }}</span>
-          <button @click="vote(-1)" class="text-gray-400 hover:text-red-600 focus:outline-none">
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-          </button>
-          <div class="mt-4 pt-4 border-t border-gray-200">
-            <button @click="toggleBookmark" class="text-gray-400 hover:text-yellow-500 focus:outline-none" :title="isBookmarked ? 'Remove bookmark' : 'Add bookmark'">
-              <svg class="w-8 h-8" :fill="isBookmarked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+          <div class="bg-black/5 rounded-2xl p-3 flex flex-col items-center">
+            <button @click="vote(1)" class="text-gray-400 hover:text-black transition-colors cursor-pointer focus:outline-none">
+              <ArrowBigUpIcon :stroke-width="2.5" class="w-7 h-7" />
+            </button>
+            <span class="text-xl font-black text-black font-heading my-2">{{ post.vote_num || 0 }}</span>
+            <button @click="vote(-1)" class="text-gray-400 hover:text-black transition-colors cursor-pointer focus:outline-none">
+              <ArrowBigDownIcon :stroke-width="2.5" class="w-7 h-7" />
+            </button>
+          </div>
+          <div class="mt-4 pt-4 border-t border-black/10">
+            <button @click="toggleBookmark" class="text-gray-400 hover:text-black transition-colors cursor-pointer focus:outline-none" :title="isBookmarked ? 'Remove bookmark' : 'Add bookmark'">
+              <BookmarkIcon :size="28" :fill="isBookmarked ? 'currentColor' : 'none'" />
             </button>
             <span v-if="bookmarkCount > 0" class="text-xs text-gray-500 mt-1 block">{{ bookmarkCount }}</span>
           </div>
         </div>
         <div class="flex-grow">
           <div class="text-sm text-gray-500 mb-2">
-            Posted by <span class="font-medium text-gray-900">{{ post.author_name }}</span>
-            in <router-link :to="`/community/${post.community_id}`" class="font-medium text-indigo-600 hover:underline">{{ post.community?.name || `Community ${post.community_id}` }}</router-link>
+            Posted by <span class="font-bold text-black">{{ post.author_name }}</span>
+            in <router-link :to="`/community/${post.community_id}`" class="font-bold text-black hover:underline">{{ post.community?.name || `Community ${post.community_id}` }}</router-link>
           </div>
-          <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ post.title }}</h1>
+          <h1 class="text-3xl font-black text-black tracking-tight font-heading mb-4">{{ post.title }}</h1>
           <div class="prose max-w-none text-gray-800 whitespace-pre-wrap">
             {{ post.content }}
           </div>
@@ -34,19 +37,19 @@
       </div>
     </div>
 
-    <div v-else class="text-center py-10">
-      <span class="text-gray-500">Post not found.</span>
+    <div v-else class="glass rounded-[24px] p-10 text-center">
+      <span class="text-gray-400 font-medium italic">Post not found.</span>
     </div>
 
     <!-- Remarks Section -->
     <div v-if="post" class="mt-8">
-      <h2 class="text-xl font-bold text-gray-900 mb-4">Comments</h2>
+      <h2 class="text-2xl font-black text-black tracking-tighter uppercase font-heading mb-4">Comments</h2>
 
       <!-- Add Comment -->
       <form @submit.prevent="submitRemark" class="mb-8">
-        <textarea v-model="newRemark" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="What are your thoughts?"></textarea>
+        <textarea v-model="newRemark" rows="3" class="w-full p-3 bg-white/50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/20 backdrop-blur-sm" placeholder="What are your thoughts?"></textarea>
         <div class="mt-2 flex justify-end">
-          <button type="submit" :disabled="submittingRemark || !newRemark.trim()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
+          <button type="submit" :disabled="submittingRemark || !newRemark.trim()" class="bg-black text-white px-6 py-2.5 rounded-2xl font-bold hover:bg-gray-800 transition-all active:scale-95 shadow-md text-sm disabled:opacity-50">
             {{ submittingRemark ? 'Posting...' : 'Comment' }}
           </button>
         </div>
@@ -54,15 +57,15 @@
 
       <!-- Comment List -->
       <div class="space-y-4">
-        <div v-for="remark in remarks" :key="remark.id" class="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
+        <div v-for="remark in remarks" :key="remark.id" class="glass rounded-2xl p-5">
           <div class="text-sm text-gray-500 mb-2">
-            <span class="font-medium text-gray-900">{{ remark.author_name || 'User ' + remark.author_id }}</span>
+            <span class="font-bold text-black">{{ remark.author_name || 'User ' + remark.author_id }}</span>
             &bull; {{ new Date(remark.create_time).toLocaleString() }}
           </div>
           <p class="text-gray-800 whitespace-pre-wrap">{{ remark.content }}</p>
         </div>
-        <div v-if="remarks.length === 0" class="text-gray-500 text-sm">
-          No comments yet. Be the first to share your thoughts!
+        <div v-if="remarks.length === 0" class="glass rounded-[24px] p-10 text-center">
+          <span class="text-gray-400 font-medium italic">No comments yet. Be the first to share your thoughts!</span>
         </div>
       </div>
     </div>
@@ -75,6 +78,7 @@ import { useRoute, useRouter } from 'vue-router';
 import request from '../api/request';
 import { bookmarkAPI } from '../api/bookmark';
 import { useAuthStore } from '../store/auth';
+import { ArrowBigUpIcon, ArrowBigDownIcon, BookmarkIcon } from 'lucide-vue-next';
 
 const route = useRoute();
 const router = useRouter();
@@ -156,16 +160,15 @@ const vote = async (direction: number) => {
       direction,
     });
     if (res.code === 1000) {
-      alert('Vote successful!');
       fetchPost();
     } else {
-      alert(res.msg || 'Vote failed');
+      console.warn(res.msg || 'Vote failed');
     }
   } catch (err: any) {
     if (err.response?.status === 401) {
       router.push('/login');
     } else {
-      alert('Vote failed');
+      console.warn('Vote failed');
     }
   }
 };
@@ -182,13 +185,13 @@ const submitRemark = async () => {
       newRemark.value = '';
       fetchRemarks();
     } else {
-      alert(res.msg || 'Failed to post comment');
+      console.warn(res.msg || 'Failed to post comment');
     }
   } catch (err: any) {
     if (err.response?.status === 401) {
       router.push('/login');
     } else {
-      alert('Failed to post comment');
+      console.warn('Failed to post comment');
     }
   } finally {
     submittingRemark.value = false;

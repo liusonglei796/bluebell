@@ -1,28 +1,30 @@
 <template>
-  <div class="max-w-md mx-auto bg-white p-8 border border-gray-200 rounded-lg shadow-sm mt-10">
-    <h2 class="text-2xl font-bold mb-6 text-center text-gray-900">Sign up for Bluebell</h2>
-    <form @submit.prevent="handleSignup" class="space-y-4">
-      <div>
-        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-        <input v-model="form.username" type="text" id="username" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+  <div class="flex items-center justify-center min-h-[70vh]">
+    <div class="glass rounded-3xl p-10 w-full max-w-md">
+      <h2 class="text-3xl font-black text-center text-black tracking-tighter mb-8 font-heading">SIGN UP</h2>
+      <form @submit.prevent="handleSignup" class="space-y-5">
+        <div>
+          <label for="username" class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Username</label>
+          <input v-model="form.username" type="text" id="username" required class="block w-full px-4 py-3 bg-white/50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/20 backdrop-blur-sm text-sm" />
+        </div>
+        <div>
+          <label for="password" class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Password</label>
+          <input v-model="form.password" type="password" id="password" required class="block w-full px-4 py-3 bg-white/50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/20 backdrop-blur-sm text-sm" />
+        </div>
+        <div>
+          <label for="re_password" class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Confirm Password</label>
+          <input v-model="form.re_password" type="password" id="re_password" required class="block w-full px-4 py-3 bg-white/50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/20 backdrop-blur-sm text-sm" />
+        </div>
+        <div v-if="errorMsg" class="text-red-500 font-medium text-sm">
+          {{ errorMsg }}
+        </div>
+        <button type="submit" :disabled="loading" class="w-full py-4 rounded-2xl bg-black text-white font-black text-sm uppercase tracking-wider hover:bg-gray-800 transition-all active:scale-95 shadow-lg disabled:opacity-50">
+          {{ loading ? 'Signing up...' : 'Sign up' }}
+        </button>
+      </form>
+      <div class="mt-6 text-center text-sm text-gray-500">
+        Already have an account? <router-link to="/login" class="font-bold text-black hover:underline">Log in</router-link>
       </div>
-      <div>
-        <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-        <input v-model="form.password" type="password" id="password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-      </div>
-      <div>
-        <label for="re_password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
-        <input v-model="form.re_password" type="password" id="re_password" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-      </div>
-      <div v-if="errorMsg" class="text-red-600 text-sm">
-        {{ errorMsg }}
-      </div>
-      <button type="submit" :disabled="loading" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
-        {{ loading ? 'Signing up...' : 'Sign up' }}
-      </button>
-    </form>
-    <div class="mt-4 text-center text-sm text-gray-600">
-      Already have an account? <router-link to="/login" class="font-medium text-indigo-600 hover:text-indigo-500">Log in</router-link>
     </div>
   </div>
 </template>

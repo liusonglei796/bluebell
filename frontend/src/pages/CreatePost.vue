@@ -1,33 +1,35 @@
 <template>
-  <div class="max-w-2xl mx-auto bg-white p-8 border border-gray-200 rounded-lg shadow-sm">
-    <h2 class="text-2xl font-bold mb-6 text-gray-900">Create a New Post</h2>
-    <form @submit.prevent="submitPost" class="space-y-6">
-      <div>
-        <label for="community" class="block text-sm font-medium text-gray-700">Community</label>
-        <select v-model="form.community_id" id="community" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md shadow-sm border">
-          <option disabled value="">Select a community</option>
-          <option v-for="community in communities" :key="community.id" :value="community.id">
-            {{ community.name }}
-          </option>
-        </select>
-      </div>
-      <div>
-        <label for="title" class="block text-sm font-medium text-gray-700">Title</label>
-        <input v-model="form.title" type="text" id="title" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-      </div>
-      <div>
-        <label for="content" class="block text-sm font-medium text-gray-700">Content</label>
-        <textarea v-model="form.content" id="content" rows="6" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
-      </div>
-      <div v-if="errorMsg" class="text-red-600 text-sm">
-        {{ errorMsg }}
-      </div>
-      <div class="flex justify-end">
-        <button type="submit" :disabled="loading" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
-          {{ loading ? 'Posting...' : 'Post' }}
-        </button>
-      </div>
-    </form>
+  <div class="flex items-center justify-center min-h-[60vh]">
+    <div class="glass rounded-3xl p-10 w-full max-w-2xl">
+      <h2 class="text-3xl font-black mb-8 text-black tracking-tighter font-heading">NEW POST</h2>
+      <form @submit.prevent="submitPost" class="space-y-6">
+        <div>
+          <label for="community" class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Community</label>
+          <select v-model="form.community_id" id="community" required class="block w-full px-4 py-3 bg-white/50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/20 backdrop-blur-sm text-sm appearance-none">
+            <option disabled value="">Select a community</option>
+            <option v-for="community in communities" :key="community.id" :value="community.id">
+              {{ community.name }}
+            </option>
+          </select>
+        </div>
+        <div>
+          <label for="title" class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Title</label>
+          <input v-model="form.title" type="text" id="title" required class="block w-full px-4 py-3 bg-white/50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/20 backdrop-blur-sm text-sm" />
+        </div>
+        <div>
+          <label for="content" class="block text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Content</label>
+          <textarea v-model="form.content" id="content" rows="6" required class="block w-full px-4 py-3 bg-white/50 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-black/20 backdrop-blur-sm text-sm resize-none"></textarea>
+        </div>
+        <div v-if="errorMsg" class="text-red-500 font-medium text-sm">
+          {{ errorMsg }}
+        </div>
+        <div class="flex justify-end">
+          <button type="submit" :disabled="loading" class="px-8 py-3 rounded-2xl bg-black text-white font-black text-sm uppercase tracking-wider hover:bg-gray-800 transition-all active:scale-95 shadow-lg disabled:opacity-50">
+            {{ loading ? 'Posting...' : 'Publish' }}
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 </template>
 

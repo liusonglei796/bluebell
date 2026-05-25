@@ -1,44 +1,43 @@
 <template>
   <div class="max-w-4xl mx-auto py-6">
     <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 mb-2">
-        Search results for: <span class="text-indigo-600">"{{ query }}"</span>
+      <h1 class="text-3xl font-black text-black tracking-tighter mb-2 font-heading">
+        SEARCH: <span class="text-gray-400">"{{ query }}"</span>
       </h1>
-      <p class="text-sm text-gray-500" v-if="!loading">
-        Found {{ total }} results
+      <p class="text-sm text-gray-500 font-bold uppercase tracking-widest" v-if="!loading">
+        {{ total }} results found
       </p>
     </div>
 
-    <div v-if="loading" class="text-center py-10">
-      <span class="text-gray-500">Searching...</span>
+    <div v-if="loading" class="flex flex-col items-center justify-center py-20 space-y-4">
+      <div class="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin"></div>
+      <span class="text-black/60 font-bold uppercase tracking-widest text-xs">Searching...</span>
     </div>
 
-    <div v-else class="space-y-6">
+    <div v-else class="space-y-4">
       <div v-for="post in posts" :key="post.post_id" 
-        class="bg-white p-6 border border-gray-200 rounded-lg shadow-sm hover:border-gray-300 transition-colors cursor-pointer"
+        class="glass rounded-[24px] p-6 hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer"
         @click="goToPost(post.post_id)">
         
-        <!-- Highlighted Title -->
-        <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors" v-if="post.highlight_title" v-html="post.highlight_title[0]"></h3>
-        <h3 class="text-lg font-bold text-gray-900 mb-2 group-hover:text-indigo-600 transition-colors" v-else>{{ post.post_title }}</h3>
+        <h3 class="text-lg font-black text-black mb-2 tracking-tight font-heading" v-if="post.highlight_title" v-html="post.highlight_title[0]"></h3>
+        <h3 class="text-lg font-black text-black mb-2 tracking-tight font-heading" v-else>{{ post.post_title }}</h3>
         
         <div class="text-xs text-gray-500 mb-3 flex items-center gap-2">
-          <span class="px-2 py-0.5 bg-gray-100 rounded text-gray-600">Community {{ post.community_id }}</span>
-          <span>&bull;</span>
+          <span class="bg-black/5 px-2 py-0.5 rounded-full text-black font-bold border border-black/5">Community {{ post.community_id }}</span>
+          <span>•</span>
           <span>{{ new Date(post.created_at).toLocaleString() }}</span>
         </div>
 
-        <!-- Highlighted Content -->
-        <div class="text-sm text-gray-700 line-clamp-3 prose prose-sm max-w-none" 
+        <div class="text-sm text-gray-600 line-clamp-3 leading-relaxed" 
           v-if="post.highlight_content" 
           v-html="post.highlight_content.join(' ... ')">
         </div>
-        <p class="text-sm text-gray-700 line-clamp-3" v-else>{{ post.content }}</p>
+        <p class="text-sm text-gray-600 line-clamp-3 leading-relaxed" v-else>{{ post.content }}</p>
       </div>
 
-      <div v-if="posts.length === 0" class="text-center py-10 bg-white rounded-lg border border-dashed border-gray-300">
-        <p class="text-gray-500">No matches found for your search.</p>
-        <router-link to="/" class="text-indigo-600 hover:underline mt-2 inline-block">Go back home</router-link>
+      <div v-if="posts.length === 0" class="glass rounded-[24px] p-12 text-center">
+        <p class="text-gray-400 font-medium italic mb-4">No matches found for your search.</p>
+        <router-link to="/" class="text-xs font-black uppercase tracking-widest text-black hover:underline">← Go back home</router-link>
       </div>
     </div>
   </div>
@@ -90,9 +89,9 @@ onMounted(() => {
 
 <style>
 .highlight {
-  background-color: #fef08a; /* yellow-200 */
-  font-weight: 600;
-  padding: 0 2px;
-  border-radius: 2px;
+  background-color: rgba(0, 0, 0, 0.08);
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
 }
 </style>
