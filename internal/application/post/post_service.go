@@ -175,6 +175,15 @@ func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *p
 		AuthorName:  post.Author.UserName,
 	}
 
+	voteData, err := s.postCache.GetPostsVoteData(ctx, []string{post.PostID})
+	if err != nil {
+		logger.WithContext(ctx).Warn("postCache.GetPostsVoteData failed in GetPostByID",
+			zap.String("post_id", post.PostID),
+			zap.Error(err))
+	} else if len(voteData) > 0 {
+		data.VoteNum = voteData[0]
+	}
+
 	return data, nil
 }
 

@@ -16,7 +16,7 @@ type PostListRequest struct {
 	CommunityID int64 `form:"community_id"`
 }
 type VoteRequest struct {
-	PostID    int64 `json:"post_id" binding:"required"`
+	PostID    int64 `json:"post_id,string" binding:"required"`
 	Direction int8  `json:"direction" binding:"required,oneof=1 0 -1"`
 }
 
@@ -26,6 +26,6 @@ const (
 	OrderScore = "score"
 )
 type RemarkRequest struct {
-	PostID    int64  `json:"post_id" binding:"required"`
+	PostID    int64  `json:"post_id,string" binding:"required"`
 	Content   string `json:"content" binding:"required"`
 }

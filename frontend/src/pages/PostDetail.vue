@@ -10,14 +10,20 @@
           <button @click="vote(1)" class="text-gray-400 hover:text-indigo-600 focus:outline-none">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
           </button>
-          <span class="text-xl font-bold text-gray-700 my-2">{{ post.score || 0 }}</span>
+          <span class="text-xl font-bold text-gray-700 my-2">{{ post.vote_num || 0 }}</span>
           <button @click="vote(-1)" class="text-gray-400 hover:text-red-600 focus:outline-none">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
           </button>
+          <div class="mt-4 pt-4 border-t border-gray-200">
+            <button @click="toggleBookmark" class="text-gray-400 hover:text-yellow-500 focus:outline-none" :title="isBookmarked ? 'Remove bookmark' : 'Add bookmark'">
+              <svg class="w-8 h-8" :fill="isBookmarked ? 'currentColor' : 'none'" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+            </button>
+            <span v-if="bookmarkCount > 0" class="text-xs text-gray-500 mt-1 block">{{ bookmarkCount }}</span>
+          </div>
         </div>
         <div class="flex-grow">
           <div class="text-sm text-gray-500 mb-2">
-            Posted by <span class="font-medium text-gray-900">{{ post.author_name }}</span> 
+            Posted by <span class="font-medium text-gray-900">{{ post.author_name }}</span>
             in <router-link :to="`/community/${post.community_id}`" class="font-medium text-indigo-600 hover:underline">{{ post.community?.name || `Community ${post.community_id}` }}</router-link>
           </div>
           <h1 class="text-2xl font-bold text-gray-900 mb-4">{{ post.title }}</h1>
@@ -35,7 +41,7 @@
     <!-- Remarks Section -->
     <div v-if="post" class="mt-8">
       <h2 class="text-xl font-bold text-gray-900 mb-4">Comments</h2>
-      
+
       <!-- Add Comment -->
       <form @submit.prevent="submitRemark" class="mb-8">
         <textarea v-model="newRemark" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="What are your thoughts?"></textarea>
@@ -67,15 +73,20 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import request from '../api/request';
+import { bookmarkAPI } from '../api/bookmark';
+import { useAuthStore } from '../store/auth';
 
 const route = useRoute();
 const router = useRouter();
-const postId = ref(Number(route.params.id));
+const authStore = useAuthStore();
+const postId = ref(route.params.id as string);
 const post = ref<any>(null);
 const remarks = ref<any[]>([]);
 const loading = ref(true);
 const newRemark = ref('');
 const submittingRemark = ref(false);
+const isBookmarked = ref(false);
+const bookmarkCount = ref(0);
 
 const fetchPost = async () => {
   try {
@@ -101,6 +112,43 @@ const fetchRemarks = async () => {
   }
 };
 
+const fetchBookmarkStatus = async () => {
+  if (!authStore.token) return;
+  try {
+    const res: any = await bookmarkAPI.getBookmarkStatus(postId.value);
+    if (res.code === 1000) {
+      isBookmarked.value = res.data.bookmarked;
+      bookmarkCount.value = res.data.count;
+    }
+  } catch (err) {
+    console.error('Failed to fetch bookmark status', err);
+  }
+};
+
+const toggleBookmark = async () => {
+  if (!authStore.token) {
+    router.push('/login');
+    return;
+  }
+  try {
+    if (isBookmarked.value) {
+      await bookmarkAPI.deleteBookmark(postId.value);
+      isBookmarked.value = false;
+      bookmarkCount.value--;
+    } else {
+      await bookmarkAPI.createBookmark(postId.value);
+      isBookmarked.value = true;
+      bookmarkCount.value++;
+    }
+  } catch (err: any) {
+    if (err.response?.status === 401) {
+      router.push('/login');
+    } else {
+      console.error('Bookmark operation failed', err);
+    }
+  }
+};
+
 const vote = async (direction: number) => {
   try {
     const res: any = await request.post('/vote', {
@@ -109,7 +157,7 @@ const vote = async (direction: number) => {
     });
     if (res.code === 1000) {
       alert('Vote successful!');
-      fetchPost(); // Refresh post score
+      fetchPost();
     } else {
       alert(res.msg || 'Vote failed');
     }
@@ -132,7 +180,7 @@ const submitRemark = async () => {
     });
     if (res.code === 1000) {
       newRemark.value = '';
-      fetchRemarks(); // Refresh comments
+      fetchRemarks();
     } else {
       alert(res.msg || 'Failed to post comment');
     }
@@ -150,5 +198,6 @@ const submitRemark = async () => {
 onMounted(() => {
   fetchPost();
   fetchRemarks();
+  fetchBookmarkStatus();
 });
 </script>

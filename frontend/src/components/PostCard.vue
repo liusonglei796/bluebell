@@ -1,13 +1,13 @@
 <template>
-  <div class="glass rounded-[24px] p-6 hover:-translate-y-1 transition-all duration-300 cursor-pointer shadow-sm" @click="goToPost">
+  <div class="glass rounded-[24px] p-6 hover:-translate-y-1 hover:shadow-md transition-all duration-300 cursor-pointer" @click="goToPost">
     <div class="flex gap-6">
       <!-- Voting Sidebar -->
       <div class="flex flex-col items-center bg-black/5 rounded-2xl p-2 h-fit" @click.stop>
-        <button @click="vote(1)" class="text-gray-400 hover:text-black transition-colors focus:outline-none p-1">
+        <button @click="vote(1)" class="text-gray-400 hover:text-black transition-colors focus:outline-none p-1 cursor-pointer">
           <ArrowBigUpIcon :stroke-width="2.5" class="w-6 h-6" />
         </button>
-        <span class="font-bold text-black my-1 text-base">{{ post.score || 0 }}</span>
-        <button @click="vote(-1)" class="text-gray-400 hover:text-black transition-colors focus:outline-none p-1">
+        <span class="font-bold text-black my-1 text-base font-heading">{{ post.vote_num || 0 }}</span>
+        <button @click="vote(-1)" class="text-gray-400 hover:text-black transition-colors focus:outline-none p-1 cursor-pointer">
           <ArrowBigDownIcon :stroke-width="2.5" class="w-6 h-6" />
         </button>
       </div>
@@ -27,7 +27,7 @@
             </router-link>
           </span>
         </div>
-        <h3 class="text-xl font-black text-black mb-2 leading-tight tracking-tight">{{ post.title }}</h3>
+        <h3 class="text-xl font-black text-black mb-2 leading-tight tracking-tight font-heading">{{ post.title }}</h3>
         <p class="text-gray-600 line-clamp-3 leading-relaxed text-sm">{{ post.content }}</p>
       </div>
     </div>
@@ -39,8 +39,26 @@ import { useRouter } from 'vue-router';
 import { ArrowBigUpIcon, ArrowBigDownIcon } from 'lucide-vue-next';
 import request from '../api/request';
 
+export interface Post {
+  id: string;
+  title: string;
+  content: string;
+  vote_num: number;
+  community_id: number;
+  author_id: string;
+  author_name: string;
+  community?: {
+    id: number;
+    name: string;
+  };
+}
+
 const props = defineProps<{
-  post: any;
+  post: Post;
+}>();
+
+const emit = defineEmits<{
+  (e: 'voted'): void;
 }>();
 
 const router = useRouter();
@@ -56,15 +74,15 @@ const vote = async (direction: number) => {
       direction,
     });
     if (res.code === 1000) {
-      alert('Vote successful!');
+      emit('voted');
     } else {
-      alert(res.msg || 'Vote failed');
+      console.warn(res.msg || 'Vote failed');
     }
   } catch (err: any) {
     if (err.response?.status === 401) {
       router.push('/login');
     } else {
-      alert('Vote failed');
+      console.error('Vote failed', err);
     }
   }
 };

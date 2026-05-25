@@ -18,7 +18,7 @@
       </div>
       
       <template v-else>
-        <PostCard v-for="post in posts" :key="post.id" :post="post" />
+        <PostCard v-for="post in posts" :key="post.id" :post="post" @voted="fetchPosts" />
         <div v-if="posts.length === 0" class="text-center py-10">
           <span class="text-gray-500">No posts in this community yet.</span>
         </div>

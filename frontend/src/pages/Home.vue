@@ -23,7 +23,7 @@
       </div>
       
       <template v-else>
-        <PostCard v-for="post in posts" :key="post.id" :post="post" />
+        <PostCard v-for="post in posts" :key="post.id" :post="post" @voted="fetchPosts" />
         <div v-if="posts.length === 0" class="glass rounded-[24px] p-10 text-center">
           <span class="text-gray-400 font-medium">No posts found in this universe.</span>
         </div>
