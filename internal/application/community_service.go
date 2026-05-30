@@ -8,10 +8,7 @@ import (
 	"strconv"
 	"go.uber.org/zap"
 	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/trace"
 )
-
-var tracerCommunity = trace.TracerForModule("service/community")
 
 type CommunityService struct {
 	communityRepo domain.CommunityRepository
