@@ -33,7 +33,7 @@ func NewProvider(
 	userService application.UserService,
 	postService *application.PostService,
 	communityService *application.CommunityService,
-	socialService application.SocialService,
+	socialService *application.SocialService,
 	bookmarkService *application.BookmarkService,
 	publisher *mq.Publisher,
 	db *gorm.DB,

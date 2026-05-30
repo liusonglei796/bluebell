@@ -4,7 +4,6 @@ import (
 	postreq "bluebell/internal/application/dto/request/post"
 	userreq "bluebell/internal/application/dto/request/user"
 	votereq "bluebell/internal/application/dto/request/vote"
-	socialResp "bluebell/internal/application/dto/response/social"
 	voteresp "bluebell/internal/application/dto/response/vote"
 	"bluebell/internal/domain/entity"
 
@@ -50,19 +49,5 @@ type VoteService interface {
 	VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error
 	// GetLeaderboard 获取排行榜
 	GetLeaderboard(ctx context.Context, p *votereq.LeaderboardRequest) (*voteresp.LeaderboardResponse, error)
-}
-
-// ========== Social Service 接口 ==========
-
-// SocialService 社交业务逻辑服务接口
-type SocialService interface {
-	// GetProfile 获取用户资料
-	GetProfile(ctx context.Context, userID, currentUserID int64) (*socialResp.ProfileResponse, error)
-	// FollowUser 关注用户
-	FollowUser(ctx context.Context, followerID, followingID int64) error
-	// UnfollowUser 取消关注
-	UnfollowUser(ctx context.Context, followerID, followingID int64) error
-	// GetActivities 获取用户动态
-	GetActivities(ctx context.Context, userID int64, page, size int) ([]*socialResp.ActivityResponse, error)
 }
 

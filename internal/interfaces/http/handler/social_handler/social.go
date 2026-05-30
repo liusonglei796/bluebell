@@ -10,10 +10,10 @@ import (
 )
 
 type Handler struct {
-	socialService application.SocialService
+	socialService *application.SocialService
 }
 
-func New(socialService application.SocialService) *Handler {
+func New(socialService *application.SocialService) *Handler {
 	return &Handler{
 		socialService: socialService,
 	}
