@@ -6,20 +6,21 @@ import (
 	"fmt"
 	"time"
 
+	"bluebell/internal/application"
 	"bluebell/internal/config"
-	"bluebell/internal/di"
 	"bluebell/internal/domain"
 	"bluebell/internal/http_server"
-	"bluebell/internal/infrastructure/jwt"
 	"bluebell/internal/infrastructure/es"
+	"bluebell/internal/infrastructure/jwt"
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
-	"bluebell/internal/infrastructure/profiler"
 	database "bluebell/internal/infrastructure/persistence/mysql"
 	redisrepo "bluebell/internal/infrastructure/persistence/redis"
+	"bluebell/internal/infrastructure/profiler"
 	"bluebell/internal/infrastructure/snowflake"
+	sse "bluebell/internal/infrastructure/sse"
 	"bluebell/internal/infrastructure/translate"
 	"bluebell/internal/interfaces/http/handler"
 	"bluebell/internal/interfaces/http/router"
@@ -124,7 +125,6 @@ func main() {
 	}
 	defer redisrepo.Close(rdb)
 
-
 	// 初始化 Validator
 	if err := translate.InitTrans(); err != nil {
 		zap.L().Fatal("init validator trans failed", zap.Error(err))
@@ -193,18 +193,29 @@ func main() {
 	if publisher != nil {
 		searchSyncRepo = publisher
 	}
-	services := di.NewServices(repositoriesUOW, cacheRepos, tokenService, searchRepo, searchSyncRepo, publisher, cfg)
+	postService := application.NewPostService(repositoriesUOW.Post, cacheRepos.PostCache, repositoriesUOW.Remark, publisher, searchRepo, searchSyncRepo)
+	communityService := application.NewCommunityService(repositoriesUOW.Community, repositoriesUOW.User)
+	userService := application.NewUserService(repositoriesUOW.User, repositoriesUOW.Social, cacheRepos.TokenCache, tokenService)
+	socialService := application.NewSocialService(repositoriesUOW.Social, repositoriesUOW.User, publisher)
+	bookmarkService := application.NewBookmarkService(repositoriesUOW.Bookmark, repositoriesUOW.Post, repositoriesUOW.User, repositoriesUOW.Community)
 
 	// 3) 表现层：创建 Handler 实例
+	// 创建 SSE Hub（替代原来的 WebSocket Hub）
+	sseHub := sse.NewHub()
+	go sseHub.Run(ctx)
+
 	handlerProvider := handler.NewProvider(
-	        services.User,
-	        services.Post,
-	        services.Community,
-	        services.Social,
-	        publisher,
-	        gormDB,
-	        rdb,
-	        esClient,
+		userService,
+		postService,
+		communityService,
+		socialService,
+		bookmarkService,
+		publisher,
+		gormDB,
+		rdb,
+		esClient,
+		cfg.Upload.Dir,
+		sseHub,
 	)
 	// 4) 创建并启动 MQ 消费者
 	if conn != nil {
