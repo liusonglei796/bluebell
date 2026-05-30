@@ -2,7 +2,6 @@ package di
 
 import (
 	"bluebell/internal/application"
-	usersvc "bluebell/internal/application/user"
 	"bluebell/internal/config"
 	"bluebell/internal/domain"
 	"bluebell/internal/infrastructure/mq"
@@ -13,7 +12,7 @@ import (
 type Services struct {
 	Post      *application.PostService
 	Community *application.CommunityService
-	User      application.UserService
+	User      *application.UserService
 	Social    *application.SocialService
 	Bookmark  *application.BookmarkService
 }
@@ -30,7 +29,7 @@ func NewServices(
 	return &Services{
 		Post:      application.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Remark, publisher, searchRepo, searchSyncRepo),
 		Community: application.NewCommunityService(dbRepos.Community, dbRepos.User),
-		User:      usersvc.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService),
+		User:      application.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService),
 		Social:    application.NewSocialService(dbRepos.Social, dbRepos.User, publisher),
 		Bookmark:  application.NewBookmarkService(dbRepos.Bookmark, dbRepos.Post, dbRepos.User, dbRepos.Community),
 	}

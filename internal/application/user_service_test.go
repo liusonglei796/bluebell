@@ -1,4 +1,4 @@
-package usersvc
+package application
 
 import (
 	"bluebell/internal/config"
@@ -10,7 +10,6 @@ import (
 	"time"
 )
 
-// MockUserRepository is a manual mock for domain.UserRepository
 type MockUserRepository struct {
 	CheckUserExistFunc func(ctx context.Context, username string) error
 	CreateUserFunc      func(ctx context.Context, user *entity.User) error
@@ -43,7 +42,6 @@ func (m *MockUserRepository) GetUserByName(ctx context.Context, username string)
 	return m.GetUserByNameFunc(ctx, username)
 }
 
-// MockTokenCacheRepository is a manual mock for domain.UserTokenCacheRepository
 type MockTokenCacheRepository struct {
 	SetUserTokenFunc       func(ctx context.Context, userID int64, aToken, rToken string, aExp, rExp time.Duration) error
 	GetUserAccessTokenFunc func(ctx context.Context, userID int64) (string, error)
@@ -64,7 +62,6 @@ func (m *MockTokenCacheRepository) DeleteUserToken(ctx context.Context, userID i
 	return m.DeleteUserTokenFunc(ctx, userID)
 }
 
-// MockTokenService is a manual mock for domain.TokenService
 type MockTokenService struct {
 	GenTokenFunc func(userID int64) (string, string, error)
 	ParseTokenFunc func(tokenString string, expectedType string) (int64, error)
@@ -84,7 +81,6 @@ func (m *MockTokenService) GetRefreshExpiry() time.Duration {
 }
 
 func TestUserService_SignUp(t *testing.T) {
-	// Initialize snowflake for tests to avoid nil pointer dereference
 	snowflake.Init(&config.Config{
 		Snowflake: &config.SnowflakeConfig{
 			StartTime: 1775539200000,
