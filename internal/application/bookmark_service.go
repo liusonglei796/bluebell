@@ -7,7 +7,6 @@ import (
 	"bluebell/internal/infrastructure/logger"
 	infratrace "bluebell/internal/infrastructure/trace"
 	"context"
-	"errors"
 	"strconv"
 	"go.uber.org/zap"
 )
@@ -43,9 +42,6 @@ func (s *BookmarkService) CreateBookmark(ctx context.Context, userID, postID int
 
 	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
-		if errors.Is(err, entity.ErrUserNotExist) {
-			return entity.ErrInvalidParam
-		}
 		logger.WithContext(ctx).Error("GetPostByID failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
@@ -137,6 +133,7 @@ func (s *BookmarkService) GetUserBookmarks(ctx context.Context, userID int64, pa
 	posts, err := s.postRepo.GetPostListByIDsWithPreload(ctx, postIDStrs)
 	if err != nil {
 		logger.WithContext(ctx).Error("Get posts failed", zap.Error(err))
+		return nil, err
 	}
 
 	postMap := make(map[string]*entity.Post)
@@ -172,6 +169,9 @@ func (s *BookmarkService) GetUserBookmarks(ctx context.Context, userID int64, pa
 
 	communityMap := make(map[int64]*entity.Community)
 	for _, cid := range communityIDs {
+		if _, ok := communityMap[cid]; ok {
+			continue
+		}
 		c, err := s.communityRepo.GetCommunityDetailByID(ctx, cid)
 		if err != nil {
 			logger.WithContext(ctx).Error("Get community failed", zap.Error(err))
