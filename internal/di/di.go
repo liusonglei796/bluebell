@@ -29,7 +29,7 @@ func NewServices(
 	cfg *config.Config,
 ) *Services {
 	return &Services{
-		Post:      application.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Vote, dbRepos.Remark, publisher, searchRepo, searchSyncRepo),
+		Post:      application.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Remark, publisher, searchRepo, searchSyncRepo),
 		Community: application.NewCommunityService(dbRepos.Community, dbRepos.User),
 		User:      usersvc.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService),
 		Social:    socialsvc.NewSocialService(dbRepos.Social, dbRepos.User, publisher),

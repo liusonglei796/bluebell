@@ -22,7 +22,6 @@ var tracerPost = trace.TracerForModule("service/post")
 type PostService struct {
 	postRepo       domain.PostRepository
 	postCache      domain.PostCacheRepository
-	voteRepo       domain.VoteRepository
 	remarkRepo     domain.RemarkRepository
 	publisher      *mq.Publisher
 	searchRepo     domain.PostSearchRepository
@@ -32,7 +31,6 @@ type PostService struct {
 func NewPostService(
 	postRepo domain.PostRepository,
 	postCache domain.PostCacheRepository,
-	voteRepo domain.VoteRepository,
 	remarkRepo domain.RemarkRepository,
 	publisher *mq.Publisher,
 	searchRepo domain.PostSearchRepository,
@@ -41,7 +39,6 @@ func NewPostService(
 	return &PostService{
 		postRepo:       postRepo,
 		postCache:      postCache,
-		voteRepo:       voteRepo,
 		remarkRepo:     remarkRepo,
 		publisher:      publisher,
 		searchRepo:     searchRepo,
