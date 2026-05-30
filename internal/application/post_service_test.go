@@ -38,7 +38,7 @@ func (m *MockRemarkRepository) DeleteRemarksByPostID(ctx context.Context, postID
 
 // TestVoteForPost_DirectCall verifies that VoteForPost calls the cache correctly.
 func TestVoteForPost_DirectCall(t *testing.T) {
-	svc := NewPostService(&MockPostRepository{}, &MockPostCacheRepository{}, &MockVoteRepository{}, &MockRemarkRepository{}, nil, nil, nil)
+	svc := NewPostService(&MockPostRepository{}, &MockPostCacheRepository{}, &MockRemarkRepository{}, nil, nil, nil)
 
 	req := &postreq.VoteRequest{
 		PostID:    1,
@@ -52,7 +52,7 @@ func TestVoteForPost_DirectCall(t *testing.T) {
 
 // TestVoteForPost_InvalidDirection verifies validation rejects bad directions.
 func TestVoteForPost_InvalidDirection(t *testing.T) {
-	svc := NewPostService(&MockPostRepository{}, &MockPostCacheRepository{}, &MockVoteRepository{}, &MockRemarkRepository{}, nil, nil, nil)
+	svc := NewPostService(&MockPostRepository{}, &MockPostCacheRepository{}, &MockRemarkRepository{}, nil, nil, nil)
 
 	req := &postreq.VoteRequest{
 		PostID:    1,
