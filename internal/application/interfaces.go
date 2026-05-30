@@ -4,7 +4,6 @@ import (
 	postreq "bluebell/internal/application/dto/request/post"
 	userreq "bluebell/internal/application/dto/request/user"
 	votereq "bluebell/internal/application/dto/request/vote"
-	bookmarkresp "bluebell/internal/application/dto/response/bookmark"
 	postResp "bluebell/internal/application/dto/response/post"
 	searchResp "bluebell/internal/application/dto/response/search"
 	socialResp "bluebell/internal/application/dto/response/social"
@@ -98,14 +97,3 @@ type SocialService interface {
 	GetActivities(ctx context.Context, userID int64, page, size int) ([]*socialResp.ActivityResponse, error)
 }
 
-// BookmarkService 收藏帖子业务逻辑服务接口
-type BookmarkService interface {
-	// CreateBookmark 收藏帖子
-	CreateBookmark(ctx context.Context, userID, postID int64) error
-	// DeleteBookmark 取消收藏
-	DeleteBookmark(ctx context.Context, userID, postID int64) error
-	// GetUserBookmarks 获取用户收藏列表
-	GetUserBookmarks(ctx context.Context, userID int64, page, size int) (*bookmarkresp.BookmarkListResponse, error)
-	// IsBookmarked 检查帖子是否被收藏
-	IsBookmarked(ctx context.Context, userID, postID int64) (*bookmarkresp.BookmarkStatusResponse, error)
-}

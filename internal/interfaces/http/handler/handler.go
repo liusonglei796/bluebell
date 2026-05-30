@@ -34,7 +34,7 @@ func NewProvider(
 	postService application.PostService,
 	communityService *application.CommunityService,
 	socialService application.SocialService,
-	bookmarkService application.BookmarkService,
+	bookmarkService *application.BookmarkService,
 	publisher *mq.Publisher,
 	db *gorm.DB,
 	rdb *redis.Client,
