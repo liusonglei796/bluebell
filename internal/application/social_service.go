@@ -5,13 +5,10 @@ import (
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/infrastructure/mq"
 	socialResp "bluebell/internal/application/dto/response/social"
-	"bluebell/internal/infrastructure/trace"
 	"context"
 	"fmt"
 	"time"
 )
-
-var tracerSocial = trace.TracerForModule("service/social")
 
 type SocialService struct {
 	socialRepo domain.SocialRepository
@@ -29,8 +26,11 @@ func NewSocialService(socialRepo domain.SocialRepository, userRepo domain.UserRe
 
 func (s *SocialService) GetProfile(ctx context.Context, userID, currentUserID int64) (*socialResp.ProfileResponse, error) {
 	user, err := s.userRepo.GetUserByID(ctx, userID)
-	if err != nil || user == nil {
+	if err != nil {
 		return nil, err
+	}
+	if user == nil {
+		return nil, entity.ErrNotFound
 	}
 
 	profile, err := s.socialRepo.GetUserProfile(ctx, userID)
