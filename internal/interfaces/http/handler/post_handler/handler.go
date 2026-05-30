@@ -19,10 +19,10 @@ import (
 )
 
 type Handler struct {
-	postService application.PostService
+	postService *application.PostService
 }
 
-func New(postService application.PostService) *Handler {
+func New(postService *application.PostService) *Handler {
 	return &Handler{postService: postService}
 }
 
@@ -222,8 +222,18 @@ func (h *Handler) GetPostRemarksHandler(c *gin.Context) {
 		return
 	}
 
+	replyToStr := c.Query("reply_to")
+	var replyTo int64
+	if replyToStr != "" {
+		replyTo, err = strconv.ParseInt(replyToStr, 10, 64)
+		if err != nil {
+			render.HandleError(c, entity.ErrInvalidParam)
+			return
+		}
+	}
+
 	ctx := c.Request.Context()
-	remarks, err := h.postService.GetPostRemarks(ctx, postID)
+	remarks, err := h.postService.GetPostRemarks(ctx, postID, replyTo)
 	if err != nil {
 		render.HandleError(c, err)
 		return

@@ -31,7 +31,7 @@ type Provider struct {
 
 func NewProvider(
 	userService application.UserService,
-	postService application.PostService,
+	postService *application.PostService,
 	communityService *application.CommunityService,
 	socialService application.SocialService,
 	bookmarkService *application.BookmarkService,

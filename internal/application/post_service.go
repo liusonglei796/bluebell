@@ -1,46 +1,25 @@
-// Package postsvc 实现帖子应用层服务
-//
-// Why Application Layer?
-// 按照 DDD 原则，应用层服务（Application Service）是“指挥官”。
-// 1. 它不包含核心业务规则（规则在 Domain）。
-// 2. 它负责编排流程：调用仓储加载数据 -> 调用领域对象执行逻辑 -> 调用仓储保存数据。
-// 3. 它处理跨切面逻辑：事务管理、日志记录、发送消息等。
-package postsvc
+package application
 
 import (
-	// 领域层 - Repository 接口
 	"bluebell/internal/domain"
-
-	// 领域层 - Service 接口
-	"bluebell/internal/application"
-
-	// DTO
 	postreq "bluebell/internal/application/dto/request/post"
 	postResp "bluebell/internal/application/dto/response/post"
 	searchResp "bluebell/internal/application/dto/response/search"
-
-	// 基础设施
 	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/infrastructure/mq"
-
-	// 错误处理
 	"bluebell/internal/domain/entity"
-
 	"context"
+	"fmt"
 	"strconv"
 	"time"
-
 	"go.uber.org/zap"
-
-	// 日志
 	"bluebell/internal/infrastructure/logger"
+	"bluebell/internal/infrastructure/trace"
 )
 
-// postServiceStruct 帖子应用服务 (Application Service)
-// DDD 定义：应用服务负责表达用例（Use Case）并协调各种基础设施。
-// 帖子是一个复杂的聚合，它的生命周期涉及到：数据库、缓存、搜索索引、消息通知。
-// 应用层服务将这些分散的技术能力聚合起来，向外提供一个统一 of 业务操作入口。
-type postServiceStruct struct {
+var tracerPost = trace.TracerForModule("service/post")
+
+type PostService struct {
 	postRepo       domain.PostRepository
 	postCache      domain.PostCacheRepository
 	voteRepo       domain.VoteRepository
@@ -48,10 +27,8 @@ type postServiceStruct struct {
 	publisher      *mq.Publisher
 	searchRepo     domain.PostSearchRepository
 	searchSyncRepo domain.PostSearchSyncRepository
-	voteBuffer     *mq.VoteBuffer
 }
 
-// NewPostService 创建帖子服务实例
 func NewPostService(
 	postRepo domain.PostRepository,
 	postCache domain.PostCacheRepository,
@@ -60,9 +37,8 @@ func NewPostService(
 	publisher *mq.Publisher,
 	searchRepo domain.PostSearchRepository,
 	searchSyncRepo domain.PostSearchSyncRepository,
-	voteBuffer *mq.VoteBuffer,
-) application.PostService {
-	return &postServiceStruct{
+) *PostService {
+	return &PostService{
 		postRepo:       postRepo,
 		postCache:      postCache,
 		voteRepo:       voteRepo,
@@ -70,19 +46,10 @@ func NewPostService(
 		publisher:      publisher,
 		searchRepo:     searchRepo,
 		searchSyncRepo: searchSyncRepo,
-		voteBuffer:     voteBuffer,
 	}
 }
 
-// CreatePost 创建帖子
-// 为什么这个流程在应用层？
-// 这是一个典型的多系统协同流程：
-// 1. 生成 ID
-// 2. 构造并校验实体 (Domain)
-// 3. 持久化到数据库 (Infrastructure)
-// 4. 同步到缓存 (Infrastructure)
-// 5. 发送异步通知 (Infrastructure)
-func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error) {
+func (s *PostService) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error) {
 	postIDInt := snowflake.GenID()
 	postID = strconv.FormatInt(postIDInt, 10)
 
@@ -107,7 +74,6 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 		return "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	// 清理 Redis 缓存
 	err = s.postCache.CreatePost(ctx, postIDInt, p.CommunityID)
 	if err != nil {
 		logger.WithContext(ctx).Error("postCache.CreatePost failed",
@@ -115,7 +81,6 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 			zap.Error(err))
 	}
 
-	// 4. 发送用户动态消息
 	_ = s.publisher.PublishActivity(ctx, &mq.ActivityMessage{
 		UserID:     authorID,
 		Type:       "post_created",
@@ -124,7 +89,6 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 		Timestamp:  time.Now().Unix(),
 	})
 
-	// 5. 发送搜索索引同步消息
 	if s.searchSyncRepo != nil {
 		if err := s.searchSyncRepo.SyncPostIndex(ctx, post); err != nil {
 			logger.WithContext(ctx).Warn("searchSyncRepo.SyncPostIndex failed",
@@ -136,8 +100,7 @@ func (s *postServiceStruct) CreatePost(ctx context.Context, p *postreq.CreatePos
 	return postID, nil
 }
 
-// GetPostByID 查询单个帖子详情
-func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *postResp.DetailResponse, err error) {
+func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *postResp.DetailResponse, err error) {
 	post, err := s.postRepo.GetPostByID(ctx, pid)
 	if err != nil {
 		logger.WithContext(ctx).Error("postRepo.GetPostByID failed",
@@ -187,8 +150,7 @@ func (s *postServiceStruct) GetPostByID(ctx context.Context, pid int64) (data *p
 	return data, nil
 }
 
-// GetPostList 获取帖子列表
-func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
+func (s *PostService) GetPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
 	ids, err := s.postCache.GetPostIDsInOrder(ctx, p.Order, p.Page, p.Size)
 	if err != nil {
 		logger.WithContext(ctx).Error("postCache.GetPostIDsInOrder failed",
@@ -203,20 +165,16 @@ func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostList
 		return
 	}
 
-	logger.WithContext(ctx).Debug("GetPostList", zap.Any("ids", ids))
-
 	posts, err := s.postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
 		logger.WithContext(ctx).Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	logger.WithContext(ctx).Debug("GetPostListByIDsWithPreload", zap.Any("posts", posts))
-
 	voteData, err := s.postCache.GetPostsVoteData(ctx, ids)
 	if err != nil {
 		logger.WithContext(ctx).Error("postCache.GetPostsVoteData failed", zap.Error(err))
-		return nil, entity.Wrap(entity.ErrServerBusy, err)
+		voteData = make([]int64, len(ids))
 	}
 
 	for idx, post := range posts {
@@ -246,8 +204,7 @@ func (s *postServiceStruct) GetPostList(ctx context.Context, p *postreq.PostList
 	return
 }
 
-// GetCommunityPostList 根据社区ID获取帖子列表
-func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
+func (s *PostService) GetCommunityPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
 	ids, err := s.postCache.GetCommunityPostIDsInOrder(ctx, p.CommunityID, p.Order, p.Page, p.Size)
 	if err != nil {
 		logger.WithContext(ctx).Error("postCache.GetCommunityPostIDsInOrder failed",
@@ -258,13 +215,9 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 	}
 
 	if len(ids) == 0 {
-		logger.WithContext(ctx).Info("GetCommunityPostList: no posts found",
-			zap.Int64("community_id", p.CommunityID))
 		data = make([]*postResp.DetailResponse, 0)
 		return data, nil
 	}
-
-	logger.WithContext(ctx).Debug("GetCommunityPostList", zap.Any("ids", ids))
 
 	posts, err := s.postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
@@ -275,7 +228,7 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 	voteData, err := s.postCache.GetPostsVoteData(ctx, ids)
 	if err != nil {
 		logger.WithContext(ctx).Error("postCache.GetPostsVoteData failed", zap.Error(err))
-		return nil, entity.Wrap(entity.ErrServerBusy, err)
+		voteData = make([]int64, len(ids))
 	}
 
 	data = make([]*postResp.DetailResponse, 0, len(posts))
@@ -306,8 +259,7 @@ func (s *postServiceStruct) GetCommunityPostList(ctx context.Context, p *postreq
 	return data, nil
 }
 
-// DeletePost 删除帖子及其评论（级联软删除）
-func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID int64) error {
+func (s *PostService) DeletePost(ctx context.Context, postID int64, userID int64) error {
 	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
 		logger.WithContext(ctx).Error("postRepo.GetPostByID failed",
@@ -319,12 +271,10 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 		return entity.ErrNotFound
 	}
 
-	// 权限校验 (下沉到领域层)
 	if err := post.CanBeDeletedBy(userID); err != nil {
 		return err
 	}
 
-	// 1. 删除该帖子的所有评论
 	if err := s.remarkRepo.DeleteRemarksByPostID(ctx, postID); err != nil {
 		logger.WithContext(ctx).Error("remarkRepo.DeleteRemarksByPostID failed",
 			zap.Int64("post_id", postID),
@@ -332,7 +282,6 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	// 2. 软删除帖子 (status = 0)
 	err = s.postRepo.DeletePostByAuthor(ctx, postID, userID)
 	if err != nil {
 		logger.WithContext(ctx).Error("postRepo.DeletePostByAuthor failed",
@@ -342,34 +291,25 @@ func (s *postServiceStruct) DeletePost(ctx context.Context, postID int64, userID
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	// 3. 删除 ES 中的帖子文档 (通过 PostSearchSyncRepository)
 	if s.searchSyncRepo != nil {
 		postIDStr := strconv.FormatInt(postID, 10)
 		if err := s.searchSyncRepo.DeletePostIndex(ctx, postIDStr); err != nil {
 			logger.WithContext(ctx).Error("searchSyncRepo.DeletePostIndex failed",
 				zap.Int64("post_id", postID),
 				zap.Error(err))
-			// ES 删除失败不影响主流程，仅记录日志
 		}
 	}
 
-	// 清理 Redis 缓存
 	if err := s.postCache.DeletePost(ctx, postID, post.CommunityID); err != nil {
 		logger.WithContext(ctx).Error("postCache.DeletePost failed",
 			zap.Int64("post_id", postID),
 			zap.Error(err))
-		// 缓存清理失败不影响主流程，仅记录日志
 	}
 
 	return nil
 }
 
-// VoteForPost 投票业务逻辑 (Architecture E: Local Buffer + Batch Redis Pipeline + MQ 持久化)
-//
-//	请求 → 领域校验 → 加入本地缓冲区 (VoteBuffer) → 返回
-//	VoteBuffer (100ms) → Batch Redis Pipeline (ZAdd+HSet+Score) → 发 MQ → 消费者持久化
-func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
-	// 1. 领域校验
+func (s *PostService) VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error {
 	vote := &entity.Vote{
 		PostID:    p.PostID,
 		UserID:    userID,
@@ -382,14 +322,34 @@ func (s *postServiceStruct) VoteForPost(ctx context.Context, userID int64, p *po
 	postIDStr := strconv.FormatInt(p.PostID, 10)
 	userIDStr := strconv.FormatInt(userID, 10)
 
-	// 2. 加入本地缓冲区 (聚合后批量写入 Redis 和 MQ)
-	s.voteBuffer.AddVote(postIDStr, userIDStr, p.Direction)
+	communityID, err := s.postCache.GetPostCommunityID(ctx, p.PostID)
+	if err != nil {
+		return fmt.Errorf("get community id for vote failed: %w", err)
+	}
+
+	if err := s.postCache.VoteForPost(ctx, userIDStr, postIDStr, strconv.FormatInt(communityID, 10), float64(p.Direction)); err != nil {
+		return err
+	}
+
+	if s.publisher != nil {
+		_ = s.publisher.PublishVote(ctx, &mq.VoteMessage{
+			MsgID:  strconv.FormatInt(snowflake.GenID(), 10),
+			PostID: postIDStr,
+			UserID: userIDStr,
+			Action: int(p.Direction),
+		})
+		_ = s.publisher.PublishActivity(ctx, &mq.ActivityMessage{
+			UserID:    userID,
+			Type:      "vote_up",
+			TargetID:  postIDStr,
+			Timestamp: time.Now().Unix(),
+		})
+	}
 
 	return nil
 }
 
-func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error) {
-	// 1. 校验帖子是否存在
+func (s *PostService) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error) {
 	post, err := s.postRepo.GetPostByID(ctx, req.PostID)
 	if err != nil {
 		logger.WithContext(ctx).Error("remarkPost: postRepo.GetPostByID failed",
@@ -401,17 +361,16 @@ func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkR
 		return 0, entity.ErrNotFound
 	}
 
-	// 2. 构建评论领域实体
 	remark := &entity.Remark{
 		PostID:   req.PostID,
 		Content:  req.Content,
 		AuthorID: userID,
+		ReplyTo:  req.ReplyTo,
 	}
 	if err := remark.Validate(); err != nil {
 		return 0, err
 	}
 
-	// 3. 保存到数据库
 	if err := s.remarkRepo.CreateRemark(ctx, remark); err != nil {
 		logger.WithContext(ctx).Error("remarkPost: remarkRepo.CreateRemark failed",
 			zap.Int64("post_id", req.PostID),
@@ -423,9 +382,7 @@ func (s *postServiceStruct) RemarkPost(ctx context.Context, req *postreq.RemarkR
 	return remark.ID, nil
 }
 
-// GetPostRemarks 获取帖子评论列表
-func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([]*postResp.RemarkDetail, error) {
-	// 1. 获取原始评论列表
+func (s *PostService) GetPostRemarks(ctx context.Context, postID int64, replyTo int64) ([]*postResp.RemarkDetail, error) {
 	remarks, err := s.remarkRepo.GetRemarksByPostID(ctx, postID)
 	if err != nil {
 		logger.WithContext(ctx).Error("getPostRemarks: remarkRepo.GetRemarksByPostID failed",
@@ -434,9 +391,15 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
-	// 2. 转换为 DTO
 	resp := make([]*postResp.RemarkDetail, 0, len(remarks))
 	for _, r := range remarks {
+		if replyTo > 0 && r.ReplyTo != replyTo {
+			continue
+		}
+		if replyTo == 0 && r.ReplyTo > 0 {
+			continue
+		}
+
 		authorName := "已注销用户"
 		if r.Author != nil {
 			authorName = r.Author.UserName
@@ -452,8 +415,7 @@ func (s *postServiceStruct) GetPostRemarks(ctx context.Context, postID int64) ([
 	return resp, nil
 }
 
-// SearchPosts 全文搜索帖子
-func (s *postServiceStruct) SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*searchResp.SearchResponse, error) {
+func (s *PostService) SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*searchResp.SearchResponse, error) {
 	if s.searchRepo == nil {
 		logger.WithContext(ctx).Warn("searchRepo is not initialized")
 		return &searchResp.SearchResponse{Posts: []searchResp.SearchPostDoc{}}, nil
@@ -464,7 +426,6 @@ func (s *postServiceStruct) SearchPosts(ctx context.Context, keyword string, pag
 		return nil, err
 	}
 
-	// 转换为 DTO
 	resp := &searchResp.SearchResponse{
 		Total:    res.Total,
 		Page:     res.Page,

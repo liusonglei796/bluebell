@@ -11,11 +11,11 @@ import (
 
 // Handler 搜索相关处理器
 type Handler struct {
-	postSvc application.PostService
+	postSvc *application.PostService
 }
 
 // New 创建搜索处理器实例
-func New(postSvc application.PostService) *Handler {
+func New(postSvc *application.PostService) *Handler {
 	return &Handler{
 		postSvc: postSvc,
 	}

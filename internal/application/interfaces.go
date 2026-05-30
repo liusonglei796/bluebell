@@ -4,8 +4,6 @@ import (
 	postreq "bluebell/internal/application/dto/request/post"
 	userreq "bluebell/internal/application/dto/request/user"
 	votereq "bluebell/internal/application/dto/request/vote"
-	postResp "bluebell/internal/application/dto/response/post"
-	searchResp "bluebell/internal/application/dto/response/search"
 	socialResp "bluebell/internal/application/dto/response/social"
 	voteresp "bluebell/internal/application/dto/response/vote"
 	"bluebell/internal/domain/entity"
@@ -14,35 +12,6 @@ import (
 )
 
 
-// ========== Post Service 接口 ==========
-
-// PostService 帖子业务逻辑服务接口
-type PostService interface {
-	// CreatePost 创建帖子
-	CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error)
-
-	// GetPostByID 查询单个帖子详情
-	GetPostByID(ctx context.Context, pid int64) (*postResp.DetailResponse, error)
-
-	// GetPostList 获取帖子列表
-	GetPostList(ctx context.Context, p *postreq.PostListRequest) ([]*postResp.DetailResponse, error)
-
-	// GetCommunityPostList 根据社区ID获取帖子列表
-	GetCommunityPostList(ctx context.Context, p *postreq.PostListRequest) ([]*postResp.DetailResponse, error)
-
-	// DeletePost 删除帖子（软删除）
-	DeletePost(ctx context.Context, postID int64, userID int64) error
-
-	// VoteForPost 为帖子投票
-	VoteForPost(ctx context.Context, userID int64, p *postreq.VoteRequest) error
-	//发表评论
-	RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error)
-	// GetPostRemarks 获取帖子评论列表
-	GetPostRemarks(ctx context.Context, postID int64, replyTo int64) ([]*postResp.RemarkDetail, error)
-
-	// SearchPosts 全文搜索帖子
-	SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*searchResp.SearchResponse, error)
-}
 
 // ========== User Service 接口 ==========
 
