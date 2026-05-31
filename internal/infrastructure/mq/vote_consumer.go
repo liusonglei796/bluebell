@@ -79,22 +79,46 @@ func (c *VoteConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 		return nil
 	}
 
-	userID, _ := strconv.ParseInt(msg.UserID, 10, 64)
-	postID, _ := strconv.ParseInt(msg.PostID, 10, 64)
-
-	// 使用领域模型校验
-	vote := &entity.Vote{
-		UserID:    userID,
-		PostID:    postID,
-		Direction: int8(msg.Action),
+	userID, err := strconv.ParseInt(msg.UserID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("vote_consumer: 无效的 UserID %q: %w", msg.UserID, err)
 	}
-	if err := vote.Validate(); err != nil {
-		return fmt.Errorf("领域校验失败: %w", err)
+	postID, err := strconv.ParseInt(msg.PostID, 10, 64)
+	if err != nil {
+		return fmt.Errorf("vote_consumer: 无效的 PostID %q: %w", msg.PostID, err)
 	}
 
-	if err := c.voteRepo.SaveVote(ctx, userID, postID, int8(msg.Action)); err != nil {
-		c.rdb.Del(ctx, dedupKey) // 失败则删除去重 key，允许重试
-		return fmt.Errorf("vote_consumer: 保存投票数据失败: %w", err)
+	// 只在创建或更新时进行校验
+	if msg.Operation == "create" || msg.Operation == "update" {
+		vote := &entity.Vote{
+			UserID:    userID,
+			PostID:    postID,
+			Direction: int8(msg.Action),
+		}
+		if err := vote.Validate(); err != nil {
+			return fmt.Errorf("领域校验失败: %w", err)
+		}
+	}
+
+	// 根据操作类型执行不同的数据库操作
+	switch msg.Operation {
+	case "create":
+		if err := c.voteRepo.CreateVote(ctx, userID, postID, int8(msg.Action)); err != nil {
+			c.rdb.Del(ctx, dedupKey) // 失败则删除去重 key，允许重试
+			return fmt.Errorf("vote_consumer: 创建投票失败: %w", err)
+		}
+	case "update":
+		if err := c.voteRepo.UpdateVote(ctx, userID, postID, int8(msg.Action)); err != nil {
+			c.rdb.Del(ctx, dedupKey)
+			return fmt.Errorf("vote_consumer: 更新投票失败: %w", err)
+		}
+	case "delete":
+		if err := c.voteRepo.DeleteVote(ctx, userID, postID); err != nil {
+			c.rdb.Del(ctx, dedupKey)
+			return fmt.Errorf("vote_consumer: 删除投票失败: %w", err)
+		}
+	default:
+		return fmt.Errorf("未知的投票操作类型: %s", msg.Operation)
 	}
 
 	return nil
