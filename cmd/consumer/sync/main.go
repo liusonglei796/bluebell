@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"bluebell/internal/config"
@@ -119,9 +120,16 @@ func main() {
 	
 	zap.L().Info("Starting Sync Consumer (ES)...")
 	// 12. 在独立的协程中启动消费者监听
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		if err := consumer.Start(ctx); err != nil {
-			zap.L().Error("sync consumer exited with error", zap.Error(err))
+			if ctx.Err() != nil {
+				zap.L().Info("sync consumer stopped gracefully")
+			} else {
+				zap.L().Error("sync consumer exited with error", zap.Error(err))
+			}
 		}
 	}()
 
@@ -131,6 +139,9 @@ func main() {
 	// 阻塞直到接收到退出信号
 	<-quit
 
-	zap.L().Info("Shutting down Sync Consumer...")
-	// 此处函数结束，触发 defer 执行，依次关闭信道、连接和上下文
+	zap.L().Info("Shutting down Sync Consumer, waiting for processing to complete...")
+	cancel()
+	wg.Wait()
+
+	zap.L().Info("Sync Consumer stopped. Closing resources...")
 }
