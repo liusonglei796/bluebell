@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"bluebell/internal/config"
@@ -38,14 +39,14 @@ func main() {
 	defer zap.L().Sync()
 
 	// 初始化 OTel
-	ctx := context.Background()
-	otelShutdown, err := bluebellotel.InitOTEL(ctx, cfg.Otel)
+	otelCtx := context.Background()
+	otelShutdown, err := bluebellotel.InitOTEL(otelCtx, cfg.Otel)
 	if err != nil {
 		fmt.Printf("init otel failed, err:%v\n", err)
 		return
 	}
 	defer func() {
-		if err := otelShutdown(ctx); err != nil {
+		if err := otelShutdown(otelCtx); err != nil {
 			fmt.Printf("otel shutdown error: %v\n", err)
 		}
 	}()
@@ -111,9 +112,16 @@ func main() {
 	consumer := mq.NewVoteConsumer(ch, repositoriesUOW.Vote, rdb)
 	
 	zap.L().Info("Starting Vote Consumer...")
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		if err := consumer.Start(ctx); err != nil {
-			zap.L().Error("vote consumer exited with error", zap.Error(err))
+			if ctx.Err() != nil {
+				zap.L().Info("vote consumer stopped gracefully")
+			} else {
+				zap.L().Error("vote consumer exited with error", zap.Error(err))
+			}
 		}
 	}()
 
@@ -121,5 +129,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	zap.L().Info("Shutting down Vote Consumer...")
+	zap.L().Info("Shutting down Vote Consumer, waiting for processing to complete...")
+	cancel()
+	wg.Wait()
+
+	zap.L().Info("Vote Consumer stopped. Closing resources...")
 }
