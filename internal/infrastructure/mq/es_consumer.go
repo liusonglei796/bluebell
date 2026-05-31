@@ -61,9 +61,7 @@ func (c *SyncConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 
 	var msg SyncMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
-		log.Printf("解析搜索消息失败: %v", err)
-		_ = d.Nack(false, false)
-		return nil
+		return fmt.Errorf("es_consumer: 反序列化消息失败: %w", err)
 	}
 
 	switch msg.Action {
@@ -90,6 +88,5 @@ func (c *SyncConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) erro
 		}
 	}
 
-	_ = d.Ack(false)
 	return nil
 }
