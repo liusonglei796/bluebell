@@ -21,6 +21,7 @@ import (
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -36,6 +37,7 @@ func NewRouter(
 	cfg *config.Config,
 	tokenService domain.TokenService,
 	tokenCache domain.UserTokenCacheRepository,
+	rdb *redis.Client,
 ) (*gin.Engine, error) {
 
 	r := gin.New()
@@ -50,14 +52,30 @@ func NewRouter(
 		return nil, fmt.Errorf("parse request timeout failed: %w", err)
 	}
 
+	var slidingWindow time.Duration
+	if cfg.SlidingRateLimit != nil && cfg.SlidingRateLimit.Enabled {
+		if rdb == nil {
+			return nil, fmt.Errorf("redis client (rdb) is required when sliding rate limit is enabled")
+		}
+		slidingWindow, err = time.ParseDuration(cfg.SlidingRateLimit.Window)
+		if err != nil {
+			return nil, fmt.Errorf("parse sliding rate limit window failed: %w", err)
+		}
+	}
+
 	r.Use(
 		otelgin.Middleware("bluebell"), // OpenTelemetry 链路追踪中间件
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
 		middleware.Cors(), // 跨域中间件
 		middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity), // 令牌桶限流
-		middleware.TimeoutMiddleware(timeout),
 	)
+
+	if cfg.SlidingRateLimit != nil && cfg.SlidingRateLimit.Enabled {
+		r.Use(middleware.SlidingRateLimitMiddleware(rdb, slidingWindow, cfg.SlidingRateLimit.Limit))
+	}
+
+	r.Use(middleware.TimeoutMiddleware(timeout))
 
 	// Health check 端点（根路径，无需认证）
 	r.GET("/healthz", hp.HealthHandler.Healthz)
