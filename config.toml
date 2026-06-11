@@ -69,3 +69,4 @@ service_name = "bluebell"
 dir = "uploads"
 max_size = 10485760
 allowed_exts = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+

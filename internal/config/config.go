@@ -47,6 +47,18 @@ type rateLimitConfig struct {
 	Capacity     int64  `mapstructure:"capacity"`
 }
 
+type slidingRateLimitConfig struct {
+	Enabled bool   `mapstructure:"enabled"`
+	Window  string `mapstructure:"window"`
+	Limit   int64  `mapstructure:"limit"`
+}
+
+type UploadConfig struct {
+	Dir         string   `mapstructure:"dir"`
+	MaxSize     int64    `mapstructure:"max_size"`
+	AllowedExts []string `mapstructure:"allowed_exts"`
+}
+
 type timeoutConfig struct {
 	Timeout string `mapstructure:"timeout"`
 }
@@ -100,14 +112,16 @@ type Config struct {
 	Redis     *redisConfig     `mapstructure:"redis"`
 	Log       *logConfig       `mapstructure:"log"`
 	Snowflake *SnowflakeConfig `mapstructure:"snowflake"`
-	RateLimit *rateLimitConfig `mapstructure:"ratelimit"`
-	JWT       *jwtConfig       `mapstructure:"jwt"`
-	Timeout   *timeoutConfig   `mapstructure:"timeout"`
+	RateLimit        *rateLimitConfig        `mapstructure:"ratelimit"`
+	SlidingRateLimit *slidingRateLimitConfig `mapstructure:"sliding_ratelimit"`
+	JWT              *jwtConfig              `mapstructure:"jwt"`
+	Timeout          *timeoutConfig          `mapstructure:"timeout"`
 	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
 	ES        *esConfig        `mapstructure:"es"`
 	Otel      *OtelConfig      `mapstructure:"otel"`
 	Pyroscope *PyroscopeConfig `mapstructure:"pyroscope"`
 	GitHub    *GitHubConfig    `mapstructure:"github"`
+	Upload    *UploadConfig    `mapstructure:"upload"`
 }
 
 var atva atomic.Value

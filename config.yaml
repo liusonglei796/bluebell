@@ -35,6 +35,11 @@ ratelimit:
   fill_interval: "1ns"
   capacity: 999999999999
 
+sliding_ratelimit:
+  enabled: true
+  window: "60s"
+  limit: 100
+
 timeout:
   timeout: "30s"
 
@@ -61,3 +66,13 @@ pyroscope:
   enabled: true
   endpoint: "http://localhost:4040"
   service_name: "bluebell"
+
+upload:
+  dir: "uploads"
+  max_size: 10485760
+  allowed_exts:
+    - ".jpg"
+    - ".jpeg"
+    - ".png"
+    - ".gif"
+    - ".webp"
