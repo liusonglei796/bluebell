@@ -107,6 +107,22 @@ The notebook titles will be formatted as `[BookAbbrev] - [Chapter prefix]: [Titl
 * **Expected Chapters (11)**:
   * Chapters 1 to 11 (Pages starting from 25, 38, 63, 92, 122, 153, 184, 204, 236, 268, 296, ending at page 322).
 
+### Book 7: MongoDB权威指南第3版 (MongoDB)
+* **Strategy**: Static mapping based on search matches.
+* **Notebook Prefix**: `MongoDB - 第[N]章: [Title]`
+* **Chapters (11)**:
+  1. `第1章: 简介` (Pages 21–24)
+  2. `第2章: 入门` (Pages 25–42)
+  3. `第3章: 创建、更新及删除文档` (Pages 43–64)
+  4. `第4章: 查询` (Pages 65–84)
+  5. `第5章: 索引` (Pages 85–98)
+  6. `第6章: 聚合` (Pages 99–110)
+  7. `第7章: 进阶指南` (Pages 111–126)
+  8. `第8章: 管理` (Pages 127–140)
+  9. `第9章: 复制` (Pages 141–154)
+  10. `第10章: 分片` (Pages 155–164)
+  11. `第11章: 应用举例` (Pages 165–182)
+
 ---
 
 ## 3. Automation Implementation Details
