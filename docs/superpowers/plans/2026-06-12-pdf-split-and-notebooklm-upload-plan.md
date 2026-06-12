@@ -408,14 +408,31 @@ if __name__ == '__main__':
 **Files:**
 - Modify: `C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\extract_chapters.py`
 
-- [ ] **Step 1: Add MongoDB to static book mappings**
+- [x] **Step 1: Add MongoDB to static book mappings**
   Add the static chapter metadata mapping for the book `C:\Users\pc\Desktop\MongoDB权威指南第3版.pdf` with the `MongoDB` prefix.
-
-- [ ] **Step 2: Run verification test**
+ 
+- [x] **Step 2: Run verification test**
   Run: `python "C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\test_extract_chapters.py"`
   Expected: Verification passes and prints MongoDB chapter count (11).
-
-- [ ] **Step 3: Run the orchestrator script for MongoDB**
+ 
+- [x] **Step 3: Run the orchestrator script for MongoDB**
   Run: `python "C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\split_and_upload.py"`
   Expected: Orchestrator reads active notebooks cache, identifies existing 75 notebooks, skips them, and creates & uploads the 11 new MongoDB notebooks.
 
+---
+
+### Task 7: Add Concurrency in Go, Go Design Patterns, and Hands-On Software Architecture Books and Execute Third Pass
+
+**Files:**
+- Modify: `C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\extract_chapters.py`
+
+- [x] **Step 1: Add new books to static mappings**
+  Add static mappings for `Concurrency in Go` (CG), `Go Design Patterns` (GDP), and `Hands-On Software Architecture with Golang` (GoArch) to `STATIC_BOOK_MAPPINGS` in `extract_chapters.py`.
+
+- [x] **Step 2: Run verification test**
+  Run: `python "C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\test_extract_chapters.py"`
+  Expected: All 10 books verification passes.
+
+- [ ] **Step 3: Run the orchestrator script for the third pass**
+  Run: `python -u "C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\split_and_upload.py"`
+  Expected: Orchestrator runs, skips the 86 existing notebooks, and uploads the 28 new chapters.
