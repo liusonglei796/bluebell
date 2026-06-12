@@ -123,6 +123,49 @@ The notebook titles will be formatted as `[BookAbbrev] - [Chapter prefix]: [Titl
   10. `第10章: 分片` (Pages 155–164)
   11. `第11章: 应用举例` (Pages 165–182)
 
+### Book 8: Concurrency in Go (CG)
+* **Strategy**: Static mapping based on search matches.
+* **Notebook Prefix**: `CG - Chapter [N]: [Title]`
+* **Chapters (6)**:
+  1. `Chapter 1: An Introduction to Concurrency` (Pages 15–36)
+  2. `Chapter 2: Modeling Your Code: Communicating Sequential Processes` (Pages 37–50)
+  3. `Chapter 3: Go’s Concurrency Building Blocks` (Pages 51–98)
+  4. `Chapter 4: Concurrency Patterns in Go` (Pages 99–160)
+  5. `Chapter 5: Concurrency at Scale` (Pages 161–210)
+  6. `Chapter 6: Goroutines and the Go Runtime` (Pages 211–238)
+
+### Book 9: Go Design Patterns (GDP)
+* **Strategy**: Static mapping based on search matches.
+* **Notebook Prefix**: `GDP - Chapter [N]: [Title]`
+* **Chapters (10)**:
+  1. `Chapter 1: Ready... Steady... Go!` (Pages 28–69)
+  2. `Chapter 2: Creational Patterns - Singleton, Builder, Factory, Prototype, and Abstract Factory Design Patterns` (Pages 70–106)
+  3. `Chapter 3: Structural Patterns - Composite, Adapter, and Bridge Design Patterns` (Pages 107–132)
+  4. `Chapter 4: Structural Patterns - Proxy, Facade, Decorator, and Flyweight Design Patterns` (Pages 133–171)
+  5. `Chapter 5: Behavioral Patterns - Strategy, Chain of Responsibility, and Command Design Patterns` (Pages 172–202)
+  6. `Chapter 6: Behavioral Patterns - Template, Memento, and Interpreter Design Patterns` (Pages 203–236)
+  7. `Chapter 7: Behavioral Patterns - Visitor, State, Mediator, and Observer Design Patterns` (Pages 237–269)
+  8. `Chapter 8: Introduction to Gos Concurrency` (Pages 270–302)
+  9. `Chapter 9: Concurrency Patterns - Barrier, Future, and Pipeline Design Patterns` (Pages 303–333)
+  10. `Chapter 10: Concurrency Patterns - Workers Pool and Publish/Subscriber Design Patterns` (Pages 334–361)
+
+### Book 10: Hands-On Software Architecture with Golang (GoArch)
+* **Strategy**: Static mapping based on search matches.
+* **Notebook Prefix**: `GoArch - Chapter [N]: [Title]`
+* **Chapters (12)**:
+  1. `Chapter 1: Building Big with Go` (Pages 22–52)
+  2. `Chapter 2: Packaging Code` (Pages 53–80)
+  3. `Chapter 3: Design Patterns` (Pages 81–117)
+  4. `Chapter 4: Scaling Applications` (Pages 118–150)
+  5. `Chapter 5: Going Distributed` (Pages 151–198)
+  6. `Chapter 6: Messaging` (Pages 199–239)
+  7. `Chapter 7: Building APIs` (Pages 240–281)
+  8. `Chapter 8: Modeling Data` (Pages 282–337)
+  9. `Chapter 9: Anti-Fragile Systems` (Pages 338–383)
+  10. `Chapter 10: Case Study – Travel Website` (Pages 384–413)
+  11. `Chapter 11: Planning for Deployment` (Pages 414–458)
+  12. `Chapter 12: Migrating Applications` (Pages 459–491)
+
 ---
 
 ## 3. Automation Implementation Details
