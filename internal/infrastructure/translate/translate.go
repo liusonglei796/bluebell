@@ -1,4 +1,5 @@
 package translate
+
 import (
 	"errors"
 	"fmt"

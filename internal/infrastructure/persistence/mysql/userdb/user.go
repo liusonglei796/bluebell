@@ -97,7 +97,6 @@ func isDuplicateEntryError(err error) bool {
 	return strings.Contains(err.Error(), "1062") || strings.Contains(err.Error(), "Duplicate entry")
 }
 
-
 func (r *userRepoStruct) VerifyUser(ctx context.Context, user *entity.User) (err error) {
 	m := &model.User{}
 	err = r.db.WithContext(ctx).Where("user_name = ?", user.UserName).First(m).Error

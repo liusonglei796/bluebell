@@ -13,14 +13,14 @@ import (
 // GinLogger 日志中间件
 func GinLogger() gin.HandlerFunc {
 	return func(c *gin.Context) {
-	start := time.Now()
-	c.Next()
-	cost := time.Since(start)
+		start := time.Now()
+		c.Next()
+		cost := time.Since(start)
 
-	// 记录请求延迟到 Prometheus Histogram
-	metrics.RecordHTTPDuration(c.Request.Context(), cost.Seconds(), c.Request.Method, c.Writer.Status())
+		// 记录请求延迟到 Prometheus Histogram
+		metrics.RecordHTTPDuration(c.Request.Context(), cost.Seconds(), c.Request.Method, c.Writer.Status())
 
-	fields := []zap.Field{
+		fields := []zap.Field{
 			zap.Int("status", c.Writer.Status()),
 			zap.String("method", c.Request.Method),
 			zap.String("path", c.Request.URL.Path),

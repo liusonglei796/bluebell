@@ -6,11 +6,12 @@ import (
 
 // Remark 评论模型
 type Remark struct {
+	Author *User `gorm:"foreignKey:AuthorID;references:UserID"`
 	gorm.Model
-	PostID   int64  `gorm:"column:post_id;not null;index"`
 	Content  string `gorm:"column:content;type:text;not null"`
+	PostID   int64  `gorm:"column:post_id;not null;index"`
 	AuthorID int64  `gorm:"column:author_id;not null"`
-	Author   *User  `gorm:"foreignKey:AuthorID;references:UserID"`
+	ReplyTo  int64  `gorm:"column:reply_to;not null;default:0"`
 }
 
 // TableName 自定义表名

@@ -73,7 +73,6 @@ func main() {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
 
-
 	// 6. 创建上下文，用于控制后续消费者的生命周期
 	ctx, cancel := context.WithCancel(context.Background())
 	// 优雅关机时通知所有依赖此 context 的 goroutine 退出
@@ -117,7 +116,7 @@ func main() {
 	// 11. 初始化搜索同步消费者实例
 	// 注入信道和 ES 客户端
 	consumer := mq.NewSyncConsumer(ch, esClient)
-	
+
 	zap.L().Info("Starting Sync Consumer (ES)...")
 	// 12. 在独立的协程中启动消费者监听
 	var wg sync.WaitGroup

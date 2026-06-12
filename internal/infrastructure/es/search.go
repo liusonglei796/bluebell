@@ -5,7 +5,7 @@ import (
 	"context"       // 提供上下文支持，用于请求取消和超时控制
 	"encoding/json" // 提供 JSON 序列化和反序列化
 	"fmt"
-	"io"            // 提供 I/O 操作接口
+	"io" // 提供 I/O 操作接口
 
 	"bluebell/internal/domain/entity"
 
@@ -142,13 +142,13 @@ func buildSearchQuery(req *SearchRequest) map[string]interface{} {
 func parseSearchResponse(res *esapi.Response) (*entity.SearchResponse, error) {
 	var result struct {
 		Hits struct {
+			Hits []struct {
+				Highlight map[string][]string `json:"highlight"`
+				Source    json.RawMessage     `json:"_source"`
+			} `json:"hits"`
 			Total struct {
 				Value int64 `json:"value"`
 			} `json:"total"`
-			Hits []struct {
-				Source    json.RawMessage     `json:"_source"`
-				Highlight map[string][]string `json:"highlight"`
-			} `json:"hits"`
 		} `json:"hits"`
 	}
 

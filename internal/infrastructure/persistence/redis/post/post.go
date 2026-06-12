@@ -462,4 +462,3 @@ func (c *cacheStruct) GetPostCommunityID(ctx context.Context, postID int64) (int
 	}
 	return communityID, nil
 }
-

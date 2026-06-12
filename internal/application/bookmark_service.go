@@ -7,8 +7,8 @@ import (
 	"bluebell/internal/infrastructure/logger"
 	infratrace "bluebell/internal/infrastructure/trace"
 	"context"
-	"strconv"
 	"go.uber.org/zap"
+	"strconv"
 )
 
 var tracerBookmark = infratrace.TracerForModule("service/bookmark")

@@ -7,8 +7,8 @@ import (
 	"bluebell/internal/application"
 	communityreq "bluebell/internal/application/dto/request/community"
 	communityResp "bluebell/internal/application/dto/response/community"
-	"bluebell/internal/infrastructure/translate"
 	"bluebell/internal/domain/entity"
+	"bluebell/internal/infrastructure/translate"
 	"bluebell/internal/interfaces/http/render"
 
 	"github.com/gin-gonic/gin"
@@ -29,7 +29,6 @@ func New(communityService *application.CommunityService) *Handler {
 		communityService: communityService,
 	}
 }
-
 
 func (h *Handler) GetCommunityListHandler(c *gin.Context) {
 	ctx := c.Request.Context()

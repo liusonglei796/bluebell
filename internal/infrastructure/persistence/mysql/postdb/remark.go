@@ -19,6 +19,7 @@ func toModelRemark(r *entity.Remark) *model.Remark {
 		PostID:   r.PostID,
 		Content:  r.Content,
 		AuthorID: r.AuthorID,
+		ReplyTo:  r.ReplyTo,
 	}
 }
 
@@ -32,6 +33,7 @@ func fromModelRemark(m *model.Remark) *entity.Remark {
 		PostID:    m.PostID,
 		Content:   m.Content,
 		AuthorID:  m.AuthorID,
+		ReplyTo:   m.ReplyTo,
 		CreatedAt: m.CreatedAt,
 	}
 

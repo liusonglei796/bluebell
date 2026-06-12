@@ -1,17 +1,17 @@
 package application
 
 import (
+	userreq "bluebell/internal/application/dto/request/user"
 	"bluebell/internal/config"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/infrastructure/snowflake"
-	userreq "bluebell/internal/application/dto/request/user"
 	"context"
 	"testing"
 	"time"
 )
 
 type MockUserRepository struct {
-	CheckUserExistFunc func(ctx context.Context, username string) error
+	CheckUserExistFunc  func(ctx context.Context, username string) error
 	CreateUserFunc      func(ctx context.Context, user *entity.User) error
 	VerifyUserFunc      func(ctx context.Context, user *entity.User) error
 	GetUserByIDFunc     func(ctx context.Context, uid int64) (*entity.User, error)
@@ -43,10 +43,10 @@ func (m *MockUserRepository) GetUserByName(ctx context.Context, username string)
 }
 
 type MockTokenCacheRepository struct {
-	SetUserTokenFunc       func(ctx context.Context, userID int64, aToken, rToken string, aExp, rExp time.Duration) error
-	GetUserAccessTokenFunc func(ctx context.Context, userID int64) (string, error)
+	SetUserTokenFunc        func(ctx context.Context, userID int64, aToken, rToken string, aExp, rExp time.Duration) error
+	GetUserAccessTokenFunc  func(ctx context.Context, userID int64) (string, error)
 	GetUserRefreshTokenFunc func(ctx context.Context, userID int64) (string, error)
-	DeleteUserTokenFunc    func(ctx context.Context, userID int64) error
+	DeleteUserTokenFunc     func(ctx context.Context, userID int64) error
 }
 
 func (m *MockTokenCacheRepository) SetUserToken(ctx context.Context, userID int64, aToken, rToken string, aExp, rExp time.Duration) error {
@@ -63,7 +63,7 @@ func (m *MockTokenCacheRepository) DeleteUserToken(ctx context.Context, userID i
 }
 
 type MockTokenService struct {
-	GenTokenFunc func(userID int64) (string, string, error)
+	GenTokenFunc   func(userID int64) (string, string, error)
 	ParseTokenFunc func(tokenString string, expectedType string) (int64, error)
 }
 

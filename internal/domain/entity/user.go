@@ -20,9 +20,9 @@ const (
 // DDD 定义：实体是有唯一标识（UserID）且包含业务行为的对象。
 // 它承载了用户最核心的属性和必须遵守的规则（如密码加密、管理员判定）。
 type User struct {
-	UserID   int64
 	UserName string
 	Password string // 明文或密文，取决于使用场景
+	UserID   int64
 	Role     int
 }
 

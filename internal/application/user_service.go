@@ -1,17 +1,17 @@
 package application
 
 import (
-	"bluebell/internal/domain"
 	userreq "bluebell/internal/application/dto/request/user"
-	"bluebell/internal/infrastructure/snowflake"
+	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
+	"bluebell/internal/infrastructure/logger"
+	"bluebell/internal/infrastructure/snowflake"
+	"bluebell/internal/infrastructure/trace"
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"go.uber.org/zap"
-	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/trace"
+	"strings"
 )
 
 var tracerUser = trace.TracerForModule("service/user")

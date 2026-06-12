@@ -1,10 +1,10 @@
 package application
 
 import (
+	socialResp "bluebell/internal/application/dto/response/social"
 	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/infrastructure/mq"
-	socialResp "bluebell/internal/application/dto/response/social"
 	"context"
 	"fmt"
 	"time"
@@ -40,7 +40,7 @@ func (s *SocialService) GetProfile(ctx context.Context, userID, currentUserID in
 
 	followerCount, _ := s.socialRepo.GetFollowerCount(ctx, userID)
 	followingCount, _ := s.socialRepo.GetFollowingCount(ctx, userID)
-	
+
 	isFollowing := false
 	if currentUserID > 0 {
 		isFollowing, _ = s.socialRepo.IsFollowing(ctx, currentUserID, userID)

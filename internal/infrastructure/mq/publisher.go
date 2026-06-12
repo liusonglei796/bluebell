@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
+	"bluebell/internal/domain/entity"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"go.opentelemetry.io/otel"
-	"bluebell/internal/domain/entity"
 )
 
 // Publisher 生产者：只认信道，不认连接
@@ -85,4 +85,3 @@ func (p *Publisher) DeletePostIndex(ctx context.Context, postID string) error {
 	}
 	return p.PublishSearch(ctx, syncMsg)
 }
-

@@ -9,11 +9,10 @@ type CreatePostRequest struct {
 
 // PostListRequest 用于获取帖子列表时的分页和排序参数
 type PostListRequest struct {
-	Page  int64  `form:"page"`
-	Size  int64  `form:"size"`
-	Order string `form:"order"`
-	// 新增的字段，用于区分是否按社区查询
-	CommunityID int64 `form:"community_id"`
+	Order       string `form:"order"`
+	Page        int64  `form:"page"`
+	Size        int64  `form:"size"`
+	CommunityID int64  `form:"community_id"`
 }
 type VoteRequest struct {
 	PostID    int64 `json:"post_id,string" binding:"required"`
@@ -25,7 +24,9 @@ const (
 	OrderTime  = "time"
 	OrderScore = "score"
 )
+
 type RemarkRequest struct {
-	PostID    int64  `json:"post_id,string" binding:"required"`
-	Content   string `json:"content" binding:"required"`
+	Content string `json:"content" binding:"required"`
+	PostID  int64  `json:"post_id,string" binding:"required"`
+	ReplyTo int64  `json:"reply_to,string"`
 }

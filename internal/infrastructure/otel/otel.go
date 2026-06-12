@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	otelprom "go.opentelemetry.io/otel/exporters/prometheus"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/log/global"
+	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -50,12 +50,12 @@ func InitOTEL(ctx context.Context, cfg *config.OtelConfig) (func(context.Context
 		cfg.Endpoint,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
-			grpc.MaxCallRecvMsgSize(10 * 1024 * 1024),
+			grpc.MaxCallRecvMsgSize(10*1024*1024),
 		),
 		grpc.WithConnectParams(grpc.ConnectParams{
 			Backoff: backoff.Config{
-				BaseDelay:  100 * time.Millisecond,
-				MaxDelay:   1 * time.Second,
+				BaseDelay: 100 * time.Millisecond,
+				MaxDelay:  1 * time.Second,
 			},
 		}),
 	)
@@ -104,11 +104,21 @@ func InitOTEL(ctx context.Context, cfg *config.OtelConfig) (func(context.Context
 	// 6. Shutdown
 	shutdown := func(ctx context.Context) error {
 		var errs []error
-		if err := tp.Shutdown(ctx); err != nil { errs = append(errs, err) }
-		if err := mp.Shutdown(ctx); err != nil { errs = append(errs, err) }
-		if err := lp.Shutdown(ctx); err != nil { errs = append(errs, err) }
-		if err := conn.Close(); err != nil { errs = append(errs, err) }
-		if len(errs) > 0 { return fmt.Errorf("shutdown errors: %v", errs) }
+		if err := tp.Shutdown(ctx); err != nil {
+			errs = append(errs, err)
+		}
+		if err := mp.Shutdown(ctx); err != nil {
+			errs = append(errs, err)
+		}
+		if err := lp.Shutdown(ctx); err != nil {
+			errs = append(errs, err)
+		}
+		if err := conn.Close(); err != nil {
+			errs = append(errs, err)
+		}
+		if len(errs) > 0 {
+			return fmt.Errorf("shutdown errors: %v", errs)
+		}
 		return nil
 	}
 

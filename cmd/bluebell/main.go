@@ -193,7 +193,7 @@ func main() {
 	if publisher != nil {
 		searchSyncRepo = publisher
 	}
-	postService := application.NewPostService(repositoriesUOW.Post, cacheRepos.PostCache, repositoriesUOW.Remark, repositoriesUOW.Vote, publisher, searchRepo, searchSyncRepo)
+	postService := application.NewPostService(repositoriesUOW.Post, cacheRepos.PostCache, repositoriesUOW.Remark, publisher, searchRepo, searchSyncRepo)
 	communityService := application.NewCommunityService(repositoriesUOW.Community, repositoriesUOW.User)
 	userService := application.NewUserService(repositoriesUOW.User, repositoriesUOW.Social, cacheRepos.TokenCache, tokenService)
 	socialService := application.NewSocialService(repositoriesUOW.Social, repositoriesUOW.User, publisher)
@@ -262,7 +262,7 @@ func main() {
 	}
 
 	// 5) 路由层：初始化路由，注入 Handler
-	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg, tokenService, cacheRepos.TokenCache)
+	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg, tokenService, cacheRepos.TokenCache, rdb)
 	if err != nil {
 		zap.L().Fatal("init router failed", zap.Error(err))
 	}

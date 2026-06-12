@@ -72,7 +72,6 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 		zap.L().Error("register otelgorm plugin failed", zap.Error(err))
 	}
 
-	
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("get sql.DB failed: %w", err)

@@ -9,10 +9,10 @@ import (
 
 // VoteBuffer 投票本地缓冲区
 type VoteBuffer struct {
-	mu            sync.Mutex
 	votes         map[string]int8 // key: postID:userID, value: direction
-	flushInterval time.Duration
 	flushFunc     func(ctx context.Context, votes map[string]int8) error
+	flushInterval time.Duration
+	mu            sync.Mutex
 }
 
 // NewVoteBuffer 创建一个新的投票缓冲区

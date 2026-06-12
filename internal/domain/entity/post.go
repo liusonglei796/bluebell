@@ -16,23 +16,23 @@ import (
 // 状态定义在领域层，因为状态流转（如发布、删除）是核心业务逻辑，
 // 它决定了帖子在系统生命周期中的行为，不应受数据库存储方式的影响。
 const (
-	PostStatusPublished = 1  // 已发布
-	PostStatusDeleted   = 0  // 已删除（软删除）
+	PostStatusPublished = 1 // 已发布
+	PostStatusDeleted   = 0 // 已删除（软删除）
 )
 
 // Post 帖子领域实体 (Domain Entity)
 // DDD 定义：实体是有唯一标识（PostID）且包含生命周期和状态的对象。
 // 它封装了帖子的业务属性和校验规则。
 type Post struct {
-	PostID      string
-	AuthorID    int64
-	CommunityID int64
-	PostTitle   string
-	Content     string
-	Status      int8
 	CreatedAt   time.Time
 	Author      *User
 	Community   *Community
+	PostID      string
+	PostTitle   string
+	Content     string
+	AuthorID    int64
+	CommunityID int64
+	Status      int8
 }
 
 // Validate 校验帖子内容是否合法

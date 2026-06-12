@@ -58,7 +58,7 @@ func Init(cfg *config.Config, mode string) error {
 
 	// 6. 替换全局 Logger (兼容某些直接用 zap.L() 的第三方库)
 	zap.ReplaceGlobals(zapLogger)
-	
+
 	return nil
 }
 

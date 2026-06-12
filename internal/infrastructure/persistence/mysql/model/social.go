@@ -5,11 +5,11 @@ import "gorm.io/gorm"
 // UserProfile 用户资料模型
 type UserProfile struct {
 	gorm.Model
-	UserID    int64  `gorm:"column:user_id;uniqueIndex"`
 	AvatarURL string `gorm:"column:avatar_url"`
 	Bio       string `gorm:"column:bio;type:text"`
 	GitHubID  string `gorm:"column:github_id;index"`
 	GitHubURL string `gorm:"column:github_url"`
+	UserID    int64  `gorm:"column:user_id;uniqueIndex"`
 }
 
 func (UserProfile) TableName() string {
@@ -30,11 +30,11 @@ func (Follow) TableName() string {
 // Activity 动态模型
 type Activity struct {
 	gorm.Model
-	UserID      int64  `gorm:"column:user_id;index"`
 	Type        string `gorm:"column:type"` // post, vote, follow, comment
 	TargetID    string `gorm:"column:target_id"`
 	TargetName  string `gorm:"column:target_name"`
 	Description string `gorm:"column:description"`
+	UserID      int64  `gorm:"column:user_id;index"`
 }
 
 func (Activity) TableName() string {

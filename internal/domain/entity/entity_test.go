@@ -1,8 +1,8 @@
 package entity
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestUser_IsAdmin(t *testing.T) {

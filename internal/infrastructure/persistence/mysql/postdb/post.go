@@ -156,7 +156,6 @@ func (r *postRepoStruct) DeletePostByAuthor(ctx context.Context, postID, authorI
 	return nil
 }
 
-
 // DB 返回底层 GORM DB 实例，用于事务操作
 func (r *postRepoStruct) DB() *gorm.DB {
 	return r.db

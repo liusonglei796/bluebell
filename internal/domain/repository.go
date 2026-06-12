@@ -48,6 +48,49 @@ type UserTokenCacheRepository interface {
 	DeleteUserToken(ctx context.Context, userID int64) error
 }
 
+// UserInfoCacheRepository 用户信息缓存仓储接口
+type UserInfoCacheRepository interface {
+	GetUserInfo(ctx context.Context, userID int64) (*entity.User, error)
+	GetUserInfoByName(ctx context.Context, username string) (*entity.User, error)
+	SetUserInfo(ctx context.Context, user *entity.User) error
+	InvalidateUserInfo(ctx context.Context, userID int64, username string) error
+}
+
+// RemarkCacheRepository 评论缓存仓储接口
+type RemarkCacheRepository interface {
+	GetRemarks(ctx context.Context, postID int64) ([]*entity.Remark, error)
+	SetRemarks(ctx context.Context, postID int64, remarks []*entity.Remark) error
+	InvalidateRemarks(ctx context.Context, postID int64) error
+}
+
+// CommunityCacheRepository 社区缓存仓储接口
+type CommunityCacheRepository interface {
+	GetCommunityList(ctx context.Context) ([]*entity.Community, error)
+	SetCommunityList(ctx context.Context, list []*entity.Community) error
+	InvalidateCommunityList(ctx context.Context) error
+	GetCommunityDetail(ctx context.Context, id int64) (*entity.Community, error)
+	SetCommunityDetail(ctx context.Context, community *entity.Community) error
+	InvalidateCommunityDetail(ctx context.Context, id int64) error
+}
+
+// SocialCacheRepository 社交缓存仓储接口
+type SocialCacheRepository interface {
+	GetFollowerCount(ctx context.Context, userID int64) (int64, error)
+	SetFollowerCount(ctx context.Context, userID int64, count int64) error
+	GetFollowingCount(ctx context.Context, userID int64) (int64, error)
+	SetFollowingCount(ctx context.Context, userID int64, count int64) error
+	InvalidateFollowCounts(ctx context.Context, userID int64) error
+	GetIsFollowing(ctx context.Context, followerID, followingID int64) (bool, error)
+	SetIsFollowing(ctx context.Context, followerID, followingID int64, value bool) error
+	InvalidateIsFollowing(ctx context.Context, followerID, followingID int64) error
+	GetProfile(ctx context.Context, userID int64) (*entity.UserProfile, error)
+	SetProfile(ctx context.Context, profile *entity.UserProfile) error
+	InvalidateProfile(ctx context.Context, userID int64) error
+	GetActivitiesFirstPage(ctx context.Context, userID int64, page, size int) ([]*entity.Activity, error)
+	SetActivitiesFirstPage(ctx context.Context, userID int64, activities []*entity.Activity) error
+	InvalidateActivities(ctx context.Context, userID int64) error
+}
+
 // ========== 数据库层仓储接口 ==========
 
 // PostRepository 帖子数据库仓储接口（MySQL）
@@ -101,4 +144,13 @@ type SocialRepository interface {
 	GetFollowingCount(ctx context.Context, userID int64) (int64, error)
 	CreateActivity(ctx context.Context, activity *entity.Activity) error
 	GetActivitiesByUserID(ctx context.Context, userID int64, page, size int) ([]*entity.Activity, error)
+}
+
+// BookmarkRepository 收藏数据库仓储接口
+type BookmarkRepository interface {
+	CreateBookmark(ctx context.Context, bookmark *entity.Bookmark) error
+	DeleteBookmark(ctx context.Context, userID, postID int64) error
+	IsBookmarked(ctx context.Context, userID, postID int64) (bool, error)
+	GetUserBookmarks(ctx context.Context, userID int64, page, size int) ([]*entity.Bookmark, error)
+	GetBookmarkCount(ctx context.Context, userID int64) (int, error)
 }

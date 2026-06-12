@@ -2,6 +2,7 @@ package database
 
 import (
 	// DAO 层 - MySQL 数据库访问
+	"bluebell/internal/infrastructure/persistence/mysql/bookmarkdb"
 	"bluebell/internal/infrastructure/persistence/mysql/communitydb"
 	"bluebell/internal/infrastructure/persistence/mysql/postdb"
 	"bluebell/internal/infrastructure/persistence/mysql/socialdb"
@@ -22,6 +23,7 @@ type Repositories struct {
 	Vote      domain.VoteRepository
 	Remark    domain.RemarkRepository
 	Social    domain.SocialRepository
+	Bookmark  domain.BookmarkRepository
 }
 
 // NewRepositories 创建 Repositories 实例
@@ -33,5 +35,6 @@ func NewRepositories(db *gorm.DB) *Repositories {
 		User:      userdb.NewUserRepo(db),
 		Vote:      votedb.NewVoteRepo(db),
 		Social:    socialdb.NewSocialRepo(db),
+		Bookmark:  bookmarkdb.NewBookmarkRepo(db),
 	}
 }

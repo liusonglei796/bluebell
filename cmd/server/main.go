@@ -131,10 +131,10 @@ func main() {
 	searchRepo := es.NewPostSearch(searchClient)
 	searchSyncRepo := es.NewPostSync(searchClient)
 
-	postService := application.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Remark, cacheRepos.RemarkCache, publisher, searchRepo, searchSyncRepo)
-	communityService := application.NewCommunityService(dbRepos.Community, dbRepos.User, cacheRepos.CommunityCache)
-	userService := application.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService, cacheRepos.UserInfoCache)
-	socialService := application.NewSocialService(dbRepos.Social, dbRepos.User, publisher, cacheRepos.SocialCache)
+	postService := application.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Remark, publisher, searchRepo, searchSyncRepo)
+	communityService := application.NewCommunityService(dbRepos.Community, dbRepos.User)
+	userService := application.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService)
+	socialService := application.NewSocialService(dbRepos.Social, dbRepos.User, publisher)
 	bookmarkService := application.NewBookmarkService(dbRepos.Bookmark, dbRepos.Post, dbRepos.User, dbRepos.Community)
 
 	// 创建 SSE Hub（替代原来的 WebSocket Hub）

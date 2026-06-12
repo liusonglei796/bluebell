@@ -26,18 +26,18 @@ type logConfig struct {
 
 type mysqlConfig struct {
 	Host         string `mapstructure:"host"`
-	Port         int    `mapstructure:"port"`
 	User         string `mapstructure:"user"`
 	Password     string `mapstructure:"passwd"`
 	DbName       string `mapstructure:"db_name"`
+	Port         int    `mapstructure:"port"`
 	MaxOpenConns int    `mapstructure:"max_open_conns"`
 	MaxIdleConns int    `mapstructure:"max_idle_conns"`
 }
 
 type redisConfig struct {
 	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
 	Password string `mapstructure:"password"`
+	Port     int    `mapstructure:"port"`
 	DB       int    `mapstructure:"db_name"`
 	PoolSize int    `mapstructure:"pool_size"`
 }
@@ -48,15 +48,15 @@ type rateLimitConfig struct {
 }
 
 type slidingRateLimitConfig struct {
-	Enabled bool   `mapstructure:"enabled"`
 	Window  string `mapstructure:"window"`
 	Limit   int64  `mapstructure:"limit"`
+	Enabled bool   `mapstructure:"enabled"`
 }
 
 type UploadConfig struct {
 	Dir         string   `mapstructure:"dir"`
-	MaxSize     int64    `mapstructure:"max_size"`
 	AllowedExts []string `mapstructure:"allowed_exts"`
+	MaxSize     int64    `mapstructure:"max_size"`
 }
 
 type timeoutConfig struct {
@@ -85,43 +85,43 @@ type jwtConfig struct {
 }
 
 type esConfig struct {
-	Addresses []string `mapstructure:"addresses"`
 	Username  string   `mapstructure:"username"`
 	Password  string   `mapstructure:"password"`
+	Addresses []string `mapstructure:"addresses"`
 }
 
 // OtelConfig OpenTelemetry 配置结构体
 type OtelConfig struct {
-	Enabled     bool   `mapstructure:"enabled"`
 	Endpoint    string `mapstructure:"endpoint"`
 	ServiceName string `mapstructure:"service_name"`
+	Enabled     bool   `mapstructure:"enabled"`
 }
 
 // PyroscopeConfig continuous profiling configuration
 type PyroscopeConfig struct {
-	Enabled     bool   `mapstructure:"enabled"`
 	Endpoint    string `mapstructure:"endpoint"`
 	ServiceName string `mapstructure:"service_name"`
+	Enabled     bool   `mapstructure:"enabled"`
 }
 
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
 type Config struct {
-	App       *appConfig       `mapstructure:"app"`
-	Mysql     *mysqlConfig     `mapstructure:"mysql"`
-	Redis     *redisConfig     `mapstructure:"redis"`
-	Log       *logConfig       `mapstructure:"log"`
-	Snowflake *SnowflakeConfig `mapstructure:"snowflake"`
+	App              *appConfig              `mapstructure:"app"`
+	Mysql            *mysqlConfig            `mapstructure:"mysql"`
+	Redis            *redisConfig            `mapstructure:"redis"`
+	Log              *logConfig              `mapstructure:"log"`
+	Snowflake        *SnowflakeConfig        `mapstructure:"snowflake"`
 	RateLimit        *rateLimitConfig        `mapstructure:"ratelimit"`
 	SlidingRateLimit *slidingRateLimitConfig `mapstructure:"sliding_ratelimit"`
 	JWT              *jwtConfig              `mapstructure:"jwt"`
 	Timeout          *timeoutConfig          `mapstructure:"timeout"`
-	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
-	ES        *esConfig        `mapstructure:"es"`
-	Otel      *OtelConfig      `mapstructure:"otel"`
-	Pyroscope *PyroscopeConfig `mapstructure:"pyroscope"`
-	GitHub    *GitHubConfig    `mapstructure:"github"`
-	Upload    *UploadConfig    `mapstructure:"upload"`
+	RabbitMQ         *rabbitmqConfig         `mapstructure:"rabbitmq"`
+	ES               *esConfig               `mapstructure:"es"`
+	Otel             *OtelConfig             `mapstructure:"otel"`
+	Pyroscope        *PyroscopeConfig        `mapstructure:"pyroscope"`
+	GitHub           *GitHubConfig           `mapstructure:"github"`
+	Upload           *UploadConfig           `mapstructure:"upload"`
 }
 
 var atva atomic.Value

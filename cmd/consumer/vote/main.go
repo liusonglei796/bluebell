@@ -13,9 +13,9 @@ import (
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
-	"bluebell/internal/infrastructure/profiler"
 	database "bluebell/internal/infrastructure/persistence/mysql"
 	redisrepo "bluebell/internal/infrastructure/persistence/redis"
+	"bluebell/internal/infrastructure/profiler"
 	"bluebell/internal/infrastructure/snowflake"
 
 	"go.uber.org/zap"
@@ -81,7 +81,6 @@ func main() {
 	}
 	defer redisrepo.Close(rdb)
 
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -110,7 +109,7 @@ func main() {
 
 	repositoriesUOW := database.NewRepositories(gormDB)
 	consumer := mq.NewVoteConsumer(ch, repositoriesUOW.Vote, rdb)
-	
+
 	zap.L().Info("Starting Vote Consumer...")
 	var wg sync.WaitGroup
 	wg.Add(1)

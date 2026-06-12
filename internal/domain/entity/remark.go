@@ -7,12 +7,13 @@ import (
 
 // Remark 评论领域实体
 type Remark struct {
-	ID        uint
-	PostID    int64
-	Content   string
-	AuthorID  int64
 	CreatedAt time.Time
 	Author    *User
+	Content   string
+	ID        uint
+	PostID    int64
+	AuthorID  int64
+	ReplyTo   int64
 }
 
 // Validate 校验评论内容是否合法

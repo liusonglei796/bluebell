@@ -81,7 +81,6 @@ func (r *socialRepoStruct) SaveUserProfile(ctx context.Context, profile *entity.
 	return nil
 }
 
-
 func (r *socialRepoStruct) FollowUser(ctx context.Context, followerID, followingID int64) error {
 	m := model.Follow{
 		FollowerID:  followerID,
@@ -98,7 +97,6 @@ func (r *socialRepoStruct) FollowUser(ctx context.Context, followerID, following
 	}
 	return nil
 }
-
 
 func (r *socialRepoStruct) UnfollowUser(ctx context.Context, followerID, followingID int64) error {
 	err := r.db.WithContext(ctx).Where("follower_id = ? AND following_id = ?", followerID, followingID).Delete(&model.Follow{}).Error

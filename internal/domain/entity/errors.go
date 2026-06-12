@@ -14,8 +14,8 @@ type wrappedError struct {
 	cause    error
 }
 
-func (e *wrappedError) Error() string   { return e.sentinel.Error() }
-func (e *wrappedError) Unwrap() error   { return e.cause }
+func (e *wrappedError) Error() string { return e.sentinel.Error() }
+func (e *wrappedError) Unwrap() error { return e.cause }
 func (e *wrappedError) Is(target error) bool {
 	return target == e.sentinel
 }
@@ -32,10 +32,10 @@ func Wrap(sentinel, err error) error {
 
 // 领域层通用错误（替代原有的 errorx）
 var (
-	ErrNotFound          = errors.New("entity not found")
-	ErrInvalidOperation  = errors.New("invalid operation")
-	ErrUnauthorized      = errors.New("unauthorized")
-	ErrDuplicate         = errors.New("entity already exists")
+	ErrNotFound         = errors.New("entity not found")
+	ErrInvalidOperation = errors.New("invalid operation")
+	ErrUnauthorized     = errors.New("unauthorized")
+	ErrDuplicate        = errors.New("entity already exists")
 
 	// 业务级错误
 	ErrInvalidParam      = errors.New("invalid parameters")

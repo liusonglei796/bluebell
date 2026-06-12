@@ -20,9 +20,9 @@ const (
 
 type User struct {
 	gorm.Model
-	UserID   int64  `gorm:"column:user_id"`
 	UserName string `gorm:"column:user_name;size:64;not null"`
 	Passwd   string `gorm:"column:passwd;size:255;not null"`
+	UserID   int64  `gorm:"column:user_id"`
 	Role     int    `gorm:"column:role;default:1;not null"`
 }
 

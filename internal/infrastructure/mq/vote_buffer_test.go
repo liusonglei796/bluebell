@@ -76,7 +76,7 @@ func TestVoteBuffer_Stop(t *testing.T) {
 	vb := NewVoteBuffer(interval, flushFunc)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	// Use a separate goroutine to run Start
 	done := make(chan struct{})
 	go func() {
@@ -85,7 +85,7 @@ func TestVoteBuffer_Stop(t *testing.T) {
 	}()
 
 	vb.AddVote("post_final", "user_final", entity.VoteUp)
-	
+
 	// Stop the buffer
 	cancel()
 	<-done
