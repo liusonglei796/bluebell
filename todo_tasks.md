@@ -1,6 +1,6 @@
 # PDF Splitting and Google NotebookLM Upload Task List
 
-- [ ] **Task 1: Create Temporary Storage Directory**
+- [x] **Task 1: Create Temporary Storage Directory**
 - [ ] **Task 2: Create Chapter Extraction Module**
 - [ ] **Task 3: Create NotebookLM CLI Subprocess Interface Module**
 - [ ] **Task 4: Create Orchestration Script**
