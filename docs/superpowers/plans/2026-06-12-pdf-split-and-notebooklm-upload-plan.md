@@ -433,6 +433,6 @@ if __name__ == '__main__':
   Run: `python "C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\test_extract_chapters.py"`
   Expected: All 10 books verification passes.
 
-- [ ] **Step 3: Run the orchestrator script for the third pass**
+- [x] **Step 3: Run the orchestrator script for the third pass**
   Run: `python -u "C:\Users\pc\.gemini\antigravity-cli\brain\8f929dd9-8c42-434f-940f-b979ab20fa48\scratch\split_and_upload.py"`
   Expected: Orchestrator runs, skips the 86 existing notebooks, and uploads the 28 new chapters.
