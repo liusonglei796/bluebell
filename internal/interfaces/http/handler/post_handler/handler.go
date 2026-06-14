@@ -2,10 +2,9 @@ package post_handler
 
 import (
 	"errors"
-	"net/http"
 	"strconv"
 
-	"bluebell/internal/application"
+	"bluebell/internal/application/port"
 	postreq "bluebell/internal/application/dto/request/post"
 	postResp "bluebell/internal/application/dto/response/post"
 	"bluebell/internal/domain/entity"
@@ -19,10 +18,10 @@ import (
 )
 
 type Handler struct {
-	postService *application.PostService
+	postService port.PostService
 }
 
-func New(postService *application.PostService) *Handler {
+func New(postService port.PostService) *Handler {
 	return &Handler{postService: postService}
 }
 
@@ -37,8 +36,7 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(p); err != nil {
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)
@@ -87,8 +85,7 @@ func (h *Handler) GetPostListHandler(c *gin.Context) {
 		zap.L().Error("GetPostListHandler ShouldBindQuery failed", zap.Error(err))
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)
@@ -153,8 +150,7 @@ func (h *Handler) PostVoteHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(p); err != nil {
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)
@@ -194,8 +190,7 @@ func (h *Handler) PostRemarkHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(req); err != nil {
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)

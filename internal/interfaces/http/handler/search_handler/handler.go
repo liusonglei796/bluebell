@@ -1,7 +1,7 @@
 package search_handler
 
 import (
-	"bluebell/internal/application"
+	"bluebell/internal/application/port"
 	searchreq "bluebell/internal/application/dto/request/search"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/interfaces/http/render"
@@ -11,11 +11,11 @@ import (
 
 // Handler 搜索相关处理器
 type Handler struct {
-	postSvc *application.PostService
+	postSvc port.PostService
 }
 
 // New 创建搜索处理器实例
-func New(postSvc *application.PostService) *Handler {
+func New(postSvc port.PostService) *Handler {
 	return &Handler{
 		postSvc: postSvc,
 	}

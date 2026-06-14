@@ -2,9 +2,8 @@ package community_handler
 
 import (
 	"errors"
-	"net/http"
 
-	"bluebell/internal/application"
+	"bluebell/internal/application/port"
 	communityreq "bluebell/internal/application/dto/request/community"
 	communityResp "bluebell/internal/application/dto/response/community"
 	"bluebell/internal/domain/entity"
@@ -19,12 +18,12 @@ var _ = communityResp.Response{} // 取消编译器对未使用导包的检查�
 
 // Handler 社区相关处理器
 type Handler struct {
-	communityService *application.CommunityService
+	communityService port.CommunityService
 }
 
 // New 创建 Handler 实例
 // 通过构造函数进行依赖注入
-func New(communityService *application.CommunityService) *Handler {
+func New(communityService port.CommunityService) *Handler {
 	return &Handler{
 		communityService: communityService,
 	}
@@ -47,8 +46,7 @@ func (h *Handler) GetCommunityDetailHandler(c *gin.Context) {
 	if err := c.ShouldBindUri(p); err != nil {
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)
@@ -76,8 +74,7 @@ func (h *Handler) CreateCommunityHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(p); err != nil {
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)

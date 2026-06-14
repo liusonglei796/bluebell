@@ -1,23 +1,21 @@
 package bookmark_handler
 
 import (
-	"bluebell/internal/application"
+	"bluebell/internal/application/port"
 	bookmarkreq "bluebell/internal/application/dto/request/bookmark"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/interfaces/http/render"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 type Handler struct {
-	bookmarkService *application.BookmarkService
+	bookmarkService port.BookmarkService
 }
 
-func New(bookmarkService *application.BookmarkService) *Handler {
+func New(bookmarkService port.BookmarkService) *Handler {
 	return &Handler{bookmarkService: bookmarkService}
 }
 
@@ -76,7 +74,6 @@ func (h *Handler) GetUserBookmarksHandler(c *gin.Context) {
 
 	var req bookmarkreq.BookmarkListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		logger.WithContext(c.Request.Context()).Error("GetUserBookmarksHandler bind query failed", zap.Error(err))
 		render.HandleError(c, err)
 		return
 	}

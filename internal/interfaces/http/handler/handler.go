@@ -1,10 +1,7 @@
 package handler
 
 import (
-	"bluebell/internal/application"
-	"bluebell/internal/infrastructure/es"
-	"bluebell/internal/infrastructure/mq"
-	sse "bluebell/internal/infrastructure/sse"
+	"bluebell/internal/application/port"
 	"bluebell/internal/interfaces/http/handler/bookmark_handler"
 	"bluebell/internal/interfaces/http/handler/community_handler"
 	"bluebell/internal/interfaces/http/handler/health"
@@ -13,6 +10,9 @@ import (
 	"bluebell/internal/interfaces/http/handler/social_handler"
 	"bluebell/internal/interfaces/http/handler/sse_handler"
 	"bluebell/internal/interfaces/http/handler/user_handler"
+
+	"bluebell/internal/infrastructure/es"
+	sse "bluebell/internal/infrastructure/sse"
 
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
@@ -30,12 +30,12 @@ type Provider struct {
 }
 
 func NewProvider(
-	userService *application.UserService,
-	postService *application.PostService,
-	communityService *application.CommunityService,
-	socialService *application.SocialService,
-	bookmarkService *application.BookmarkService,
-	publisher *mq.Publisher,
+	userService port.UserService,
+	postService port.PostService,
+	communityService port.CommunityService,
+	socialService port.SocialService,
+	bookmarkService port.BookmarkService,
+	idGen port.IDGenerator,
 	db *gorm.DB,
 	rdb *redis.Client,
 	esClient *es.Client,
@@ -43,7 +43,7 @@ func NewProvider(
 	sseHub *sse.Hub,
 ) *Provider {
 	return &Provider{
-		UserHandler:      user_handler.New(userService, uploadDir),
+		UserHandler:      user_handler.New(userService, uploadDir, idGen),
 		PostHandler:      post_handler.New(postService),
 		CommunityHandler: community_handler.New(communityService),
 		SocialHandler:    social_handler.New(socialService),

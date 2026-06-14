@@ -4,37 +4,37 @@ import (
 	postreq "bluebell/internal/application/dto/request/post"
 	postResp "bluebell/internal/application/dto/response/post"
 	searchResp "bluebell/internal/application/dto/response/search"
+	"bluebell/internal/application/port"
 	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/mq"
-	"bluebell/internal/infrastructure/snowflake"
-	"bluebell/internal/infrastructure/trace"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
 	"strconv"
 	"time"
 )
-
-var tracerPost = trace.TracerForModule("service/post")
 
 type PostService struct {
 	postRepo       domain.PostRepository
 	postCache      domain.PostCacheRepository
 	remarkRepo     domain.RemarkRepository
-	publisher      *mq.Publisher
 	searchRepo     domain.PostSearchRepository
 	searchSyncRepo domain.PostSearchSyncRepository
+
+	// 端口依赖（替代直接依赖 infrastructure 包）
+	logger    port.Logger
+	publisher port.EventPublisher
+	idGen     port.IDGenerator
 }
 
 func NewPostService(
 	postRepo domain.PostRepository,
 	postCache domain.PostCacheRepository,
 	remarkRepo domain.RemarkRepository,
-	publisher *mq.Publisher,
+	publisher port.EventPublisher,
 	searchRepo domain.PostSearchRepository,
 	searchSyncRepo domain.PostSearchSyncRepository,
+	logger port.Logger,
+	idGen port.IDGenerator,
 ) *PostService {
 	return &PostService{
 		postRepo:       postRepo,
@@ -43,11 +43,13 @@ func NewPostService(
 		publisher:      publisher,
 		searchRepo:     searchRepo,
 		searchSyncRepo: searchSyncRepo,
+		logger:         logger,
+		idGen:          idGen,
 	}
 }
 
 func (s *PostService) CreatePost(ctx context.Context, p *postreq.CreatePostRequest, authorID int64) (postID string, err error) {
-	postIDInt := snowflake.GenID()
+	postIDInt := s.idGen.GenID()
 	postID = strconv.FormatInt(postIDInt, 10)
 
 	post := &entity.Post{
@@ -65,32 +67,34 @@ func (s *PostService) CreatePost(ctx context.Context, p *postreq.CreatePostReque
 
 	err = s.postRepo.CreatePost(ctx, post)
 	if err != nil {
-		logger.WithContext(ctx).Error("postRepo.CreatePost failed",
-			zap.Int64("post_id", postIDInt),
-			zap.Error(err))
+		s.logger.Error(ctx, "postRepo.CreatePost failed",
+			port.Int64("post_id", postIDInt),
+			port.Err(err))
 		return "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	err = s.postCache.CreatePost(ctx, postIDInt, p.CommunityID)
 	if err != nil {
-		logger.WithContext(ctx).Error("postCache.CreatePost failed",
-			zap.Int64("post_id", postIDInt),
-			zap.Error(err))
+		s.logger.Error(ctx, "postCache.CreatePost failed",
+			port.Int64("post_id", postIDInt),
+			port.Err(err))
 	}
 
-	_ = s.publisher.PublishActivity(ctx, &mq.ActivityMessage{
-		UserID:     authorID,
-		Type:       "post_created",
-		TargetID:   postID,
-		TargetName: p.Title,
-		Timestamp:  time.Now().Unix(),
-	})
+	if s.publisher != nil {
+		_ = s.publisher.PublishActivity(ctx, &port.ActivityEvent{
+			UserID:     authorID,
+			Type:       "post_created",
+			TargetID:   postID,
+			TargetName: p.Title,
+			Timestamp:  time.Now().Unix(),
+		})
+	}
 
 	if s.searchSyncRepo != nil {
 		if err := s.searchSyncRepo.SyncPostIndex(ctx, post); err != nil {
-			logger.WithContext(ctx).Warn("searchSyncRepo.SyncPostIndex failed",
-				zap.String("post_id", post.PostID),
-				zap.Error(err))
+			s.logger.Warn(ctx, "searchSyncRepo.SyncPostIndex failed",
+				port.String("post_id", post.PostID),
+				port.Err(err))
 		}
 	}
 
@@ -100,9 +104,9 @@ func (s *PostService) CreatePost(ctx context.Context, p *postreq.CreatePostReque
 func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *postResp.DetailResponse, err error) {
 	post, err := s.postRepo.GetPostByID(ctx, pid)
 	if err != nil {
-		logger.WithContext(ctx).Error("postRepo.GetPostByID failed",
-			zap.Int64("post_id", pid),
-			zap.Error(err))
+		s.logger.Error(ctx, "postRepo.GetPostByID failed",
+			port.Int64("post_id", pid),
+			port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -111,16 +115,16 @@ func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *postRes
 	}
 
 	if post.Author == nil || post.Author.UserID == 0 {
-		logger.WithContext(ctx).Warn("author not found for post",
-			zap.Int64("post_id", pid),
-			zap.Int64("author_id", post.AuthorID))
+		s.logger.Warn(ctx, "author not found for post",
+			port.Int64("post_id", pid),
+			port.Int64("author_id", post.AuthorID))
 		return nil, entity.ErrNotFound
 	}
 
 	if post.Community == nil || post.Community.ID == 0 {
-		logger.WithContext(ctx).Warn("community not found for post",
-			zap.Int64("post_id", pid),
-			zap.Int64("community_id", post.CommunityID))
+		s.logger.Warn(ctx, "community not found for post",
+			port.Int64("post_id", pid),
+			port.Int64("community_id", post.CommunityID))
 		return nil, entity.ErrNotFound
 	}
 
@@ -137,9 +141,9 @@ func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *postRes
 
 	voteData, err := s.postCache.GetPostsVoteData(ctx, []string{post.PostID})
 	if err != nil {
-		logger.WithContext(ctx).Warn("postCache.GetPostsVoteData failed in GetPostByID",
-			zap.String("post_id", post.PostID),
-			zap.Error(err))
+		s.logger.Warn(ctx, "postCache.GetPostsVoteData failed in GetPostByID",
+			port.String("post_id", post.PostID),
+			port.Err(err))
 	} else if len(voteData) > 0 {
 		data.VoteNum = voteData[0]
 	}
@@ -150,27 +154,27 @@ func (s *PostService) GetPostByID(ctx context.Context, pid int64) (data *postRes
 func (s *PostService) GetPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
 	ids, err := s.postCache.GetPostIDsInOrder(ctx, p.Order, p.Page, p.Size)
 	if err != nil {
-		logger.WithContext(ctx).Error("postCache.GetPostIDsInOrder failed",
-			zap.String("order", p.Order),
-			zap.Error(err))
+		s.logger.Error(ctx, "postCache.GetPostIDsInOrder failed",
+			port.String("order", p.Order),
+			port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	if len(ids) == 0 {
-		logger.WithContext(ctx).Warn("postCache.GetPostIDsInOrder() return 0 data")
+		s.logger.Warn(ctx, "postCache.GetPostIDsInOrder() return 0 data")
 		data = make([]*postResp.DetailResponse, 0)
 		return
 	}
 
 	posts, err := s.postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
-		logger.WithContext(ctx).Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
+		s.logger.Error(ctx, "postRepo.GetPostListByIDsWithPreload failed", port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	voteData, err := s.postCache.GetPostsVoteData(ctx, ids)
 	if err != nil {
-		logger.WithContext(ctx).Error("postCache.GetPostsVoteData failed", zap.Error(err))
+		s.logger.Error(ctx, "postCache.GetPostsVoteData failed", port.Err(err))
 		voteData = make([]int64, len(ids))
 	}
 
@@ -179,9 +183,9 @@ func (s *PostService) GetPostList(ctx context.Context, p *postreq.PostListReques
 		if post.Author != nil {
 			authorName = post.Author.UserName
 		} else {
-			logger.WithContext(ctx).Error("author not preloaded for post",
-				zap.String("post_id", post.PostID),
-				zap.Int64("author_id", post.AuthorID))
+			s.logger.Error(ctx, "author not preloaded for post",
+				port.String("post_id", post.PostID),
+				port.Int64("author_id", post.AuthorID))
 		}
 
 		postDetail := &postResp.DetailResponse{
@@ -204,10 +208,10 @@ func (s *PostService) GetPostList(ctx context.Context, p *postreq.PostListReques
 func (s *PostService) GetCommunityPostList(ctx context.Context, p *postreq.PostListRequest) (data []*postResp.DetailResponse, err error) {
 	ids, err := s.postCache.GetCommunityPostIDsInOrder(ctx, p.CommunityID, p.Order, p.Page, p.Size)
 	if err != nil {
-		logger.WithContext(ctx).Error("postCache.GetCommunityPostIDsInOrder failed",
-			zap.Int64("community_id", p.CommunityID),
-			zap.String("order", p.Order),
-			zap.Error(err))
+		s.logger.Error(ctx, "postCache.GetCommunityPostIDsInOrder failed",
+			port.Int64("community_id", p.CommunityID),
+			port.String("order", p.Order),
+			port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -218,13 +222,13 @@ func (s *PostService) GetCommunityPostList(ctx context.Context, p *postreq.PostL
 
 	posts, err := s.postRepo.GetPostListByIDsWithPreload(ctx, ids)
 	if err != nil {
-		logger.WithContext(ctx).Error("postRepo.GetPostListByIDsWithPreload failed", zap.Error(err))
+		s.logger.Error(ctx, "postRepo.GetPostListByIDsWithPreload failed", port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	voteData, err := s.postCache.GetPostsVoteData(ctx, ids)
 	if err != nil {
-		logger.WithContext(ctx).Error("postCache.GetPostsVoteData failed", zap.Error(err))
+		s.logger.Error(ctx, "postCache.GetPostsVoteData failed", port.Err(err))
 		voteData = make([]int64, len(ids))
 	}
 
@@ -234,9 +238,9 @@ func (s *PostService) GetCommunityPostList(ctx context.Context, p *postreq.PostL
 		if post.Author != nil {
 			authorName = post.Author.UserName
 		} else {
-			logger.WithContext(ctx).Error("author not preloaded for post",
-				zap.String("post_id", post.PostID),
-				zap.Int64("author_id", post.AuthorID))
+			s.logger.Error(ctx, "author not preloaded for post",
+				port.String("post_id", post.PostID),
+				port.Int64("author_id", post.AuthorID))
 		}
 
 		postDetail := &postResp.DetailResponse{
@@ -259,9 +263,9 @@ func (s *PostService) GetCommunityPostList(ctx context.Context, p *postreq.PostL
 func (s *PostService) DeletePost(ctx context.Context, postID int64, userID int64) error {
 	post, err := s.postRepo.GetPostByID(ctx, postID)
 	if err != nil {
-		logger.WithContext(ctx).Error("postRepo.GetPostByID failed",
-			zap.Int64("post_id", postID),
-			zap.Error(err))
+		s.logger.Error(ctx, "postRepo.GetPostByID failed",
+			port.Int64("post_id", postID),
+			port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 	if !post.IsValid() {
@@ -273,34 +277,34 @@ func (s *PostService) DeletePost(ctx context.Context, postID int64, userID int64
 	}
 
 	if err := s.remarkRepo.DeleteRemarksByPostID(ctx, postID); err != nil {
-		logger.WithContext(ctx).Error("remarkRepo.DeleteRemarksByPostID failed",
-			zap.Int64("post_id", postID),
-			zap.Error(err))
+		s.logger.Error(ctx, "remarkRepo.DeleteRemarksByPostID failed",
+			port.Int64("post_id", postID),
+			port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	err = s.postRepo.DeletePostByAuthor(ctx, postID, userID)
 	if err != nil {
-		logger.WithContext(ctx).Error("postRepo.DeletePostByAuthor failed",
-			zap.Int64("post_id", postID),
-			zap.Int64("user_id", userID),
-			zap.Error(err))
+		s.logger.Error(ctx, "postRepo.DeletePostByAuthor failed",
+			port.Int64("post_id", postID),
+			port.Int64("user_id", userID),
+			port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	if s.searchSyncRepo != nil {
 		postIDStr := strconv.FormatInt(postID, 10)
 		if err := s.searchSyncRepo.DeletePostIndex(ctx, postIDStr); err != nil {
-			logger.WithContext(ctx).Error("searchSyncRepo.DeletePostIndex failed",
-				zap.Int64("post_id", postID),
-				zap.Error(err))
+			s.logger.Error(ctx, "searchSyncRepo.DeletePostIndex failed",
+				port.Int64("post_id", postID),
+				port.Err(err))
 		}
 	}
 
 	if err := s.postCache.DeletePost(ctx, postID, post.CommunityID); err != nil {
-		logger.WithContext(ctx).Error("postCache.DeletePost failed",
-			zap.Int64("post_id", postID),
-			zap.Error(err))
+		s.logger.Error(ctx, "postCache.DeletePost failed",
+			port.Int64("post_id", postID),
+			port.Err(err))
 	}
 
 	return nil
@@ -329,13 +333,13 @@ func (s *PostService) VoteForPost(ctx context.Context, userID int64, p *postreq.
 	}
 
 	if s.publisher != nil {
-		_ = s.publisher.PublishVote(ctx, &mq.VoteMessage{
-			MsgID:  strconv.FormatInt(snowflake.GenID(), 10),
+		_ = s.publisher.PublishVote(ctx, &port.VoteEvent{
+			MsgID:  strconv.FormatInt(s.idGen.GenID(), 10),
 			PostID: postIDStr,
 			UserID: userIDStr,
 			Action: int(p.Direction),
 		})
-		_ = s.publisher.PublishActivity(ctx, &mq.ActivityMessage{
+		_ = s.publisher.PublishActivity(ctx, &port.ActivityEvent{
 			UserID:    userID,
 			Type:      "vote_up",
 			TargetID:  postIDStr,
@@ -349,9 +353,9 @@ func (s *PostService) VoteForPost(ctx context.Context, userID int64, p *postreq.
 func (s *PostService) RemarkPost(ctx context.Context, req *postreq.RemarkRequest, userID int64) (remarkID uint, err error) {
 	post, err := s.postRepo.GetPostByID(ctx, req.PostID)
 	if err != nil {
-		logger.WithContext(ctx).Error("remarkPost: postRepo.GetPostByID failed",
-			zap.Int64("post_id", req.PostID),
-			zap.Error(err))
+		s.logger.Error(ctx, "remarkPost: postRepo.GetPostByID failed",
+			port.Int64("post_id", req.PostID),
+			port.Err(err))
 		return 0, entity.Wrap(entity.ErrServerBusy, err)
 	}
 	if !post.IsValid() {
@@ -369,10 +373,10 @@ func (s *PostService) RemarkPost(ctx context.Context, req *postreq.RemarkRequest
 	}
 
 	if err := s.remarkRepo.CreateRemark(ctx, remark); err != nil {
-		logger.WithContext(ctx).Error("remarkPost: remarkRepo.CreateRemark failed",
-			zap.Int64("post_id", req.PostID),
-			zap.Int64("author_id", userID),
-			zap.Error(err))
+		s.logger.Error(ctx, "remarkPost: remarkRepo.CreateRemark failed",
+			port.Int64("post_id", req.PostID),
+			port.Int64("author_id", userID),
+			port.Err(err))
 		return 0, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -382,9 +386,9 @@ func (s *PostService) RemarkPost(ctx context.Context, req *postreq.RemarkRequest
 func (s *PostService) GetPostRemarks(ctx context.Context, postID int64, replyTo int64) ([]*postResp.RemarkDetail, error) {
 	remarks, err := s.remarkRepo.GetRemarksByPostID(ctx, postID)
 	if err != nil {
-		logger.WithContext(ctx).Error("getPostRemarks: remarkRepo.GetRemarksByPostID failed",
-			zap.Int64("post_id", postID),
-			zap.Error(err))
+		s.logger.Error(ctx, "getPostRemarks: remarkRepo.GetRemarksByPostID failed",
+			port.Int64("post_id", postID),
+			port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -414,7 +418,7 @@ func (s *PostService) GetPostRemarks(ctx context.Context, postID int64, replyTo 
 
 func (s *PostService) SearchPosts(ctx context.Context, keyword string, page, pageSize int) (*searchResp.SearchResponse, error) {
 	if s.searchRepo == nil {
-		logger.WithContext(ctx).Warn("searchRepo is not initialized")
+		s.logger.Warn(ctx, "searchRepo is not initialized")
 		return &searchResp.SearchResponse{Posts: []searchResp.SearchPostDoc{}}, nil
 	}
 

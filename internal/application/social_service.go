@@ -2,9 +2,9 @@ package application
 
 import (
 	socialResp "bluebell/internal/application/dto/response/social"
+	"bluebell/internal/application/port"
 	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/mq"
 	"context"
 	"fmt"
 	"time"
@@ -13,10 +13,16 @@ import (
 type SocialService struct {
 	socialRepo domain.SocialRepository
 	userRepo   domain.UserRepository
-	publisher  *mq.Publisher
+
+	// 端口依赖
+	publisher port.EventPublisher
 }
 
-func NewSocialService(socialRepo domain.SocialRepository, userRepo domain.UserRepository, publisher *mq.Publisher) *SocialService {
+func NewSocialService(
+	socialRepo domain.SocialRepository,
+	userRepo domain.UserRepository,
+	publisher port.EventPublisher,
+) *SocialService {
 	return &SocialService{
 		socialRepo: socialRepo,
 		userRepo:   userRepo,
@@ -68,12 +74,14 @@ func (s *SocialService) FollowUser(ctx context.Context, followerID, followingID 
 		return err
 	}
 
-	_ = s.publisher.PublishActivity(ctx, &mq.ActivityMessage{
-		UserID:    followerID,
-		Type:      "follow",
-		TargetID:  fmt.Sprintf("%d", followingID),
-		Timestamp: time.Now().Unix(),
-	})
+	if s.publisher != nil {
+		_ = s.publisher.PublishActivity(ctx, &port.ActivityEvent{
+			UserID:    followerID,
+			Type:      "follow",
+			TargetID:  fmt.Sprintf("%d", followingID),
+			Timestamp: time.Now().Unix(),
+		})
+	}
 
 	return nil
 }
@@ -84,12 +92,14 @@ func (s *SocialService) UnfollowUser(ctx context.Context, followerID, followingI
 		return err
 	}
 
-	_ = s.publisher.PublishActivity(ctx, &mq.ActivityMessage{
-		UserID:    followerID,
-		Type:      "unfollow",
-		TargetID:  fmt.Sprintf("%d", followingID),
-		Timestamp: time.Now().Unix(),
-	})
+	if s.publisher != nil {
+		_ = s.publisher.PublishActivity(ctx, &port.ActivityEvent{
+			UserID:    followerID,
+			Type:      "unfollow",
+			TargetID:  fmt.Sprintf("%d", followingID),
+			Timestamp: time.Now().Unix(),
+		})
+	}
 
 	return nil
 }

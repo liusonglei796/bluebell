@@ -2,25 +2,24 @@ package application
 
 import (
 	userreq "bluebell/internal/application/dto/request/user"
+	"bluebell/internal/application/port"
 	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/snowflake"
-	"bluebell/internal/infrastructure/trace"
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"strings"
 )
-
-var tracerUser = trace.TracerForModule("service/user")
 
 type UserService struct {
 	userRepo     domain.UserRepository
 	socialRepo   domain.SocialRepository
 	tokenCache   domain.UserTokenCacheRepository
 	tokenService domain.TokenService
+
+	// 端口依赖（替代直接依赖 infrastructure 包）
+	logger port.Logger
+	idGen  port.IDGenerator
 }
 
 func NewUserService(
@@ -28,12 +27,16 @@ func NewUserService(
 	socialRepo domain.SocialRepository,
 	tokenCache domain.UserTokenCacheRepository,
 	tokenService domain.TokenService,
+	logger port.Logger,
+	idGen port.IDGenerator,
 ) *UserService {
 	return &UserService{
 		userRepo:     userRepo,
 		socialRepo:   socialRepo,
 		tokenCache:   tokenCache,
 		tokenService: tokenService,
+		logger:       logger,
+		idGen:        idGen,
 	}
 }
 
@@ -42,7 +45,7 @@ func (s *UserService) SocialLogin(ctx context.Context, githubID, username, email
 	var userID int64
 
 	if err != nil {
-		userID = snowflake.GenID()
+		userID = s.idGen.GenID()
 		u := &entity.User{
 			UserID:   userID,
 			UserName: username,
@@ -80,11 +83,11 @@ func (s *UserService) SocialLogin(ctx context.Context, githubID, username, email
 }
 
 func (s *UserService) SignUp(ctx context.Context, p *userreq.SignUpRequest) (err error) {
-	userID := snowflake.GenID()
+	userID := s.idGen.GenID()
 
 	hashedPassword, err := entity.HashPassword(p.Password)
 	if err != nil {
-		logger.WithContext(ctx).Error("entity.HashPassword failed", zap.Error(err))
+		s.logger.Error(ctx, "entity.HashPassword failed", port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -100,10 +103,10 @@ func (s *UserService) SignUp(ctx context.Context, p *userreq.SignUpRequest) (err
 		if errors.Is(err, entity.ErrUserExist) {
 			return err
 		}
-		logger.WithContext(ctx).Error("userRepo.CreateUser failed",
-			zap.Int64("user_id", u.UserID),
-			zap.String("username", p.Username),
-			zap.Error(err))
+		s.logger.Error(ctx, "userRepo.CreateUser failed",
+			port.Int64("user_id", u.UserID),
+			port.String("username", p.Username),
+			port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -116,9 +119,9 @@ func (s *UserService) Login(ctx context.Context, p *userreq.LoginRequest) (strin
 		if errors.Is(err, entity.ErrUserNotExist) {
 			return "", "", err
 		}
-		logger.WithContext(ctx).Error("userRepo.GetUserByName failed",
-			zap.String("username", p.Username),
-			zap.Error(err))
+		s.logger.Error(ctx, "userRepo.GetUserByName failed",
+			port.String("username", p.Username),
+			port.Err(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -128,9 +131,9 @@ func (s *UserService) Login(ctx context.Context, p *userreq.LoginRequest) (strin
 
 	aToken, rToken, err := s.tokenService.GenToken(u.UserID)
 	if err != nil {
-		logger.WithContext(ctx).Error("jwt.GenToken failed",
-			zap.Int64("user_id", u.UserID),
-			zap.Error(err))
+		s.logger.Error(ctx, "jwt.GenToken failed",
+			port.Int64("user_id", u.UserID),
+			port.Err(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -139,9 +142,9 @@ func (s *UserService) Login(ctx context.Context, p *userreq.LoginRequest) (strin
 
 	err = s.tokenCache.SetUserToken(ctx, u.UserID, aToken, rToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
-		logger.WithContext(ctx).Error("tokenCache.SetUserToken failed",
-			zap.Int64("user_id", u.UserID),
-			zap.Error(err))
+		s.logger.Error(ctx, "tokenCache.SetUserToken failed",
+			port.Int64("user_id", u.UserID),
+			port.Err(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -161,17 +164,17 @@ func (s *UserService) RefreshToken(ctx context.Context, p *userreq.RefreshTokenR
 
 	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil || user == nil {
-		logger.WithContext(ctx).Error("userRepo.GetUserByID failed",
-			zap.Int64("user_id", userID),
-			zap.Error(err))
+		s.logger.Error(ctx, "userRepo.GetUserByID failed",
+			port.Int64("user_id", userID),
+			port.Err(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
 	newAToken, newRToken, err = s.tokenService.GenToken(user.UserID)
 	if err != nil {
-		logger.WithContext(ctx).Error("jwt.GenToken failed in refresh",
-			zap.Int64("user_id", user.UserID),
-			zap.Error(err))
+		s.logger.Error(ctx, "jwt.GenToken failed in refresh",
+			port.Int64("user_id", user.UserID),
+			port.Err(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -180,9 +183,9 @@ func (s *UserService) RefreshToken(ctx context.Context, p *userreq.RefreshTokenR
 
 	err = s.tokenCache.SetUserToken(ctx, user.UserID, newAToken, newRToken, accessTokenExp, refreshTokenExp)
 	if err != nil {
-		logger.WithContext(ctx).Error("tokenCache.SetUserToken failed in refresh",
-			zap.Int64("user_id", user.UserID),
-			zap.Error(err))
+		s.logger.Error(ctx, "tokenCache.SetUserToken failed in refresh",
+			port.Int64("user_id", user.UserID),
+			port.Err(err))
 		return "", "", entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -191,9 +194,9 @@ func (s *UserService) RefreshToken(ctx context.Context, p *userreq.RefreshTokenR
 
 func (s *UserService) Logout(ctx context.Context, userID int64) error {
 	if err := s.tokenCache.DeleteUserToken(ctx, userID); err != nil {
-		logger.WithContext(ctx).Error("tokenCache.DeleteUserToken failed",
-			zap.Int64("user_id", userID),
-			zap.Error(err))
+		s.logger.Error(ctx, "tokenCache.DeleteUserToken failed",
+			port.Int64("user_id", userID),
+			port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 

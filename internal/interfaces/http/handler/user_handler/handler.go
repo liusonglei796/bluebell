@@ -9,14 +9,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	// 领域层 - Service 接口
-	"bluebell/internal/application"
+	// 端口接口
+	"bluebell/internal/application/port"
 
 	// DTO 请求
 	userreq "bluebell/internal/application/dto/request/user"
 
 	// 基础设施 - 参数校验
-	"bluebell/internal/infrastructure/snowflake"
 	"bluebell/internal/infrastructure/translate"
 
 	// 错误处理
@@ -60,16 +59,18 @@ func (h *Handler) GitHubCallbackHandler(c *gin.Context) {
 
 // Handler 用户相关处理器
 type Handler struct {
-	userService *application.UserService
+	userService port.UserService
+	idGen       port.IDGenerator
 	uploadDir   string // 上传文件存储根目录
 }
 
 // New 创建 Handler 实例
 // 通过构造函数进行依赖注入
 // uploadDir 是上传文件存储根目录（来自 config.Upload.Dir）
-func New(userService *application.UserService, uploadDir string) *Handler {
+func New(userService port.UserService, uploadDir string, idGen port.IDGenerator) *Handler {
 	return &Handler{
 		userService: userService,
+		idGen:       idGen,
 		uploadDir:   uploadDir,
 	}
 }
@@ -80,8 +81,7 @@ func (h *Handler) SignUpHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(p); err != nil {
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)
@@ -105,8 +105,7 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 	if err := c.ShouldBindJSON(p); err != nil {
 		var errs validator.ValidationErrors
 		if errors.As(err, &errs) {
-			translatedErrs := errs.Translate(translate.Trans)
-			c.JSON(http.StatusBadRequest, gin.H{"error": translate.RemoveTopStruct(translatedErrs)})
+			render.HandleValidationError(c, translate.RemoveTopStruct(errs.Translate(translate.Trans)))
 			return
 		}
 		render.HandleError(c, entity.ErrInvalidParam)
@@ -211,7 +210,7 @@ func (h *Handler) UploadAvatarHandler(c *gin.Context) {
 
 	// 5. 生成唯一文件名：snowflake ID + 扩展名
 	// 使用 snowflake 生成唯一 ID 避免文件名冲突
-	filename := fmt.Sprintf("%d%s", snowflake.GenID(), ext)
+	filename := fmt.Sprintf("%d%s", h.idGen.GenID(), ext)
 
 	// 6. 确保上传目录存在（avatars 子目录）
 	// uploadDir 来自配置文件 config.yaml 的 upload.dir 字段

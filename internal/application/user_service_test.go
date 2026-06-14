@@ -2,9 +2,8 @@ package application
 
 import (
 	userreq "bluebell/internal/application/dto/request/user"
-	"bluebell/internal/config"
+	"bluebell/internal/application/port"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/snowflake"
 	"context"
 	"testing"
 	"time"
@@ -81,13 +80,6 @@ func (m *MockTokenService) GetRefreshExpiry() time.Duration {
 }
 
 func TestUserService_SignUp(t *testing.T) {
-	snowflake.Init(&config.Config{
-		Snowflake: &config.SnowflakeConfig{
-			StartTime: 1775539200000,
-			MachineID: 1,
-		},
-	})
-
 	mockRepo := &MockUserRepository{
 		CheckUserExistFunc: func(ctx context.Context, username string) error {
 			return nil
@@ -107,7 +99,14 @@ func TestUserService_SignUp(t *testing.T) {
 			return "access", "refresh", nil
 		},
 	}
-	s := NewUserService(mockRepo, nil, nil, mockTokenService)
+	s := NewUserService(
+		mockRepo,
+		nil, // no social repo
+		nil, // no token cache
+		mockTokenService,
+		port.NopLogger(),
+		&mockIDGenerator{counter: 5000},
+	)
 	err := s.SignUp(context.Background(), &userreq.SignUpRequest{
 		Username:   "testuser",
 		Password:   "password123",

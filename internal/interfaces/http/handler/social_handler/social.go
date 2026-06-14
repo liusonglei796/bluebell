@@ -1,7 +1,7 @@
 package social_handler
 
 import (
-	"bluebell/internal/application"
+	"bluebell/internal/application/port"
 	"bluebell/internal/domain/entity"
 	"bluebell/internal/interfaces/http/render"
 	"strconv"
@@ -10,10 +10,10 @@ import (
 )
 
 type Handler struct {
-	socialService *application.SocialService
+	socialService port.SocialService
 }
 
-func New(socialService *application.SocialService) *Handler {
+func New(socialService port.SocialService) *Handler {
 	return &Handler{
 		socialService: socialService,
 	}

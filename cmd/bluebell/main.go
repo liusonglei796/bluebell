@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"bluebell/internal/application"
+	"bluebell/internal/application/port"
 	"bluebell/internal/config"
 	"bluebell/internal/domain"
 	"bluebell/internal/http_server"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/jwt"
-	"bluebell/internal/infrastructure/logger"
+	infralogger "bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
@@ -95,7 +96,7 @@ func main() {
 	}
 
 	// 2. 初始化日志（集成 OTel 自动关联）
-	if err := logger.Init(cfg, cfg.App.Mode); err != nil {
+	if err := infralogger.Init(cfg, cfg.App.Mode); err != nil {
 		fmt.Printf("init logger failed, err:%v\n", err)
 		return
 	}
@@ -183,7 +184,15 @@ func main() {
 		publisher = mq.NewPublisher(pubCh)
 	}
 
-	// 2) 业务逻辑层：创建 Service 实例
+	// 2) 创建基础设施适配器
+	appLogger := infralogger.New()
+	var eventPublisher port.EventPublisher
+	if publisher != nil {
+		eventPublisher = mq.NewEventPublisher(publisher)
+	}
+	idGen := snowflake.NewIDGenerator()
+
+	// 3) 业务逻辑层：创建 Service 实例（注入 port 接口）
 	tokenService := jwt.NewJWTService(cfg)
 	var searchRepo domain.PostSearchRepository
 	if esClient != nil {
@@ -193,11 +202,11 @@ func main() {
 	if publisher != nil {
 		searchSyncRepo = publisher
 	}
-	postService := application.NewPostService(repositoriesUOW.Post, cacheRepos.PostCache, repositoriesUOW.Remark, publisher, searchRepo, searchSyncRepo)
-	communityService := application.NewCommunityService(repositoriesUOW.Community, repositoriesUOW.User)
-	userService := application.NewUserService(repositoriesUOW.User, repositoriesUOW.Social, cacheRepos.TokenCache, tokenService)
-	socialService := application.NewSocialService(repositoriesUOW.Social, repositoriesUOW.User, publisher)
-	bookmarkService := application.NewBookmarkService(repositoriesUOW.Bookmark, repositoriesUOW.Post, repositoriesUOW.User, repositoriesUOW.Community)
+	postService := application.NewPostService(repositoriesUOW.Post, cacheRepos.PostCache, repositoriesUOW.Remark, eventPublisher, searchRepo, searchSyncRepo, appLogger, idGen)
+	communityService := application.NewCommunityService(repositoriesUOW.Community, repositoriesUOW.User, appLogger)
+	userService := application.NewUserService(repositoriesUOW.User, repositoriesUOW.Social, cacheRepos.TokenCache, tokenService, appLogger, idGen)
+	socialService := application.NewSocialService(repositoriesUOW.Social, repositoriesUOW.User, eventPublisher)
+	bookmarkService := application.NewBookmarkService(repositoriesUOW.Bookmark, repositoriesUOW.Post, repositoriesUOW.User, repositoriesUOW.Community, appLogger)
 
 	// 3) 表现层：创建 Handler 实例
 	// 创建 SSE Hub（替代原来的 WebSocket Hub）
@@ -210,7 +219,7 @@ func main() {
 		communityService,
 		socialService,
 		bookmarkService,
-		publisher,
+		idGen,
 		gormDB,
 		rdb,
 		esClient,

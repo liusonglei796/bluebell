@@ -2,23 +2,28 @@ package application
 
 import (
 	communityResp "bluebell/internal/application/dto/response/community"
+	"bluebell/internal/application/port"
 	"bluebell/internal/domain"
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/logger"
 	"context"
-	"go.uber.org/zap"
 	"strconv"
 )
 
 type CommunityService struct {
 	communityRepo domain.CommunityRepository
 	userRepo      domain.UserRepository
+	logger        port.Logger
 }
 
-func NewCommunityService(communityRepo domain.CommunityRepository, userRepo domain.UserRepository) *CommunityService {
+func NewCommunityService(
+	communityRepo domain.CommunityRepository,
+	userRepo domain.UserRepository,
+	logger port.Logger,
+) *CommunityService {
 	return &CommunityService{
 		communityRepo: communityRepo,
 		userRepo:      userRepo,
+		logger:        logger,
 	}
 }
 
@@ -33,7 +38,7 @@ func toResponse(c *entity.Community) *communityResp.Response {
 func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*communityResp.Response, error) {
 	data, err := s.communityRepo.GetCommunityList(ctx)
 	if err != nil {
-		logger.WithContext(ctx).Error("communityRepo.GetCommunityList failed", zap.Error(err))
+		s.logger.Error(ctx, "communityRepo.GetCommunityList failed", port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -47,9 +52,9 @@ func (s *CommunityService) GetCommunityList(ctx context.Context) ([]*communityRe
 func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*communityResp.Response, error) {
 	data, err := s.communityRepo.GetCommunityDetailByID(ctx, id)
 	if err != nil {
-		logger.WithContext(ctx).Error("communityRepo.GetCommunityDetailByID failed",
-			zap.Int64("community_id", id),
-			zap.Error(err))
+		s.logger.Error(ctx, "communityRepo.GetCommunityDetailByID failed",
+			port.Int64("community_id", id),
+			port.Err(err))
 		return nil, entity.Wrap(entity.ErrServerBusy, err)
 	}
 
@@ -63,9 +68,9 @@ func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*c
 func (s *CommunityService) CreateCommunity(ctx context.Context, name, introduction string, userID int64) error {
 	user, err := s.userRepo.GetUserByID(ctx, userID)
 	if err != nil {
-		logger.WithContext(ctx).Error("userRepo.GetUserByID failed",
-			zap.Int64("user_id", userID),
-			zap.Error(err))
+		s.logger.Error(ctx, "userRepo.GetUserByID failed",
+			port.Int64("user_id", userID),
+			port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 	if user == nil || !user.IsAdmin() {
@@ -77,9 +82,9 @@ func (s *CommunityService) CreateCommunity(ctx context.Context, name, introducti
 		Introduction:  introduction,
 	}
 	if err := s.communityRepo.CreateCommunity(ctx, community); err != nil {
-		logger.WithContext(ctx).Error("communityRepo.CreateCommunity failed",
-			zap.String("community_name", name),
-			zap.Error(err))
+		s.logger.Error(ctx, "communityRepo.CreateCommunity failed",
+			port.String("community_name", name),
+			port.Err(err))
 		return entity.Wrap(entity.ErrServerBusy, err)
 	}
 

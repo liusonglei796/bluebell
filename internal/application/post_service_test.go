@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	postreq "bluebell/internal/application/dto/request/post"
+	"bluebell/internal/application/port"
 	"bluebell/internal/domain/entity"
 )
 
@@ -70,9 +71,32 @@ func (m *MockRemarkRepository) DeleteRemarksByPostID(ctx context.Context, postID
 	return nil
 }
 
+// mockIDGenerator 测试用 ID 生成器
+type mockIDGenerator struct {
+	counter int64
+}
+
+func (m *mockIDGenerator) GenID() int64 {
+	m.counter++
+	return m.counter
+}
+
+func newTestPostService() *PostService {
+	return NewPostService(
+		&MockPostRepository{},
+		&MockPostCacheRepository{},
+		&MockRemarkRepository{},
+		nil,  // no event publisher
+		nil,  // no search repo
+		nil,  // no search sync repo
+		port.NopLogger(),
+		&mockIDGenerator{counter: 1000},
+	)
+}
+
 // TestVoteForPost_DirectCall verifies that VoteForPost calls the cache correctly.
 func TestVoteForPost_DirectCall(t *testing.T) {
-	svc := NewPostService(&MockPostRepository{}, &MockPostCacheRepository{}, &MockRemarkRepository{}, nil, nil, nil)
+	svc := newTestPostService()
 
 	req := &postreq.VoteRequest{
 		PostID:    1,
@@ -86,7 +110,7 @@ func TestVoteForPost_DirectCall(t *testing.T) {
 
 // TestVoteForPost_InvalidDirection verifies validation rejects bad directions.
 func TestVoteForPost_InvalidDirection(t *testing.T) {
-	svc := NewPostService(&MockPostRepository{}, &MockPostCacheRepository{}, &MockRemarkRepository{}, nil, nil, nil)
+	svc := newTestPostService()
 
 	req := &postreq.VoteRequest{
 		PostID:    1,

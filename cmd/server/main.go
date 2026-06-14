@@ -14,7 +14,7 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/jwt"
-	"bluebell/internal/infrastructure/logger"
+	infralogger "bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	bluebellotel "bluebell/internal/infrastructure/otel"
@@ -26,7 +26,6 @@ import (
 	"bluebell/internal/interfaces/http/handler"
 	"bluebell/internal/interfaces/http/router"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
@@ -41,7 +40,7 @@ func main() {
 		return
 	}
 
-	if err := logger.Init(cfg, cfg.App.Mode); err != nil {
+	if err := infralogger.Init(cfg, cfg.App.Mode); err != nil {
 		fmt.Printf("init logger failed, err:%v\n", err)
 		return
 	}
@@ -124,6 +123,12 @@ func main() {
 		searchClient = nil
 	}
 
+	// ========== 创建基础设施适配器（将 infrastructure 实现适配为 port 接口） ==========
+	appLogger := infralogger.New()                          // port.Logger 适配器
+	eventPublisher := mq.NewEventPublisher(publisher)       // port.EventPublisher 适配器
+	idGen := snowflake.NewIDGenerator()                     // port.IDGenerator 适配器
+
+	// ========== 创建仓储 ==========
 	dbRepos := database.NewRepositories(gormDB)
 	cacheRepos := redisrepo.NewRepositories(rdb)
 	tokenService := jwt.NewJWTService(cfg)
@@ -131,24 +136,39 @@ func main() {
 	searchRepo := es.NewPostSearch(searchClient)
 	searchSyncRepo := es.NewPostSync(searchClient)
 
-	postService := application.NewPostService(dbRepos.Post, cacheRepos.PostCache, dbRepos.Remark, publisher, searchRepo, searchSyncRepo)
-	communityService := application.NewCommunityService(dbRepos.Community, dbRepos.User)
-	userService := application.NewUserService(dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService)
-	socialService := application.NewSocialService(dbRepos.Social, dbRepos.User, publisher)
-	bookmarkService := application.NewBookmarkService(dbRepos.Bookmark, dbRepos.Post, dbRepos.User, dbRepos.Community)
+	// ========== 创建应用服务（注入 port 接口而非 infrastructure 包） ==========
+	postService := application.NewPostService(
+		dbRepos.Post, cacheRepos.PostCache, dbRepos.Remark,
+		eventPublisher, searchRepo, searchSyncRepo,
+		appLogger, idGen,
+	)
+	communityService := application.NewCommunityService(
+		dbRepos.Community, dbRepos.User, appLogger,
+	)
+	userService := application.NewUserService(
+		dbRepos.User, dbRepos.Social, cacheRepos.TokenCache, tokenService,
+		appLogger, idGen,
+	)
+	socialService := application.NewSocialService(
+		dbRepos.Social, dbRepos.User, eventPublisher,
+	)
+	bookmarkService := application.NewBookmarkService(
+		dbRepos.Bookmark, dbRepos.Post, dbRepos.User, dbRepos.Community,
+		appLogger,
+	)
 
-	// 创建 SSE Hub（替代原来的 WebSocket Hub）
-	// SSE 使用标准 HTTP 协议，无需独立端口和 gorilla/websocket 依赖
+	// 创建 SSE Hub
 	sseHub := sse.NewHub()
 	go sseHub.Run(ctx)
 
+	// ========== 创建 Handler Provider（传入 port 接口） ==========
 	hp := handler.NewProvider(
 		userService,
 		postService,
 		communityService,
 		socialService,
 		bookmarkService,
-		publisher,
+		idGen,
 		gormDB,
 		rdb,
 		searchClient,
@@ -191,5 +211,3 @@ func main() {
 
 	zap.L().Info("Server exited")
 }
-
-var _ = gin.ReleaseMode
