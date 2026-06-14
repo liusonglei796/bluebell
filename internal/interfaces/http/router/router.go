@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
@@ -81,10 +80,9 @@ func NewRouter(
 	r.GET("/healthz", hp.HealthHandler.Healthz)
 	r.GET("/readyz", hp.HealthHandler.Readyz)
 
-	// Swagger & PProf (仅在非生产环境)
+	// Swagger (仅在非生产环境)
 	if mode != gin.ReleaseMode {
 		r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-		pprof.Register(r) // 注册 pprof 路由
 	}
 
 	// 路由组

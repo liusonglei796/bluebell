@@ -7,7 +7,6 @@ require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/elastic/go-elasticsearch/v8 v8.19.5
 	github.com/fsnotify/fsnotify v1.7.0
-	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-contrib/timeout v1.1.0
 	github.com/go-playground/locales v0.14.1
 	github.com/go-playground/universal-translator v0.18.1
