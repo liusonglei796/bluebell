@@ -2,23 +2,24 @@ package database
 
 import (
 	"bluebell/internal/config"
+	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/persistence/mysql/model"
 	"context"
 	"fmt"
-	"log"
-	"os"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 
 	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 )
 
-// Init 初始化 MySQL 连接，返回数据库连接实例
-func Init(cfg *config.Config) (*gorm.DB, error) {
+// Init 初始化 MySQL 连接，返回数据库连接实例。
+// reg 为 Prometheus 注册表（可选），用于注册 database/sql 的连接池指标。
+func Init(cfg *config.Config, reg prometheus.Registerer) (*gorm.DB, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("mysql.Init received nil config")
 	}
@@ -35,26 +36,10 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// 根据环境配置 GORM Logger
-	// - debug: Info 级别，打印所有 SQL（开发环境）
-	// - test/release: Silent 级别，不打印任何 SQL（生产环境）
-	var gormLogger logger.Interface
-
-	if cfg.App.Mode == "dev" {
-		// 独立创建一个慢查询日志文件，避免和 zap 冲突
-		slowLogFile, _ := os.OpenFile("gorm_slow.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		gormLogger = logger.New(
-			log.New(slowLogFile, "\r\n", log.LstdFlags), // 专门输出到新文件
-			logger.Config{
-				SlowThreshold:             10 * time.Millisecond,
-				LogLevel:                  logger.Warn,
-				IgnoreRecordNotFoundError: true,
-				Colorful:                  false,
-			},
-		)
-	} else {
-		gormLogger = logger.Default.LogMode(logger.Silent)
-	}
+	// 使用 GORM → Zap 桥接日志适配器
+	// - dev:  Info 级别，记录所有 SQL，慢查询阈值 10ms
+	// - prod: Warn 级别，仅记录慢查询（阈值 200ms）和错误
+	gormLogger := logger.NewGormLogger(cfg.App.Mode)
 
 	gormConfig := &gorm.Config{
 		Logger:                                   gormLogger,
@@ -75,6 +60,14 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 	sqlDB, err := db.DB()
 	if err != nil {
 		return nil, fmt.Errorf("get sql.DB failed: %w", err)
+	}
+
+	// 注册 database/sql 的 DBStats collector，暴露 go_sql_connections_* 指标
+	// 数据流: DBStats → Prometheus Registry → /metrics scrape → Mimir
+	if reg != nil {
+		if err := reg.Register(collectors.NewDBStatsCollector(sqlDB, "bluebell_mysql")); err != nil {
+			zap.L().Warn("register DBStatsCollector failed", zap.Error(err))
+		}
 	}
 
 	if err = sqlDB.PingContext(ctx); err != nil {

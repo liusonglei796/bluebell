@@ -30,6 +30,9 @@ import (
 // prometheusHandler 保存 Prometheus exporter 的 HTTP handler，供 /metrics 端点使用
 var prometheusHandler http.Handler
 
+// promRegistry 自定义 Prometheus 注册表（非 default），所有 OTel 指标和外部 collector 均注册于此
+var promRegistry *prometheus.Registry
+
 // InitOTEL 初始化 OpenTelemetry SDK（Traces + Metrics + Logs）。
 // 它会设置全局的 TracerProvider, MeterProvider 和 LoggerProvider。
 func InitOTEL(ctx context.Context, cfg *config.OtelConfig) (func(context.Context) error, error) {
@@ -79,7 +82,7 @@ func InitOTEL(ctx context.Context, cfg *config.OtelConfig) (func(context.Context
 	}
 
 	// Prometheus exporter（用于 /metrics scrape）
-	promRegistry := prometheus.NewRegistry()
+	promRegistry = prometheus.NewRegistry()
 	promExporter, err := otelprom.New(otelprom.WithRegisterer(promRegistry))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create prometheus exporter: %w", err)
@@ -129,4 +132,11 @@ func InitOTEL(ctx context.Context, cfg *config.OtelConfig) (func(context.Context
 // 如果 OTel 未启用（InitOTEL 未调用或返回 no-op），则返回 nil。
 func GetPrometheusHandler() http.Handler {
 	return prometheusHandler
+}
+
+// GetPrometheusRegistry 返回自定义 Prometheus 注册表，供外部 collector 注册使用
+// （例如 database/sql 的 DBStatsCollector）。
+// 如果 OTel 未启用，则返回 nil。
+func GetPrometheusRegistry() prometheus.Registerer {
+	return promRegistry
 }

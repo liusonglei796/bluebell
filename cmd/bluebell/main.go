@@ -113,7 +113,7 @@ func main() {
 	}
 
 	// 3. 初始化 MySQL
-	gormDB, err := database.Init(cfg)
+	gormDB, err := database.Init(cfg, bluebellotel.GetPrometheusRegistry())
 	if err != nil {
 		zap.L().Fatal("Init MySQL failed", zap.Error(err))
 	}

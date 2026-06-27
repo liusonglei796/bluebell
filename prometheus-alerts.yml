@@ -102,9 +102,39 @@ groups:
             Go heap memory is {{ $value | humanize }}B over 5 minutes (threshold: 1GB).
 
       # ---------------------------------------------------------------
-      # 7. 数据库连接失败
-      # bluebell.errors.total{error_type="system"} 表示系统级错误
-      # 通常由数据库连接失败、超时等引起
+      # 7. 数据库连接池水位过高
+      # go_sql_db_in_use_connections 来自 DBStatsCollector
+      # ---------------------------------------------------------------
+      - alert: HighDatabaseConnections
+        expr: go_sql_db_in_use_connections / go_sql_db_max_open_connections > 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL connection pool utilization high ({{ $value | humanizePercentage }})"
+          description: |
+            MySQL connection pool is {{ $value | humanizePercentage }} utilized (threshold: 80%).
+            Connection pool may be saturated, consider increasing max_open_conns.
+
+      # ---------------------------------------------------------------
+      # 8. 数据库连接等待时间过长
+      # wait_duration / wait_count = 平均等待时间
+      # 1e7 纳秒 = 10 毫秒
+      # ---------------------------------------------------------------
+      - alert: MySQLConnectionWaitHigh
+        expr: rate(go_sql_db_wait_duration_nanoseconds_total[5m]) / rate(go_sql_db_wait_count_total[5m]) > 1e7
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL connection wait time high ({{ $value | humanizeDuration }})"
+          description: |
+            Average time waiting for a MySQL connection is {{ $value | humanizeDuration }} (threshold: 10ms).
+            Connection pool may be saturated.
+
+      # ---------------------------------------------------------------
+      # 9. 数据库系统级错误
+      # bluebell.errors.total{error_type="system"} 通常由数据库连接失败引起
       # ---------------------------------------------------------------
       - alert: DatabaseConnectionFailure
         expr: rate(bluebell_errors_total{error_type="system"}[5m]) > 0
@@ -118,7 +148,7 @@ groups:
             Possible causes: MySQL connection failure, timeout, or pool exhaustion.
 
       # ---------------------------------------------------------------
-      # 8. Redis 连接失败
+      # 10. Redis 连接失败
       # redisotel.InstrumentMetrics 提供 redis 客户端指标
       # redis_client_errors_total 来自 Redis OTel 插件的自动指标
       # ---------------------------------------------------------------
@@ -132,3 +162,50 @@ groups:
           description: |
             Redis client errors detected over 2 minutes.
             Possible causes: Redis instance down, network partition, or connection pool exhaustion.
+
+      # ---------------------------------------------------------------
+      # 11. Redis P95 操作延迟 > 50ms
+      # redis_client_duration_seconds_bucket 来自 redisotel 的 histogram 指标
+      # ---------------------------------------------------------------
+      - alert: RedisHighLatencyP95
+        expr: histogram_quantile(0.95, rate(redis_client_duration_seconds_bucket[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis P95 latency high ({{ $value | humanizeDuration }})"
+          description: |
+            Redis P95 operation latency is {{ $value | humanizeDuration }} over 5 minutes (threshold: 50ms).
+
+      # ---------------------------------------------------------------
+      # 12. Redis P99 操作延迟 > 100ms
+      # ---------------------------------------------------------------
+      - alert: RedisHighLatencyP99
+        expr: histogram_quantile(0.99, rate(redis_client_duration_seconds_bucket[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis P99 latency high ({{ $value | humanizeDuration }})"
+          description: |
+            Redis P99 operation latency is {{ $value | humanizeDuration }} over 5 minutes (threshold: 100ms).
+
+      # ---------------------------------------------------------------
+      # 13. Redis 错误率 > 1%
+      # 错误率 = 错误数 / 操作总数
+      # ---------------------------------------------------------------
+      - alert: RedisHighErrorRate
+        expr: |
+          (
+            rate(redis_client_errors_total[5m])
+            /
+            rate(redis_client_duration_seconds_count[5m])
+            * 100
+          ) > 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis error rate high ({{ $value | humanize }}%)"
+          description: |
+            Redis client error rate is {{ $value | humanize }}% over 5 minutes (threshold: 1%).

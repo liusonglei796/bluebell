@@ -1,7 +1,7 @@
 {
   "uid": "bluebell-application-overview",
   "title": "Bluebell Application Overview",
-  "description": "Comprehensive dashboard for Bluebell forum application: business metrics, HTTP performance, Go runtime, and database health",
+  "description": "Comprehensive dashboard for Bluebell forum application: business metrics, HTTP performance, Go runtime, database health, and Redis performance",
   "tags": ["bluebell", "observability", "production"],
   "schemaVersion": 39,
   "version": 0,
@@ -538,25 +538,25 @@
     },
     {
       "id": 13,
-      "title": "Database Connections",
+      "title": "MySQL Connection Overview",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 20 },
       "datasource": { "type": "prometheus" },
       "targets": [
         {
-          "expr": "go_sql_connections_open",
+          "expr": "go_sql_db_open_connections{db_name=\"bluebell_mysql\"}",
           "legendFormat": "Open"
         },
         {
-          "expr": "go_sql_connections_in_use",
+          "expr": "go_sql_db_in_use_connections{db_name=\"bluebell_mysql\"}",
           "legendFormat": "In Use"
         },
         {
-          "expr": "go_sql_connections_idle",
+          "expr": "go_sql_db_idle_connections{db_name=\"bluebell_mysql\"}",
           "legendFormat": "Idle"
         },
         {
-          "expr": "go_sql_connections_max_open",
+          "expr": "go_sql_db_max_open_connections{db_name=\"bluebell_mysql\"}",
           "legendFormat": "Max Open"
         }
       ],
@@ -588,18 +588,18 @@
     },
     {
       "id": 14,
-      "title": "SQL Connection Wait Duration",
+      "title": "MySQL Connection Wait",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 20 },
       "datasource": { "type": "prometheus" },
       "targets": [
         {
-          "expr": "rate(go_sql_connections_wait_duration_nanoseconds_total[$__rate_interval])",
-          "legendFormat": "Wait Duration"
+          "expr": "rate(go_sql_db_wait_duration_nanoseconds_total{db_name=\"bluebell_mysql\"}[$__rate_interval])",
+          "legendFormat": "Wait Duration (ns/s)"
         },
         {
-          "expr": "rate(go_sql_connections_wait_count_total[$__rate_interval])",
-          "legendFormat": "Wait Count"
+          "expr": "rate(go_sql_db_wait_count_total{db_name=\"bluebell_mysql\"}[$__rate_interval])",
+          "legendFormat": "Wait Count/s"
         }
       ],
       "fieldConfig": {
@@ -636,10 +636,58 @@
       }
     },
     {
-      "id": 15,
-      "title": "DB Client Connections",
+      "id": 21,
+      "title": "MySQL Pool Utilization",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 20 },
+      "datasource": { "type": "prometheus" },
+      "targets": [
+        {
+          "expr": "go_sql_db_in_use_connections{db_name=\"bluebell_mysql\"} / go_sql_db_max_open_connections{db_name=\"bluebell_mysql\"}",
+          "legendFormat": "Utilization"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineInterpolation": "smooth",
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 20,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.6 },
+              { "color": "red", "value": 0.8 }
+            ]
+          },
+          "min": 0,
+          "max": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["max", "mean", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Redis Connection Pool",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 28 },
       "datasource": { "type": "prometheus" },
       "targets": [
         {
@@ -668,6 +716,219 @@
             "showPoints": "auto",
             "spanNulls": false,
             "fillOpacity": 10,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["max", "mean", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Redis Command Latency (P50 / P95 / P99)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 28 },
+      "datasource": { "type": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(redis_client_duration_seconds_bucket[$__rate_interval])) by (le))",
+          "legendFormat": "P50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(redis_client_duration_seconds_bucket[$__rate_interval])) by (le))",
+          "legendFormat": "P95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(redis_client_duration_seconds_bucket[$__rate_interval])) by (le))",
+          "legendFormat": "P99"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineInterpolation": "smooth",
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.05 },
+              { "color": "red", "value": 0.1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["max", "mean", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "title": "Redis Command Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 28 },
+      "datasource": { "type": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(redis_client_duration_seconds_count[$__rate_interval]))",
+          "legendFormat": "Commands/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineInterpolation": "smooth",
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 15,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["max", "mean", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "title": "Redis Error Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 36 },
+      "datasource": { "type": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(redis_client_errors_total[$__rate_interval]))",
+          "legendFormat": "Errors/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineInterpolation": "smooth",
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 15,
+            "lineWidth": 2
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 0.1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["max", "mean", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "title": "Redis Slow Commands (>10ms)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+      "datasource": { "type": "prometheus" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(redis_client_duration_seconds_bucket[$__rate_interval])) by (db_operation, le)) > 0.01",
+          "legendFormat": "{{db_operation}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineInterpolation": "smooth",
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 10,
+            "lineWidth": 2
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["max", "mean", "lastNotNull"]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "title": "Redis Errors by Type",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
+      "datasource": { "type": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(rate(redis_client_errors_total[$__rate_interval])) by (db_operation, type)",
+          "legendFormat": "{{db_operation}} / {{type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "lineInterpolation": "smooth",
+            "showPoints": "auto",
+            "spanNulls": false,
+            "fillOpacity": 20,
             "lineWidth": 2
           }
         },

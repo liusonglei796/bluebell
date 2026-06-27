@@ -1,0 +1,138 @@
+groups:
+  - name: bluebell_alerts
+    interval: 1m
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          (
+            rate(bluebell_errors_total[5m])
+            /
+            rate(bluebell_http_request_duration_seconds_count[5m])
+            * 100
+          ) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High HTTP error rate ({{ $value | humanize }}%)"
+          description: |
+            Error rate is {{ $value | humanize }}% over 5 minutes (threshold: 5%).
+            Instance: {{ $labels.instance }}
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, rate(bluebell_http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 request latency ({{ $value | humanize }}s)"
+          description: |
+            P95 latency is {{ $value | humanize }}s over 5 minutes (threshold: 1s).
+            Instance: {{ $labels.instance }}
+      - alert: HighLatencyP99
+        expr: histogram_quantile(0.99, rate(bluebell_http_request_duration_seconds_bucket[5m])) > 3
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High P99 request latency ({{ $value | humanize }}s)"
+          description: |
+            P99 latency is {{ $value | humanize }}s over 5 minutes (threshold: 3s).
+            Instance: {{ $labels.instance }}
+      - alert: HighDatabaseConnections
+        expr: go_sql_db_in_use_connections / go_sql_db_max_open_connections > 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL connection pool utilization high ({{ $value | humanizePercentage }})"
+          description: |
+            MySQL connection pool is {{ $value | humanizePercentage }} utilized (threshold: 80%).
+            In-use: {{ $value }}, Instance: {{ $labels.instance }}
+      - alert: MySQLConnectionWaitHigh
+        expr: rate(go_sql_db_wait_duration_nanoseconds_total[5m]) / rate(go_sql_db_wait_count_total[5m]) > 1e7
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "MySQL connection wait time high ({{ $value | humanizeDuration }})"
+          description: |
+            Average time waiting for a MySQL connection is {{ $value | humanizeDuration }} (threshold: 10ms).
+            Connection pool may be saturated.
+            Instance: {{ $labels.instance }}
+      - alert: LowCacheHitRate
+        expr: |
+          (
+            bluebell_cache_hits_total
+            /
+            (bluebell_cache_hits_total + bluebell_cache_misses_total)
+          ) < 0.7
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate ({{ $value | humanizePercentage }})"
+          description: |
+            Cache hit rate is {{ $value | humanizePercentage }} (threshold: 70%).
+            Instance: {{ $labels.instance }}
+      - alert: HighMemoryUsage
+        expr: |
+          (
+            bluebell_process_resident_memory_bytes
+            /
+            bluebell_process_virtual_memory_max_bytes
+          ) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage ({{ $value | humanizePercentage }})"
+          description: |
+            Memory usage is {{ $value | humanizePercentage }} (threshold: 80%).
+            Instance: {{ $labels.instance }}
+      - alert: HighGoroutineCount
+        expr: bluebell_go_goroutines > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High goroutine count ({{ $value }})"
+          description: |
+            Goroutine count: {{ $value }} (threshold: 1000).
+            Possible goroutine leak detected.
+            Instance: {{ $labels.instance }}
+      - alert: RedisHighLatencyP95
+        expr: histogram_quantile(0.95, rate(redis_client_duration_seconds_bucket[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis P95 latency high ({{ $value | humanizeDuration }})"
+          description: |
+            Redis P95 operation latency is {{ $value | humanizeDuration }} over 5 minutes (threshold: 50ms).
+            Instance: {{ $labels.instance }}
+      - alert: RedisHighLatencyP99
+        expr: histogram_quantile(0.99, rate(redis_client_duration_seconds_bucket[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis P99 latency high ({{ $value | humanizeDuration }})"
+          description: |
+            Redis P99 operation latency is {{ $value | humanizeDuration }} over 5 minutes (threshold: 100ms).
+            Instance: {{ $labels.instance }}
+      - alert: RedisHighErrorRate
+        expr: |
+          (
+            rate(redis_client_errors_total[5m])
+            /
+            rate(redis_client_duration_seconds_count[5m])
+            * 100
+          ) > 1
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis error rate high ({{ $value | humanize }}%)"
+          description: |
+            Redis client error rate is {{ $value | humanize }}% over 5 minutes (threshold: 1%).
+            Instance: {{ $labels.instance }}

@@ -1,0 +1,15 @@
+# ============================================
+# 生产部署覆盖文件 (Production Override)
+# 用 ghcr.io 预构建镜像替代本地 build
+# 用法: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ============================================
+services:
+  # Go 后端 — 使用 ghcr.io 镜像
+  bluebell:
+    image: ghcr.io/liusonglei796/bluebell:latest
+    pull_policy: always
+
+  # 前端 — 使用 ghcr.io 镜像
+  frontend:
+    image: ghcr.io/liusonglei796/bluebell-frontend:latest
+    pull_policy: always

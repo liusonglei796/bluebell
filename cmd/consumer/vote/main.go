@@ -69,7 +69,7 @@ func main() {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
 
-	gormDB, err := database.Init(cfg)
+	gormDB, err := database.Init(cfg, bluebellotel.GetPrometheusRegistry())
 	if err != nil {
 		zap.L().Fatal("Init MySQL failed", zap.Error(err))
 	}

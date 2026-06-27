@@ -1,0 +1,91 @@
+// ============================================
+// Grafana Alloy 配置
+// 替代 OTel Collector，统一收集 traces/metrics/logs
+// 指标流: OTel SDK → Alloy → Mimir/Tempo/Loki
+// ============================================
+
+// OTLP 接收器 — 与 OTel SDK 兼容
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+// 批处理器 — 合并批量发送，减少网络开销
+otelcol.processor.batch "default" {
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.mimir.input]
+    logs    = [otelcol.processor.transform.dedup_trace_id.input]
+  }
+}
+
+// Transform Processor — 删除 log attributes 中的 TraceID，
+// 避免与 Loki 从 OTLP LogRecord 头部自动映射的 trace_id 重复
+otelcol.processor.transform "dedup_trace_id" {
+  error_mode = "ignore"
+
+  log_statements {
+    context = "log"
+    statements = [
+      "delete_key(attributes, \"TraceID\")",
+    ]
+  }
+
+  output {
+    logs = [otelcol.exporter.otlphttp.loki.input]
+  }
+}
+
+// Tempo 导出器 — traces 发送到 Tempo
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// Mimir 导出器 — metrics 发送到 Mimir (Prometheus remote write)
+otelcol.exporter.prometheus "mimir" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir:9009/api/v1/push"
+    tls_config {
+      insecure_skip_verify = true
+    }
+  }
+}
+
+// Loki 导出器 — logs 发送到 Loki
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://loki:3100/otlp"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// Prometheus scrape — 采集 Alloy 自身指标
+prometheus.scrape "self" {
+  targets = [{
+    __address__ = "127.0.0.1:12345",
+    job         = "grafana-alloy",
+  }]
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}

@@ -22,7 +22,6 @@ import (
 	redisrepo "bluebell/internal/infrastructure/persistence/redis"
 	"bluebell/internal/infrastructure/profiler"
 	"bluebell/internal/infrastructure/snowflake"
-	sse "bluebell/internal/infrastructure/sse"
 	"bluebell/internal/interfaces/http/handler"
 	"bluebell/internal/interfaces/http/router"
 
@@ -82,7 +81,7 @@ func main() {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
 
-	gormDB, err := database.Init(cfg)
+	gormDB, err := database.Init(cfg, bluebellotel.GetPrometheusRegistry())
 	if err != nil {
 		zap.L().Fatal("Init MySQL failed", zap.Error(err))
 	}
@@ -157,10 +156,6 @@ func main() {
 		appLogger,
 	)
 
-	// 创建 SSE Hub
-	sseHub := sse.NewHub()
-	go sseHub.Run(ctx)
-
 	// ========== 创建 Handler Provider（传入 port 接口） ==========
 	hp := handler.NewProvider(
 		userService,
@@ -173,7 +168,6 @@ func main() {
 		rdb,
 		searchClient,
 		cfg.Upload.Dir,
-		sseHub,
 	)
 
 	r, err := router.NewRouter(cfg.App.Mode, hp, cfg, tokenService, cacheRepos.TokenCache, rdb)
