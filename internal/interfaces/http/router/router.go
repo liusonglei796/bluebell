@@ -14,7 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 // NewRouter 初始化路由配置
@@ -39,7 +38,6 @@ func NewRouter(
 	}
 
 	r.Use(
-		otelgin.Middleware("bluebell"), // OpenTelemetry 链路追踪中间件
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
 		middleware.Cors(), // 跨域中间件

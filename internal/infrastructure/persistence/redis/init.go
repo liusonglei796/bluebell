@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -27,13 +26,7 @@ func Init(cfg *config.Config) (*redis.Client, error) {
 	})
 
 	// 启用 OpenTelemetry 追踪插件
-	if err := redisotel.InstrumentTracing(rdb); err != nil {
-		zap.L().Error("redisotel.InstrumentTracing failed", zap.Error(err))
-	}
 	// 启用 OpenTelemetry 指标插件
-	if err := redisotel.InstrumentMetrics(rdb); err != nil {
-		zap.L().Error("redisotel.InstrumentMetrics failed", zap.Error(err))
-	}
 
 	pingCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

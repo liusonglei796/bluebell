@@ -15,7 +15,6 @@ import (
 
 	// 错误处理
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/interfaces/http/render"
 
 	"github.com/gin-gonic/gin"
@@ -56,7 +55,6 @@ func (h *Handler) SignUpHandler(c *gin.Context) {
 		return
 	}
 
-	metrics.RecordSuccess(ctx, metrics.UsersRegistered)
 	render.HandleSuccess(c, nil)
 }
 
@@ -89,7 +87,6 @@ func (h *Handler) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	metrics.RecordSuccess(ctx, metrics.UsersLoggedIn)
 	render.HandleSuccess(c, map[string]interface{}{
 		"access_token":  aToken,
 		"refresh_token": rToken,
@@ -139,7 +136,6 @@ func (h *Handler) RefreshTokenHandler(c *gin.Context) {
 		return
 	}
 
-	metrics.RecordSuccess(ctx, metrics.TokenRefreshes)
 	render.HandleSuccess(c, map[string]string{
 		"access_token":  newAToken,
 		"refresh_token": newRToken,

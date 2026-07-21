@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"bluebell/internal/domain/entity"
-	"bluebell/internal/infrastructure/metrics"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,11 +32,8 @@ func classifyError(err error) (int, string) {
 
 // HandleError 根据领域层的错误类型，返回合适的 HTTP 状态码和原生的 JSON 响应
 func HandleError(c *gin.Context, err error) {
-	status, tag := classifyError(err)
+	status, _ := classifyError(err)
 
-	// 记录错误指标（无论是否能够映射到具体的 HTTP 状态码）
-	ctx := c.Request.Context()
-	metrics.RecordError(ctx, tag)
 
 	c.JSON(status, gin.H{"error": err.Error()})
 }

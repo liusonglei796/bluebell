@@ -7,7 +7,6 @@ import (
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.opentelemetry.io/otel"
 )
 
 // Publisher 生产者：只认信道，不认连接
@@ -28,8 +27,6 @@ func (p *Publisher) Send(ctx context.Context, exchange, routingKey string, msg i
 	}
 
 	// 注入 Trace 上下文到 Headers
-	headers := make(amqp.Table)
-	otel.GetTextMapPropagator().Inject(ctx, AmqpHeadersCarrier(headers))
 
 	return p.ch.PublishWithContext(ctx,
 		exchange,
@@ -37,7 +34,6 @@ func (p *Publisher) Send(ctx context.Context, exchange, routingKey string, msg i
 		false,
 		false,
 		amqp.Publishing{
-			Headers:      headers,
 			DeliveryMode: amqp.Transient,
 			ContentType:  "application/json",
 			Body:         body,

@@ -14,7 +14,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 )
 
 // Init 初始化 MySQL 连接，返回数据库连接实例
@@ -68,9 +67,6 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 	}
 
 	// 注册 OpenTelemetry GORM 插件，自动为 SQL 操作创建子 Span
-	if err := db.Use(otelgorm.NewPlugin()); err != nil {
-		zap.L().Error("register otelgorm plugin failed", zap.Error(err))
-	}
 
 	
 	sqlDB, err := db.DB()

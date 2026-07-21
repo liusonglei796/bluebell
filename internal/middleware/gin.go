@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"bluebell/internal/infrastructure/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"
@@ -30,17 +29,14 @@ func GinLogger() gin.HandlerFunc {
 			fields = append(fields, zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()))
 		}
 
-		// 使用 logger.WithContext(ctx) 获取带 trace_id 的 logger
-		ctx := c.Request.Context()
-		status := c.Writer.Status()
-		log := logger.WithContext(ctx)
-
+				status := c.Writer.Status()
+	
 		if status >= 500 {
-			log.Error("server error", fields...)
+			zap.L().Error("server error", fields...)
 		} else if status >= 400 {
-			log.Warn("client error", fields...)
+			zap.L().Warn("client error", fields...)
 		} else {
-			log.Info("http request", fields...)
+			zap.L().Info("http request", fields...)
 		}
 	}
 }

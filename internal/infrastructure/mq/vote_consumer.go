@@ -13,7 +13,6 @@ import (
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
-	"go.opentelemetry.io/otel"
 )
 
 // VoteConsumer 投票消息消费者
@@ -61,7 +60,6 @@ func (c *VoteConsumer) Start(ctx context.Context) error {
 
 func (c *VoteConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) error {
 	// 从 Headers 提取 Trace 上下文
-	ctx = otel.GetTextMapPropagator().Extract(ctx, AmqpHeadersCarrier(d.Headers))
 
 	var msg VoteMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {

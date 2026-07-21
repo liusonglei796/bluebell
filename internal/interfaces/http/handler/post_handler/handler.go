@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"bluebell/internal/application"
-	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
 	"bluebell/internal/infrastructure/persistence/mysql/model"
 	"bluebell/internal/infrastructure/translate"
@@ -73,7 +72,6 @@ func (h *Handler) CreatePostHandler(c *gin.Context) {
 		}
 	}
 
-	metrics.RecordSuccess(ctx, metrics.PostsCreated)
 	render.HandleSuccess(c, nil)
 }
 
@@ -209,7 +207,6 @@ func (h *Handler) PostVoteHandler(c *gin.Context) {
 		return
 	}
 
-	metrics.RecordSuccess(ctx, metrics.Votes)
 	render.HandleSuccess(c, nil)
 }
 
@@ -240,7 +237,6 @@ func (h *Handler) PostRemarkHandler(c *gin.Context) {
 		return
 	}
 
-	metrics.RecordSuccess(ctx, metrics.Comments)
 	render.HandleSuccess(c, nil)
 }
 

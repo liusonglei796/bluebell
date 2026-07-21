@@ -10,7 +10,6 @@ import (
 	"bluebell/internal/infrastructure/es"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"go.opentelemetry.io/otel"
 )
 
 // SyncConsumer ES 同步消费者
@@ -57,7 +56,6 @@ func (c *SyncConsumer) Start(ctx context.Context) error {
 
 func (c *SyncConsumer) handleDelivery(ctx context.Context, d amqp.Delivery) error {
 	// 从 Headers 提取 Trace 上下文
-	ctx = otel.GetTextMapPropagator().Extract(ctx, AmqpHeadersCarrier(d.Headers))
 
 	var msg SyncMessage
 	if err := json.Unmarshal(d.Body, &msg); err != nil {
