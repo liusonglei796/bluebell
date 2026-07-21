@@ -11,7 +11,6 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/mq"
-	bluebellotel "bluebell/internal/infrastructure/otel"
 	database "bluebell/internal/infrastructure/persistence/mysql"
 	redisrepo "bluebell/internal/infrastructure/persistence/redis"
 	"bluebell/internal/infrastructure/snowflake"
@@ -36,19 +35,6 @@ func main() {
 	}
 	defer zap.L().Sync()
 
-	// 初始化 OTel
-	ctx := context.Background()
-	otelShutdown, err := bluebellotel.InitOTEL(ctx, cfg.Otel)
-	if err != nil {
-		fmt.Printf("init otel failed, err:%v\n", err)
-		return
-	}
-	defer func() {
-		if err := otelShutdown(ctx); err != nil {
-			fmt.Printf("otel shutdown error: %v\n", err)
-		}
-	}()
-
 	if err := snowflake.Init(cfg); err != nil {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
@@ -64,7 +50,6 @@ func main() {
 		zap.L().Fatal("Init Redis failed", zap.Error(err))
 	}
 	defer redisrepo.Close(rdb)
-
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

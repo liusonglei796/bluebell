@@ -10,9 +10,7 @@ import (
 	"bluebell/internal/http_server"
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/metrics"
 	"bluebell/internal/infrastructure/mq"
-	bluebellotel "bluebell/internal/infrastructure/otel"
 	database "bluebell/internal/infrastructure/persistence/mysql"
 	redisrepo "bluebell/internal/infrastructure/persistence/redis"
 	"bluebell/internal/infrastructure/snowflake"
@@ -21,7 +19,6 @@ import (
 	"bluebell/internal/interfaces/http/router"
 
 	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.uber.org/zap"
 )
 
@@ -52,40 +49,12 @@ func main() {
 	// 设置 Gin 运行模式 — 强制 ReleaseMode（禁用调试日志和 Gin 默认日志）
 	gin.SetMode(gin.ReleaseMode)
 
-	// ====== 基础设施层：OpenTelemetry ======
-	// 初始化 OTel SDK（Traces + Metrics + Logs），必须在 Logger 之前
-	ctx := context.Background()
-	otelShutdown, err := bluebellotel.InitOTEL(ctx, cfg.Otel)
-	if err != nil {
-		fmt.Printf("init otel failed, err:%v\n", err)
-		return
-	}
-	defer func() {
-		if err := otelShutdown(ctx); err != nil {
-			fmt.Printf("otel shutdown error: %v\n", err)
-		}
-	}()
-
-	// 初始化自定义业务指标（MeterProvider 已设置，使用 no-op 回退）
-	serviceName := "bluebell"
-	if cfg.Otel != nil {
-		serviceName = cfg.Otel.ServiceName
-	}
-	if err := metrics.Init(serviceName); err != nil {
-		zap.L().Error("init custom metrics failed", zap.Error(err))
-	}
-
-	// 2. 初始化日志（集成 OTel 自动关联）
+	// 2. 初始化日志
 	if err := logger.Init(cfg, cfg.App.Mode); err != nil {
 		fmt.Printf("init logger failed, err:%v\n", err)
 		return
 	}
 	defer zap.L().Sync()
-
-	// 启动 Go 运行时指标采集（goroutine 数、内存使用等）
-	if err := runtime.Start(); err != nil {
-		zap.L().Error("failed to start runtime instrumentation", zap.Error(err))
-	}
 
 	// 初始化 snowflake
 	if err := snowflake.Init(cfg); err != nil {
@@ -106,7 +75,6 @@ func main() {
 	}
 	defer redisrepo.Close(rdb)
 
-
 	// 初始化 Validator
 	if err := translate.InitTrans(); err != nil {
 		zap.L().Fatal("init validator trans failed", zap.Error(err))
@@ -122,6 +90,8 @@ func main() {
 	// 启动 Gravity 热度分数定时刷新任务
 	cacheRepos.HotScoreRefresher.Start()
 	defer cacheRepos.HotScoreRefresher.Stop()
+
+	ctx := context.Background()
 
 	// ====== 基础设施层：ES / MQ ======
 

@@ -72,14 +72,6 @@ type esConfig struct {
 	Password  string   `mapstructure:"password"`
 }
 
-// OtelConfig OpenTelemetry 配置结构体
-type OtelConfig struct {
-	Enabled     bool   `mapstructure:"enabled"`
-	Endpoint    string `mapstructure:"endpoint"`
-	ServiceName string `mapstructure:"service_name"`
-}
-
-
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
 type Config struct {
@@ -93,7 +85,6 @@ type Config struct {
 	Timeout   *timeoutConfig   `mapstructure:"timeout"`
 	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
 	ES        *esConfig        `mapstructure:"es"`
-	Otel      *OtelConfig      `mapstructure:"otel"`
 }
 
 var atva atomic.Value

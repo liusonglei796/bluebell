@@ -12,7 +12,6 @@ import (
 	"bluebell/internal/infrastructure/es"
 	"bluebell/internal/infrastructure/logger"
 	"bluebell/internal/infrastructure/mq"
-	bluebellotel "bluebell/internal/infrastructure/otel"
 	"bluebell/internal/infrastructure/snowflake"
 
 	"go.uber.org/zap"
@@ -39,24 +38,10 @@ func main() {
 	// 程序退出前将缓冲区日志刷入磁盘
 	defer zap.L().Sync()
 
-	// 初始化 OTel
-	otelCtx := context.Background()
-	otelShutdown, err := bluebellotel.InitOTEL(otelCtx, cfg.Otel)
-	if err != nil {
-		fmt.Printf("init otel failed, err:%v\n", err)
-		return
-	}
-	defer func() {
-		if err := otelShutdown(otelCtx); err != nil {
-			fmt.Printf("otel shutdown error: %v\n", err)
-		}
-	}()
-
 	// 4. 初始化分布式 ID 生成器 Snowflake
 	if err := snowflake.Init(cfg); err != nil {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
-
 
 	// 6. 创建上下文，用于控制后续消费者的生命周期
 	ctx, cancel := context.WithCancel(context.Background())
