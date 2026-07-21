@@ -9,7 +9,7 @@ machine_id = 1
 
 [log]
 level = "info"
-file_name = "bluebell.log"
+file_name = "/app/logs/bluebell.log"
 max_size = 100
 max_backups = 7
 max_age = 30
@@ -50,7 +50,3 @@ addresses = ["http://elasticsearch:9200"]
 username = ""
 password = ""
 
-[otel]
-enabled = true
-endpoint = "otel-collector:4317"
-service_name = "bluebell"

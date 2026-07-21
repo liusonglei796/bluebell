@@ -52,7 +52,7 @@ es:
   username: ""
   password: ""
 
-otel:
   enabled: true
   endpoint: "localhost:4317"
   service_name: "bluebell"
+
