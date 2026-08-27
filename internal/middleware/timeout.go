@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"bluebell/internal/domain/entity"
+	"bluebell/internal/model"
 	"net/http"
 	"time"
 
@@ -18,5 +18,5 @@ func TimeoutMiddleware(timeoutDuration time.Duration) gin.HandlerFunc {
 
 // customTimeoutResponse 自定义超时响应
 func customTimeoutResponse(c *gin.Context) {
-	c.JSON(http.StatusServiceUnavailable, gin.H{"error": entity.ErrServerBusy.Error()})
+	c.JSON(http.StatusServiceUnavailable, gin.H{"error": model.ErrServerBusy.Error()})
 }

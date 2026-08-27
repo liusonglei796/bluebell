@@ -1,6 +1,6 @@
 # ============================================
 # 生产单机部署 (Single Server Production)
-# 包含完整服务栈: Go 后端 + 前端 + Nginx + 基础设施
+# 包含完整服务栈: Go API + Go Consumer + 前端 + Nginx + MySQL + Redis + RabbitMQ
 # 使用: docker compose up -d
 # ============================================
 services:
@@ -25,59 +25,37 @@ services:
   redis:
     image: redis:alpine
     container_name: bluebell_redis
+    command: ["redis-server", "--requirepass", "bluebell_redis_password_secure"]
     volumes:
       - ./data/redis:/data
     restart: always
     networks:
       - bluebell_net
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "bluebell_redis_password_secure", "ping"]
       interval: 5s
       timeout: 10s
       retries: 5
 
   rabbitmq:
-    image: rabbitmq:3.13-management-alpine
+    image: rabbitmq:3-management-alpine
     container_name: bluebell_rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: bluebell
-      RABBITMQ_DEFAULT_PASS: bluebell123
-    volumes:
-      - ./data/rabbitmq:/var/lib/rabbitmq
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "15672:15672" # RabbitMQ 管理控制台 (可选)
+    restart: always
     networks:
       - bluebell_net
-    restart: always
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
-      timeout: 10s
+      timeout: 15s
       retries: 5
 
-  elasticsearch:
-    image: elasticsearch:8.11.0
-    container_name: bluebell_elasticsearch
-    ports:
-      - "9200:9200"
-    environment:
-      - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms512m -Xmx512m
-      - xpack.security.enabled=false
-    volumes:
-      - ./data/elasticsearch:/usr/share/elasticsearch/data
-    networks:
-      - bluebell_net
-    restart: always
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-
-  # Go 后端应用
-  bluebell:
+  # Go 后端 API 服务 (Web API 进程)
+  bluebell_api:
     build:
       context: .
       dockerfile: Dockerfile
@@ -89,15 +67,35 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     networks:
       - bluebell_net
     restart: always
-    env_file:
-      - path: .env.prod
-        required: false
     volumes:
       - ./config.docker.toml:/app/config.toml:ro
       - ./logs/app:/app/logs
+
+  # Go 后端异步消费者服务 (独立后台 Worker 进程)
+  bluebell_consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bluebell_consumer
+    entrypoint: ["/app/bluebell_consumer", "-conf", "/app/config.toml"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - bluebell_net
+    restart: always
+    volumes:
+      - ./config.docker.toml:/app/config.toml:ro
+      - ./logs/consumer:/app/logs
 
   # 前端构建 (构建完成后自动退出)
   frontend:
@@ -108,28 +106,6 @@ services:
       - frontend_dist:/app/dist
     networks:
       - bluebell_net
-
-  # SLS 日志采集 (LoongCollector)
-  loongcollector:
-    image: aliyun-observability-release-registry.cn-heyuan.cr.aliyuncs.com/loongcollector/loongcollector:v3.0.12.0-25723a1-aliyun
-    container_name: bluebell_loongcollector
-    hostname: bluebell-lc
-    privileged: true
-    volumes:
-      - /:/logtail_host:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - ALIYUN_LOGTAIL_CONFIG=/etc/ilogtail/conf/cn-heyuan/ilogtail_config.json
-      - ALIYUN_LOGTAIL_USER_ID=1223229399378024
-      - ALIYUN_LOGTAIL_USER_DEFINED_ID=bluebell
-    restart: always
-    networks:
-      - bluebell_net
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "2"
 
   # Nginx 反向代理 + 前端静态服务
   nginx:
@@ -144,6 +120,7 @@ services:
       - frontend_dist:/usr/share/nginx/html:ro
     depends_on:
       - frontend
+      - bluebell_api
     networks:
       - bluebell_net
     restart: always

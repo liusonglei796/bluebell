@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>参考手册：数据库反范式与冗余字段决策准则</title>
+  <link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+  <div class="container">
+    <header class="lesson-header">
+      <span class="lesson-tag">Reference Sheet #0001</span>
+      <h1>数据库反范式与冗余字段决策准则</h1>
+      <p style="color: var(--text-muted);">核心原则：数据库范式保证写数据时的正确与无损；反范式冗余支撑高并发读请求的极速响应。</p>
+    </header>
+
+    <h2>一、 4 步决策判断树</h2>
+    <div class="card">
+      <ol>
+        <li><strong>业务读写比（Read/Write Ratio）是否极度读多写少？</strong>
+          <ul>
+            <li>读写比 &gt; 10:1（如社区刷帖、电商商品展示） $\rightarrow$ <strong>强烈考虑冗余</strong>。</li>
+            <li>写多读少或频繁更新（如日志流水、传感器上报） $\rightarrow$ <strong>坚决严禁冗余</strong>。</li>
+          </ul>
+        </li>
+        <li><strong>查询是否处于核心高频关键链路（P99 延迟敏感）？</strong>
+          <ul>
+            <li>首页信息流、列表单卡片、高频聚合统计 $\rightarrow$ <strong>必须避免多表 JOIN</strong>。</li>
+          </ul>
+        </li>
+        <li><strong>被冗余字段的“突变频率”与“修改代价”如何？</strong>
+          <ul>
+            <li><strong>几乎不改/天然不可变</strong>（如历史快照、订单生成时的商品标题与单价） $\rightarrow$ <strong>完美冗余候选</strong>。</li>
+            <li><strong>频繁修改</strong>（如用户签名、用户动态余额） $\rightarrow$ <strong>不宜冗余</strong>（会引发写放大与级联更新地狱）。</li>
+          </ul>
+        </li>
+        <li><strong>是否面临分库分表（Sharding）环境？</strong>
+          <ul>
+            <li>跨表跨库无法发起物理 JOIN $\rightarrow$ <strong>必须冗余 Sharding Key（如 `user_id` / `tenant_id`）</strong>。</li>
+          </ul>
+        </li>
+      </ol>
+    </div>
+
+    <h2>二、 冗余字段分类速查表</h2>
+    <table style="width: 100%; border-collapse: collapse; margin: 1.5rem 0; font-size: 0.95rem;">
+      <thead>
+        <tr style="background: #f1f5f9; border-bottom: 2px solid var(--border);">
+          <th style="padding: 0.75rem; text-align: left;">分类</th>
+          <th style="padding: 0.75rem; text-align: left;">典型字段案例</th>
+          <th style="padding: 0.75rem; text-align: left;">冗余收益</th>
+          <th style="padding: 0.75rem; text-align: left;">一致性维护策略</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.75rem; font-weight: 600;">1. 路由分片键</td>
+          <td style="padding: 0.75rem;"><code>post_bookmark.user_id</code><br><code>comment.post_id</code></td>
+          <td style="padding: 0.75rem;">避免广播全库，直达目标分片；支持单表主键/覆盖索引。</td>
+          <td style="padding: 0.75rem;">创建后不可变，无维护成本。</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.75rem; font-weight: 600;">2. 历史快照数据</td>
+          <td style="padding: 0.75rem;"><code>order_item.product_name</code><br><code>order_item.deal_price</code></td>
+          <td style="padding: 0.75rem;">即便商品后续改名降价，订单仍保留当时交易快照。</td>
+          <td style="padding: 0.75rem;">只读业务属性，天然不可变。</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.75rem; font-weight: 600;">3. 聚合计数器</td>
+          <td style="padding: 0.75rem;"><code>post.comment_count</code><br><code>folder.post_count</code></td>
+          <td style="padding: 0.75rem;">避免每次查询执行极其昂贵的 <code>COUNT(*)</code>。</td>
+          <td style="padding: 0.75rem;">本地事务原子自增/自减，配合定时异步离线对账校准。</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 0.75rem; font-weight: 600;">4. 稳定展示属性</td>
+          <td style="padding: 0.75rem;"><code>post.author_name</code><br><code>post.community_name</code></td>
+          <td style="padding: 0.75rem;">列表渲染无需 JOIN 用户表与社区表。</td>
+          <td style="padding: 0.75rem;">改名时通过 MQ 领域事件异步批量刷新。</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warning">
+      <strong>严禁冗余的红线区：</strong>
+      <ul>
+        <li><strong>强一致资产数据</strong>：用户账户可用余额、库存剩余数量（必须单点权威存储，避免脏读超卖）。</li>
+        <li><strong>大体量富文本</strong>：文章长内容、富媒体详情（会极大增加关联表的体积与单页行数限制）。</li>
+      </ul>
+    </div>
+
+    <div class="footer-nav">
+      <span>返回课程：<a href="../lessons/0001-when-to-denormalize-fields.html">第 0001 课</a></span>
+      <span>Mission 目标：<a href="../MISSION.md">MISSION.md</a></span>
+    </div>
+  </div>
+</body>
+</html>

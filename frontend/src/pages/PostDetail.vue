@@ -32,30 +32,38 @@
       <span class="text-gray-500">Post not found.</span>
     </div>
 
-    <!-- Remarks Section -->
+    <!-- Comments Section -->
     <div v-if="post" class="mt-8">
-      <h2 class="text-xl font-bold text-gray-900 mb-4">Comments</h2>
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Comments ({{ totalComments }})</h2>
       
       <!-- Add Comment -->
-      <form @submit.prevent="submitRemark" class="mb-8">
-        <textarea v-model="newRemark" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="What are your thoughts?"></textarea>
+      <form @submit.prevent="submitComment" class="mb-8">
+        <textarea v-model="newComment" rows="3" class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="What are your thoughts?"></textarea>
         <div class="mt-2 flex justify-end">
-          <button type="submit" :disabled="submittingRemark || !newRemark.trim()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
-            {{ submittingRemark ? 'Posting...' : 'Comment' }}
+          <button type="submit" :disabled="submittingComment || !newComment.trim()" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 disabled:opacity-50">
+            {{ submittingComment ? 'Posting...' : 'Comment' }}
           </button>
         </div>
       </form>
 
       <!-- Comment List -->
       <div class="space-y-4">
-        <div v-for="remark in remarks" :key="remark.id" class="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
+        <div v-for="comment in comments" :key="comment.id" class="bg-white p-4 border border-gray-200 rounded-lg shadow-sm">
           <div class="text-sm text-gray-500 mb-2">
-            <span class="font-medium text-gray-900">{{ remark.author_name || 'User ' + remark.author_id }}</span>
-            &bull; {{ new Date(remark.create_time).toLocaleString() }}
+            <span class="font-medium text-gray-900">{{ comment.author_name || 'User ' + comment.author_id }}</span>
+            &bull; {{ new Date(comment.created_at).toLocaleString() }}
           </div>
-          <p class="text-gray-800 whitespace-pre-wrap">{{ remark.content }}</p>
+          <p class="text-gray-800 whitespace-pre-wrap">{{ comment.content }}</p>
+
+          <!-- Sub Replies Preview -->
+          <div v-if="comment.sub_replies && comment.sub_replies.length > 0" class="mt-3 pl-4 border-l-2 border-gray-100 space-y-2 bg-gray-50 p-3 rounded">
+            <div v-for="reply in comment.sub_replies" :key="reply.id" class="text-sm">
+              <span class="font-medium text-gray-900">{{ reply.author_name }}: </span>
+              <span class="text-gray-700">{{ reply.content }}</span>
+            </div>
+          </div>
         </div>
-        <div v-if="remarks.length === 0" class="text-gray-500 text-sm">
+        <div v-if="comments.length === 0" class="text-gray-500 text-sm">
           No comments yet. Be the first to share your thoughts!
         </div>
       </div>
@@ -72,10 +80,11 @@ const route = useRoute();
 const router = useRouter();
 const postId = ref(Number(route.params.id));
 const post = ref<any>(null);
-const remarks = ref<any[]>([]);
+const comments = ref<any[]>([]);
+const totalComments = ref(0);
 const loading = ref(true);
-const newRemark = ref('');
-const submittingRemark = ref(false);
+const newComment = ref('');
+const submittingComment = ref(false);
 
 const fetchPost = async () => {
   try {
@@ -90,14 +99,22 @@ const fetchPost = async () => {
   }
 };
 
-const fetchRemarks = async () => {
+const fetchComments = async () => {
   try {
-    const res: any = await request.get(`/post/${postId.value}/remarks`);
-    if (res.code === 1000) {
-      remarks.value = res.data || [];
+    const res: any = await request.get('/comments', {
+      params: {
+        post_id: postId.value,
+        page: 1,
+        size: 50,
+        order: 'hot',
+      },
+    });
+    if (res.code === 1000 && res.data) {
+      comments.value = res.data.comments || [];
+      totalComments.value = res.data.total || 0;
     }
   } catch (err) {
-    console.error('Failed to fetch remarks', err);
+    console.error('Failed to fetch comments', err);
   }
 };
 
@@ -122,17 +139,20 @@ const vote = async (direction: number) => {
   }
 };
 
-const submitRemark = async () => {
-  if (!newRemark.value.trim()) return;
-  submittingRemark.value = true;
+const submitComment = async () => {
+  if (!newComment.value.trim()) return;
+  submittingComment.value = true;
   try {
-    const res: any = await request.post('/remark', {
+    const res: any = await request.post('/comment', {
       post_id: postId.value,
-      content: newRemark.value,
+      content: newComment.value,
+      root_id: 0,
+      parent_id: 0,
+      reply_to_uid: 0,
     });
     if (res.code === 1000) {
-      newRemark.value = '';
-      fetchRemarks(); // Refresh comments
+      newComment.value = '';
+      fetchComments(); // Refresh comments
     } else {
       alert(res.msg || 'Failed to post comment');
     }
@@ -143,12 +163,12 @@ const submitRemark = async () => {
       alert('Failed to post comment');
     }
   } finally {
-    submittingRemark.value = false;
+    submittingComment.value = false;
   }
 };
 
 onMounted(() => {
   fetchPost();
-  fetchRemarks();
+  fetchComments();
 });
 </script>

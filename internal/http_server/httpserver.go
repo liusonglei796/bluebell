@@ -3,13 +3,13 @@ package http_server
 import (
 	"context"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 // Run 启动 HTTP 服务并阻塞，直到收到退出信号后优雅关机

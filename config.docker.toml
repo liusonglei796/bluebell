@@ -4,7 +4,7 @@ port = 8080
 mode = "release"
 
 [snowflake]
-start_time = 1775539200000
+start_time = 1577836800000
 machine_id = 1
 
 [log]
@@ -26,9 +26,12 @@ max_idle_conns = 30
 [redis]
 host = "redis"
 port = 6379
-password = ""
+password = "bluebell_redis_password_secure"
 db_name = 1
-pool_size = 100
+pool_size = 200
+
+[rabbitmq]
+url = "amqp://guest:guest@rabbitmq:5672/"
 
 [ratelimit]
 fill_interval = "10ms"
@@ -38,15 +41,6 @@ capacity = 200
 timeout = "30s"
 
 [jwt]
-secret = "bluebell_secret_key_change_in_prod"
+secret = "bluebell_prod_super_secret_jwt_key_2026_x9f7a2"
 access_expiry = "120m"
 refresh_expiry = "168h"
-
-[rabbitmq]
-url = "amqp://bluebell:bluebell123@rabbitmq:5672/"
-
-[es]
-addresses = ["http://elasticsearch:9200"]
-username = ""
-password = ""
-

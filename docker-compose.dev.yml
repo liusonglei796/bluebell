@@ -40,26 +40,6 @@ services:
       timeout: 10s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    container_name: bluebell_rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    environment:
-      RABBITMQ_DEFAULT_USER: bluebell
-      RABBITMQ_DEFAULT_PASS: bluebell123
-    volumes:
-      - ./data/rabbitmq:/var/lib/rabbitmq
-    networks:
-      - bluebell_net
-    restart: always
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-
   elasticsearch:
     image: elasticsearch:8.11.0
     container_name: bluebell_elasticsearch

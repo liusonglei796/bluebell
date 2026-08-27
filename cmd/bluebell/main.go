@@ -1,23 +1,20 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 
 	"bluebell/internal/config"
-	"bluebell/internal/di"
+	"bluebell/internal/controller"
+	mysqldao "bluebell/internal/dao/mysql"
+	redisdao "bluebell/internal/dao/redis"
 	"bluebell/internal/http_server"
-	"bluebell/internal/infrastructure/es"
-	"bluebell/internal/infrastructure/logger"
-	"bluebell/internal/infrastructure/mq"
-	database "bluebell/internal/infrastructure/persistence/mysql"
-	redisrepo "bluebell/internal/infrastructure/persistence/redis"
-	"bluebell/internal/infrastructure/snowflake"
-	"bluebell/internal/infrastructure/translate"
-	"bluebell/internal/interfaces/http/handler"
-	"bluebell/internal/interfaces/http/router"
-
+	"bluebell/internal/logger"
+	"bluebell/internal/mq"
+	"bluebell/internal/router"
+	"bluebell/internal/service"
+	"bluebell/internal/snowflake"
+	"bluebell/internal/translate"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
@@ -61,133 +58,119 @@ func main() {
 		zap.L().Fatal("init snowflake failed", zap.Error(err))
 	}
 
-	// 3. 初始化 MySQL
-	gormDB, err := database.Init(cfg)
+	// 3. 初始化 MySQL / Redis
+	gormDB, err := mysqldao.Init(cfg)
 	if err != nil {
 		zap.L().Fatal("Init MySQL failed", zap.Error(err))
 	}
-	defer database.Close(gormDB)
+	defer mysqldao.Close(gormDB)
 
-	// 4. 初始化 Redis
-	rdb, err := redisrepo.Init(cfg)
+	rdb, err := redisdao.Init(cfg)
 	if err != nil {
 		zap.L().Fatal("Init Redis failed", zap.Error(err))
 	}
-	defer redisrepo.Close(rdb)
+	defer redisdao.Close(rdb)
 
 	// 初始化 Validator
 	if err := translate.InitTrans(); err != nil {
 		zap.L().Fatal("init validator trans failed", zap.Error(err))
 	}
 
-	// ====== 完整的 DI 流程 ======
-	// 按照分层架构从下往上依次注入依赖
+	// ====== 依赖装配（自下而上） ======
 
-	// 1) 基础设施层：创建 Repository 实例（数据访问层）
-	repositoriesUOW := database.NewRepositories(gormDB)
-	cacheRepos := redisrepo.NewRepositories(rdb)
+	// 1) DAO 层
+	postDao := mysqldao.NewPostDao(gormDB)
+	communityDao := mysqldao.NewCommunityDao(gormDB)
+	userDao := mysqldao.NewUserDao(gormDB)
+	voteDao := mysqldao.NewVoteDao(gormDB)
+	commentDao := mysqldao.NewCommentDao(gormDB)
+	relationDao := mysqldao.NewRelationDao(gormDB)
+	notifDao := mysqldao.NewNotificationDao(gormDB)
+	bookmarkDao := mysqldao.NewBookmarkDao(gormDB)
+	tagDao := mysqldao.NewTagDao(gormDB)
+
+	postCache, refresher := redisdao.NewPostCacheWithRefresher(rdb)
+	tokenCache := redisdao.NewUserTokenCache(rdb)
+	relationCache := redisdao.NewUserRelationCache(rdb)
+	notifCache := redisdao.NewNotificationCache(rdb)
+	bookmarkCache := redisdao.NewBookmarkCache(rdb)
+	feedCache := redisdao.NewFeedCache(rdb)
+	pinCache := redisdao.NewPinCache(rdb)
 
 	// 启动 Gravity 热度分数定时刷新任务
-	cacheRepos.HotScoreRefresher.Start()
-	defer cacheRepos.HotScoreRefresher.Stop()
+	refresher.Start()
+	defer refresher.Stop()
 
-	ctx := context.Background()
-
-	// ====== 基础设施层：ES / MQ ======
-
-	// 初始化 Elasticsearch 客户端
-	esClient, err := es.NewClient(cfg)
+	// 启动 Redis 6.0+ Client-Side Caching (BCAST 广播追踪模式)
+	localPostCache := redisdao.NewLocalPostCache()
+	bcastTracker := redisdao.NewBcastTracker(rdb, localPostCache)
+	if err := bcastTracker.Start(); err != nil {
+		zap.L().Warn("start redis bcast tracker warning", zap.Error(err))
+	}
+	defer bcastTracker.Stop()
+	// 2) MQ & 事件总线（生产者）
+	amqpURL := ""
+	if cfg.RabbitMQ != nil {
+		amqpURL = cfg.RabbitMQ.URL
+	}
+	eventBus, err := mq.NewEventBus(amqpURL)
 	if err != nil {
-		zap.L().Error("init ES client failed", zap.Error(err))
-		esClient = nil
-	} else {
-		if err := esClient.CreatePostIndex(ctx); err != nil {
-			zap.L().Error("create ES post index failed", zap.Error(err))
-		}
+		zap.L().Warn("init event bus warning", zap.Error(err))
 	}
+	defer eventBus.Close()
 
-	// ====== RabbitMQ 手动挡初始化 ======
-	// (1) 建立物理连接
-	conn, err := mq.Dial(cfg.RabbitMQ.URL)
-	if err != nil {
-		zap.L().Error("init MQ failed", zap.Error(err))
-		conn = nil
-	}
-
-	var publisher *mq.Publisher
-	if conn != nil {
-		// (2) 装修资源：临时信道声明 Exchange 和 Queue
-		setupCh, err := conn.Channel()
-		if err != nil {
-			zap.L().Fatal("create setup channel failed", zap.Error(err))
-		}
-		if err := mq.SetupResources(setupCh); err != nil {
-			zap.L().Fatal("setup rabbitmq resources failed", zap.Error(err))
-		}
-		setupCh.Close()
-
-		// (3) 发布信道：给生产者用
-		pubCh, err := conn.Channel()
-		if err != nil {
-			zap.L().Fatal("create publish channel failed", zap.Error(err))
-		}
-		defer pubCh.Close()
-		publisher = mq.NewPublisher(pubCh)
-	}
-
-	// 2) 业务逻辑层：创建 Service 实例
-	services := di.NewServices(repositoriesUOW, cacheRepos, publisher, esClient, cfg)
-
-	// 3) 表现层：创建 Handler 实例
-	handlerProvider := handler.NewProvider(
-		services.User,
-		services.Post,
-		services.Community,
-		publisher,
+	// 3) Service 层
+	postSvc := service.NewPostService(
+		postDao,
+		postCache,
+		localPostCache,
+		voteDao,
+		commentDao,
+		tagDao,
+		pinCache,
+		bookmarkCache,
+		relationDao,
+		feedCache,
+		eventBus,
+		communityDao,
+		userDao,
 	)
+	communitySvc := service.NewCommunityService(communityDao, userDao)
+	userSvc := service.NewUserService(userDao, tokenCache, cfg)
+	commentSvc := service.NewCommentService(commentDao, postDao, userDao, postCache, eventBus)
+	relationSvc := service.NewRelationService(relationDao, userDao, relationCache, eventBus)
+	notifSvc := service.NewNotificationService(notifDao, notifCache, userDao)
+	bookmarkSvc := service.NewBookmarkService(bookmarkDao, postDao, bookmarkCache, postSvc)
+	tagSvc := service.NewTagService(tagDao, communityDao, userDao)
 
-	// 4) 创建并启动 MQ 消费者
-	if conn != nil {
-		// 消费信道：给投票消费者用
-		voteCh, err := conn.Channel()
-		if err != nil {
-			zap.L().Fatal("create vote consumer channel failed", zap.Error(err))
-		}
-		defer voteCh.Close()
-		voteConsumer := mq.NewVoteConsumer(voteCh, repositoriesUOW.Vote, rdb)
-		go func() {
-			if err := voteConsumer.Start(ctx); err != nil {
-				zap.L().Error("vote consumer exited", zap.Error(err))
-			}
-		}()
+	// 4) Controller 层
+	userController := controller.NewUserController(userSvc)
+	postController := controller.NewPostController(postSvc)
+	communityController := controller.NewCommunityController(communitySvc)
+	commentController := controller.NewCommentController(commentSvc)
+	relationController := controller.NewRelationController(relationSvc)
+	notifController := controller.NewNotificationController(notifSvc)
+	bookmarkController := controller.NewBookmarkController(bookmarkSvc)
+	tagController := controller.NewTagController(tagSvc)
 
-		if esClient != nil {
-			// 消费信道：给搜索消费者用
-			searchCh, err := conn.Channel()
-			if err != nil {
-				zap.L().Fatal("create search consumer channel failed", zap.Error(err))
-			}
-			defer searchCh.Close()
-			esConsumer := mq.NewSyncConsumer(searchCh, esClient)
-			go func() {
-				if err := esConsumer.Start(ctx); err != nil {
-					zap.L().Error("sync consumer exited", zap.Error(err))
-				}
-			}()
-		}
-	}
-
-	// 5) 路由层：初始化路由，注入 Handler
-	r, err := router.NewRouter(cfg.App.Mode, handlerProvider, cfg, cacheRepos.TokenCache)
+	// 5) 路由层：初始化路由，注入 Controller
+	r, err := router.NewRouter(
+		cfg.App.Mode,
+		userController,
+		postController,
+		communityController,
+		commentController,
+		relationController,
+		notifController,
+		bookmarkController,
+		tagController,
+		cfg,
+		tokenCache,
+	)
 	if err != nil {
 		zap.L().Fatal("init router failed", zap.Error(err))
 	}
 
-	// 6. 启动 HTTP 服务（含优雅关机）
+	// 6) 启动 HTTP 服务（含优雅关机）
 	http_server.Run(r, cfg.App.Port)
-
-	// HTTP 服务已关闭，关闭 MQ 连接
-	if conn != nil {
-		conn.Close()
-	}
 }

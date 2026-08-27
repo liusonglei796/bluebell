@@ -29,8 +29,8 @@ func GinLogger() gin.HandlerFunc {
 			fields = append(fields, zap.String("errors", c.Errors.ByType(gin.ErrorTypePrivate).String()))
 		}
 
-				status := c.Writer.Status()
-	
+		status := c.Writer.Status()
+
 		if status >= 500 {
 			zap.L().Error("server error", fields...)
 		} else if status >= 400 {

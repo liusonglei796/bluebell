@@ -9,14 +9,14 @@ import (
 	"github.com/spf13/viper"
 )
 
-type appConfig struct {
+type AppConfig struct {
 	Name    string `mapstructure:"name"`
 	Mode    string `mapstructure:"mode"`
 	Version string `mapstructure:"version"`
 	Port    int    `mapstructure:"port"`
 }
 
-type logConfig struct {
+type LogConfig struct {
 	Level      string `mapstructure:"level"`
 	FileName   string `mapstructure:"file_name"`
 	MaxSize    int    `mapstructure:"max_size"`
@@ -24,7 +24,7 @@ type logConfig struct {
 	MaxAge     int    `mapstructure:"max_age"`
 }
 
-type mysqlConfig struct {
+type MysqlConfig struct {
 	Host         string `mapstructure:"host"`
 	Port         int    `mapstructure:"port"`
 	User         string `mapstructure:"user"`
@@ -34,7 +34,7 @@ type mysqlConfig struct {
 	MaxIdleConns int    `mapstructure:"max_idle_conns"`
 }
 
-type redisConfig struct {
+type RedisConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`
 	Password string `mapstructure:"password"`
@@ -42,17 +42,13 @@ type redisConfig struct {
 	PoolSize int    `mapstructure:"pool_size"`
 }
 
-type rateLimitConfig struct {
+type RateLimitConfig struct {
 	FillInterval string `mapstructure:"fill_interval"`
 	Capacity     int64  `mapstructure:"capacity"`
 }
 
-type timeoutConfig struct {
+type TimeoutConfig struct {
 	Timeout string `mapstructure:"timeout"`
-}
-
-type rabbitmqConfig struct {
-	URL string `mapstructure:"url"`
 }
 
 type SnowflakeConfig struct {
@@ -60,31 +56,28 @@ type SnowflakeConfig struct {
 	MachineID int64 `mapstructure:"machine_id"`
 }
 
-type jwtConfig struct {
+type JWTConfig struct {
 	Secret        string `mapstructure:"secret"`
 	AccessExpiry  string `mapstructure:"access_expiry"`
 	RefreshExpiry string `mapstructure:"refresh_expiry"`
 }
 
-type esConfig struct {
-	Addresses []string `mapstructure:"addresses"`
-	Username  string   `mapstructure:"username"`
-	Password  string   `mapstructure:"password"`
+type RabbitMQConfig struct {
+	URL string `mapstructure:"url"`
 }
 
 // Config 全局配置结构体
 // 使用指针类型以区分配置缺失和零值
 type Config struct {
-	App       *appConfig       `mapstructure:"app"`
-	Mysql     *mysqlConfig     `mapstructure:"mysql"`
-	Redis     *redisConfig     `mapstructure:"redis"`
-	Log       *logConfig       `mapstructure:"log"`
+	App       *AppConfig       `mapstructure:"app"`
+	Mysql     *MysqlConfig     `mapstructure:"mysql"`
+	Redis     *RedisConfig     `mapstructure:"redis"`
+	RabbitMQ  *RabbitMQConfig  `mapstructure:"rabbitmq"`
+	Log       *LogConfig       `mapstructure:"log"`
 	Snowflake *SnowflakeConfig `mapstructure:"snowflake"`
-	RateLimit *rateLimitConfig `mapstructure:"ratelimit"`
-	JWT       *jwtConfig       `mapstructure:"jwt"`
-	Timeout   *timeoutConfig   `mapstructure:"timeout"`
-	RabbitMQ  *rabbitmqConfig  `mapstructure:"rabbitmq"`
-	ES        *esConfig        `mapstructure:"es"`
+	RateLimit *RateLimitConfig `mapstructure:"ratelimit"`
+	JWT       *JWTConfig       `mapstructure:"jwt"`
+	Timeout   *TimeoutConfig   `mapstructure:"timeout"`
 }
 
 var atva atomic.Value
