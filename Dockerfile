@@ -6,7 +6,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/bluebell_app ./cmd/bluebell
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/bluebell_app ./cmd/api
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /app/bluebell_consumer ./cmd/consumer
 
 FROM alpine:latest
