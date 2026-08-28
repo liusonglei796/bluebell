@@ -3,6 +3,7 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"bluebell/internal/dao/mysql"
 	"bluebell/internal/dao/redis"
@@ -88,10 +89,94 @@ func (c *WorkersContainer) handleNotificationQueue(ctx context.Context, raw *eve
 }
 
 func (c *WorkersContainer) handleFeedQueue(ctx context.Context, raw *event.RawEvent) error {
+	switch raw.EventType {
+	case event.EventTypePostPublished:
+		return c.handleFeedPostPublished(ctx, raw)
+	case event.EventTypeUserFollowed:
+		return c.handleFeedUserFollowed(ctx, raw)
+	}
 	return nil
 }
 
 func (c *WorkersContainer) handleCounterQueue(ctx context.Context, raw *event.RawEvent) error {
+	switch raw.EventType {
+	case event.EventTypeVoteCast:
+		return c.handleCounterVoteCast(ctx, raw)
+	}
+	return nil
+}
+
+// handleFeedPostPublished 当发布新帖时，异步推送到所有在线/活跃粉丝的 Feed 流 (Push 模式)
+func (c *WorkersContainer) handleFeedPostPublished(ctx context.Context, raw *event.RawEvent) error {
+	var payload event.PostPublishedEvent
+	if err := json.Unmarshal(raw.Payload, &payload); err != nil {
+		return err
+	}
+
+	followerIDs, _, err := c.relationDao.GetFollowerList(ctx, payload.AuthorID, 1, 1000)
+	if err != nil || len(followerIDs) == 0 {
+		return nil
+	}
+
+	now := time.Now().Unix()
+	for _, followerID := range followerIDs {
+		_ = c.feedCache.SetUserFeed(ctx, followerID, []int64{payload.PostID}, []int64{now}, 10*time.Minute)
+	}
+
+	return nil
+}
+
+// handleFeedUserFollowed 当关注新用户时，将新关注者近期的动态写入关注者的 Feed 流
+func (c *WorkersContainer) handleFeedUserFollowed(ctx context.Context, raw *event.RawEvent) error {
+	var payload event.UserFollowedEvent
+	if err := json.Unmarshal(raw.Payload, &payload); err != nil {
+		return err
+	}
+
+	if payload.Action != "follow" || payload.FollowerID == payload.FollowingID {
+		return nil
+	}
+
+	// 异步拉取被关注者近期的帖子并写入关注者的 Feed 流
+	posts, err := c.postDao.GetPostListByAuthorIDs(ctx, []int64{payload.FollowingID}, 20)
+	if err != nil || len(posts) == 0 {
+		return nil
+	}
+
+	postIDs := make([]int64, len(posts))
+	timestamps := make([]int64, len(posts))
+	for i, p := range posts {
+		postIDs[i] = int64(p.ID)
+		timestamps[i] = p.CreatedAt.Unix()
+	}
+
+	_ = c.feedCache.SetUserFeed(ctx, payload.FollowerID, postIDs, timestamps, 10*time.Minute)
+	return nil
+}
+
+// handleCounterVoteCast 异步消费投票事件记录及同步统计
+func (c *WorkersContainer) handleCounterVoteCast(ctx context.Context, raw *event.RawEvent) error {
+	var payload event.VoteCastEvent
+	if err := json.Unmarshal(raw.Payload, &payload); err != nil {
+		return err
+	}
+
+	// 消费去重防护
+	const group = "counter_worker"
+	ok, err := c.dedupCache.AcquireEventLock(ctx, group, raw.EventID, 60*time.Second)
+	if err != nil || !ok {
+		return nil
+	}
+	defer func() {
+		_ = c.dedupCache.MarkEventDone(ctx, group, raw.EventID, 24*time.Hour)
+	}()
+
+	zap.L().Info("consumed vote event for counter aggregation",
+		zap.Int64("post_id", payload.PostID),
+		zap.Int64("user_id", payload.UserID),
+		zap.Int8("direction", payload.Direction),
+	)
+
 	return nil
 }
 
@@ -223,8 +308,4 @@ func (c *WorkersContainer) handlePostPublished(ctx context.Context, raw *event.R
 	}
 
 	return nil
-}
-
-func (c *WorkersContainer) Close() {
-	// Worker 清理工作
 }

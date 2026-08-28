@@ -25,6 +25,14 @@ func Init(cfg *config.Config) (*goredis.Client, error) {
 		Password: redisCfg.Password,
 		DB:       redisCfg.DB,
 		PoolSize: redisCfg.PoolSize,
+		// 原生客户端缓存（Client-Side Caching）：RESP3 + 库内分片近似-LRU 本地缓存。
+		// 命中走进程内 L1（0 RTT），失效由 Redis CLIENT TRACKING 自动精准推送，
+		// 取代原先手搓的 LocalPostCache + BcastTracker。
+		Protocol: 3,
+		ClientSideCache: goredis.NewLocalCache(goredis.CacheConfig{
+			MaxEntries:    10000,
+			MaxStaleness: 30 * time.Second,
+		}),
 	})
 
 	pingCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

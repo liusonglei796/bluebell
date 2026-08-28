@@ -101,13 +101,6 @@ func main() {
 	refresher.Start()
 	defer refresher.Stop()
 
-	// 启动 Redis 6.0+ Client-Side Caching (BCAST 广播追踪模式)
-	localPostCache := redisdao.NewLocalPostCache()
-	bcastTracker := redisdao.NewBcastTracker(rdb, localPostCache)
-	if err := bcastTracker.Start(); err != nil {
-		zap.L().Warn("start redis bcast tracker warning", zap.Error(err))
-	}
-	defer bcastTracker.Stop()
 	// 2) MQ & 事件总线（生产者）
 	amqpURL := ""
 	if cfg.RabbitMQ != nil {
@@ -123,7 +116,6 @@ func main() {
 	postSvc := service.NewPostService(
 		postDao,
 		postCache,
-		localPostCache,
 		voteDao,
 		commentDao,
 		tagDao,

@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
+
 // EventPublisher 事件发布者接口
 type EventPublisher interface {
 	Publish(ctx context.Context, eventType string, eventID string, actorID int64, payload interface{}) error

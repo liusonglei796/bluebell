@@ -27,7 +27,6 @@ import (
 type PostService struct {
 	postDao       *mysql.PostDao
 	postCache     *redis.PostCache
-	localCache    *redis.LocalPostCache
 	voteDao       *mysql.VoteDao
 	commentDao    *mysql.CommentDao
 	tagDao        *mysql.TagDao
@@ -44,7 +43,6 @@ type PostService struct {
 func NewPostService(
 	postDao *mysql.PostDao,
 	postCache *redis.PostCache,
-	localCache *redis.LocalPostCache,
 	voteDao *mysql.VoteDao,
 	commentDao *mysql.CommentDao,
 	tagDao *mysql.TagDao,
@@ -56,13 +54,9 @@ func NewPostService(
 	communityDao *mysql.CommunityDao,
 	userDao *mysql.UserDao,
 ) *PostService {
-	if localCache == nil {
-		localCache = redis.NewLocalPostCache()
-	}
 	return &PostService{
 		postDao:       postDao,
 		postCache:     postCache,
-		localCache:    localCache,
 		voteDao:       voteDao,
 		commentDao:    commentDao,
 		tagDao:        tagDao,
@@ -165,61 +159,44 @@ func (s *PostService) CreatePost(ctx context.Context, p *postreq.CreatePostReque
 	return postID, nil
 }
 
-// FetchPostsWithCache 通过 Redis 实体缓存 (Plan 2) + MySQL 单表冗余兜底 (Plan 1) 高性能获取帖子列表 DTO
-// FetchPostsMultiTier 三级缓存（L1 本地内存 -> L2 Redis -> L3 MySQL）获取帖子基础数据
+// FetchPostsMultiTier 通过 Redis 原生客户端缓存(CSC) + MySQL 单表冗余兜底(Plan 1)
+// 高性能获取帖子列表 DTO。L1(进程内 CSC) 与 L2(Redis) 合并为一次 rdb.Get：命中 L1 为
+// 0 RTT，否则回 L2(GET)；失效由 Redis CLIENT TRACKING 自动精准推送，无需手动维护本地 map。
 func (s *PostService) FetchPostsMultiTier(ctx context.Context, orderedIDs []string) map[string]*postResp.DetailResponse {
 	hitMap := make(map[string]*postResp.DetailResponse, len(orderedIDs))
 	if len(orderedIDs) == 0 {
 		return hitMap
 	}
 
-	var l1MissedIDs []string
-	// 1. 【L1 本地内存缓存 (0 网络 RTT)】
+	var dbMissedIDs []string
+	// L1(进程内 CSC) + L2(Redis) 合并层：rdb.Get 自动走客户端缓存
 	for _, id := range orderedIDs {
-		if s.localCache != nil {
-			if item, ok := s.localCache.Get(id); ok && item != nil {
-				hitMap[id] = item
-				continue
-			}
-		}
-		l1MissedIDs = append(l1MissedIDs, id)
-	}
-
-	// 2. 【L2 Redis 分布式实体缓存】
-	var l2MissedIDs []string
-	if len(l1MissedIDs) > 0 {
-		l2Hits, missed, err := s.postCache.MGetPostDetails(ctx, l1MissedIDs)
+		item, err := s.postCache.GetPostDetail(ctx, id)
 		if err != nil {
-			zap.L().Warn("postCache.MGetPostDetails warning, fallback to DB", zap.Error(err))
-			l2MissedIDs = l1MissedIDs
-		} else {
-			l2MissedIDs = missed
-			for id, item := range l2Hits {
-				hitMap[id] = item
-				if s.localCache != nil {
-					s.localCache.Set(id, item, 10*time.Second) // 回填 L1 本地缓存
-				}
-			}
+			zap.L().Warn("postCache.GetPostDetail warning, fallback to DB", zap.Error(err))
+			dbMissedIDs = append(dbMissedIDs, id)
+			continue
 		}
+		if item == nil {
+			dbMissedIDs = append(dbMissedIDs, id) // redis.Nil → 未命中
+			continue
+		}
+		hitMap[id] = item
 	}
 
-	// 3. 【L3 MySQL 反范式单表极速兜底 (0 JOIN)】
-	if len(l2MissedIDs) > 0 {
-		dbPosts, err := s.postDao.GetPostListByIDsSingleTable(ctx, l2MissedIDs)
+	// L3 MySQL 反范式单表极速兜底 (0 JOIN)
+	if len(dbMissedIDs) > 0 {
+		dbPosts, err := s.postDao.GetPostListByIDsSingleTable(ctx, dbMissedIDs)
 		if err != nil || len(dbPosts) == 0 {
-			dbPosts, err = s.postDao.GetPostListByIDsWithPreload(ctx, l2MissedIDs)
+			dbPosts, err = s.postDao.GetPostListByIDsWithPreload(ctx, dbMissedIDs)
 		}
 		if err != nil {
 			zap.L().Error("fetch missed posts from DB failed", zap.Error(err))
 		} else if len(dbPosts) > 0 {
-			formattedDB := s.FormatPostListDTOs(ctx, dbPosts, l2MissedIDs, 0)
-			// 同步回填 L2 与 L1
-			_ = s.postCache.SetPostDetails(ctx, formattedDB, 24*time.Hour)
+			formattedDB := s.FormatPostListDTOs(ctx, dbPosts, dbMissedIDs, 0)
+			_ = s.postCache.SetPostDetails(ctx, formattedDB, 24*time.Hour) // 回填 L2(Redis)
 			for _, item := range formattedDB {
-				hitMap[item.ID] = item
-				if s.localCache != nil {
-					s.localCache.Set(item.ID, item, 10*time.Second)
-				}
+				hitMap[item.ID] = item // 本次直接返回；L1(CSC) 下次 rdb.Get 自动填充
 			}
 		}
 	}
@@ -262,30 +239,35 @@ func (s *PostService) HydrateAndRerankPosts(ctx context.Context, orderedIDs []st
 	}
 
 	// 4. 内存中执行多维复合重排序 (In-Memory Rerank)
+	return rerankPosts(res, order)
+}
+
+// rerankPosts 内存中执行多维复合重排序：置顶优先 -> 热度/时间降序。
+// 纯函数（输入需已按 ZSet 顺序装配好动态字段），便于单测。
+func rerankPosts(items []*postResp.DetailResponse, order string) []*postResp.DetailResponse {
 	if order == postreq.OrderScore {
 		// 动态 Gravity 热度重排：置顶优先 -> 实时衰减分数降序 -> 创建时间降序
-		sort.SliceStable(res, func(i, j int) bool {
-			if res[i].IsPinned != res[j].IsPinned {
-				return res[i].IsPinned
+		sort.SliceStable(items, func(i, j int) bool {
+			if items[i].IsPinned != items[j].IsPinned {
+				return items[i].IsPinned
 			}
-			scoreI := redis.CalculateGravityScore(res[i].VoteNum, 0, res[i].CreateTime)
-			scoreJ := redis.CalculateGravityScore(res[j].VoteNum, 0, res[j].CreateTime)
+			scoreI := redis.CalculateGravityScore(items[i].VoteNum, 0, items[i].CreateTime)
+			scoreJ := redis.CalculateGravityScore(items[j].VoteNum, 0, items[j].CreateTime)
 			if scoreI != scoreJ {
 				return scoreI > scoreJ
 			}
-			return res[i].CreateTime.After(res[j].CreateTime)
+			return items[i].CreateTime.After(items[j].CreateTime)
 		})
 	} else {
 		// 时间序：置顶优先 -> 创建时间降序
-		sort.SliceStable(res, func(i, j int) bool {
-			if res[i].IsPinned != res[j].IsPinned {
-				return res[i].IsPinned
+		sort.SliceStable(items, func(i, j int) bool {
+			if items[i].IsPinned != items[j].IsPinned {
+				return items[i].IsPinned
 			}
-			return res[i].CreateTime.After(res[j].CreateTime)
+			return items[i].CreateTime.After(items[j].CreateTime)
 		})
 	}
-
-	return res
+	return items
 }
 
 // GetPostByID 查询单个帖子详情（三级缓存 + 动态水合）
@@ -383,10 +365,8 @@ func (s *PostService) DeletePost(ctx context.Context, postID int64, userID int64
 		return model.Wrap(model.ErrServerBusy, err)
 	}
 
-	// 清理多级缓存 (L1 + L2)
-	if s.localCache != nil {
-		s.localCache.Delete(postIDStr)
-	}
+	// 清理缓存：DeletePost 触发的 Redis DEL 会经 CLIENT TRACKING 自动失效进程内 L1(CSC)，
+	// 无需手动维护本地 map。
 	if err := s.postCache.DeletePost(ctx, postID, post.CommunityID); err != nil {
 		zap.L().Error("postCache.DeletePost failed",
 			zap.Int64("post_id", postID),

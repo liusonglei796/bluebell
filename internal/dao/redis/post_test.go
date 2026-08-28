@@ -226,23 +226,43 @@ func TestPostDetailCache_MGetAndSet(t *testing.T) {
 	err := cache.SetPostDetails(ctx, []*postResp.DetailResponse{p1, p2}, 1*time.Hour)
 	require.NoError(t, err)
 
-	// 2. MGet 查询 9001, 9002, 9003 (9003 未命中)
-	hitMap, missedIDs, err := cache.MGetPostDetails(ctx, []string{"9001", "9002", "9003"})
-	require.NoError(t, err)
-	assert.Len(t, hitMap, 2)
+	// 2. 单键查询 9001, 9002, 9003 (9003 未命中)
+	ids := []string{"9001", "9002", "9003"}
+	var got []*postResp.DetailResponse
+	var missedIDs []string
+	for _, id := range ids {
+		item, err := cache.GetPostDetail(ctx, id)
+		require.NoError(t, err)
+		if item == nil {
+			missedIDs = append(missedIDs, id)
+			continue
+		}
+		got = append(got, item)
+	}
+	assert.Len(t, got, 2)
 	assert.Equal(t, []string{"9003"}, missedIDs)
-	assert.Equal(t, "Post 1", hitMap["9001"].Title)
-	assert.Equal(t, "Alice", hitMap["9001"].AuthorName)
-	assert.Equal(t, []string{"Go", "Concurrency"}, hitMap["9001"].Tags)
-	assert.Equal(t, "Post 2", hitMap["9002"].Title)
+	assert.Equal(t, "Post 1", got[0].Title)
+	assert.Equal(t, "Alice", got[0].AuthorName)
+	assert.Equal(t, []string{"Go", "Concurrency"}, got[0].Tags)
+	assert.Equal(t, "Post 2", got[1].Title)
 
 	// 3. 删除 9001 缓存
 	err = cache.DeletePostDetailCache(ctx, "9001")
 	require.NoError(t, err)
 
-	hitMap2, missedIDs2, err := cache.MGetPostDetails(ctx, []string{"9001", "9002"})
-	require.NoError(t, err)
-	assert.Len(t, hitMap2, 1)
+	ids2 := []string{"9001", "9002"}
+	var got2 []*postResp.DetailResponse
+	var missedIDs2 []string
+	for _, id := range ids2 {
+		item, err := cache.GetPostDetail(ctx, id)
+		require.NoError(t, err)
+		if item == nil {
+			missedIDs2 = append(missedIDs2, id)
+			continue
+		}
+		got2 = append(got2, item)
+	}
+	assert.Len(t, got2, 1)
 	assert.Equal(t, []string{"9001"}, missedIDs2)
-	assert.NotNil(t, hitMap2["9002"])
+	assert.Equal(t, "Post 2", got2[0].Title)
 }

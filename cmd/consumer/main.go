@@ -92,7 +92,6 @@ func main() {
 	if err := workers.Start(context.Background()); err != nil {
 		zap.L().Fatal("start consumer workers failed", zap.Error(err))
 	}
-	defer workers.Close()
 
 	zap.L().Info("Bluebell Consumer worker process started successfully, listening for events...")
 	// 8. 监听退出信号实现优雅停机

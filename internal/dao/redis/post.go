@@ -48,6 +48,23 @@ func NewPostCache(rdb *goredis.Client) *PostCache {
 	return &PostCache{rdb: rdb}
 }
 
+// GetPostDetail 通过客户端缓存(CSC)读取单帖实体快照：命中进程内 L1 为 0 RTT，
+// 否则回 L2(Redis GET)。失效由 Redis CLIENT TRACKING 自动推送，无需手动维护本地 map。
+func (c *PostCache) GetPostDetail(ctx context.Context, id string) (*postResp.DetailResponse, error) {
+	raw, err := c.rdb.Get(ctx, redisKey(keyPostDetailPrefix+id)).Result()
+	if err == goredis.Nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var p postResp.DetailResponse
+	if err := json.Unmarshal([]byte(raw), &p); err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
 // NewPostCacheWithRefresher 创建 PostCache 实例和热度刷新器
 func NewPostCacheWithRefresher(rdb *goredis.Client) (*PostCache, *HotScoreRefresher) {
 	c := &PostCache{rdb: rdb}
@@ -436,46 +453,6 @@ func (c *PostCache) GetPostDetailCache(ctx context.Context, postID string) (*pos
 		return nil, err
 	}
 	return &resp, nil
-}
-
-// MGetPostDetails 批量从 Redis 获取帖子实体快照，返回命中映射及未命中的 post_id 列表
-func (c *PostCache) MGetPostDetails(ctx context.Context, postIDs []string) (hitMap map[string]*postResp.DetailResponse, missedIDs []string, err error) {
-	hitMap = make(map[string]*postResp.DetailResponse, len(postIDs))
-	if len(postIDs) == 0 {
-		return hitMap, nil, nil
-	}
-
-	keys := make([]string, len(postIDs))
-	for i, id := range postIDs {
-		keys[i] = redisKey(keyPostDetailPrefix + id)
-	}
-
-	vals, err := c.rdb.MGet(ctx, keys...).Result()
-	if err != nil {
-		// 缓存故障时全部当做未命中，平滑降级
-		return hitMap, postIDs, nil
-	}
-
-	for i, v := range vals {
-		id := postIDs[i]
-		if v == nil {
-			missedIDs = append(missedIDs, id)
-			continue
-		}
-		str, ok := v.(string)
-		if !ok || str == "" {
-			missedIDs = append(missedIDs, id)
-			continue
-		}
-		var detail postResp.DetailResponse
-		if err := json.Unmarshal([]byte(str), &detail); err != nil {
-			missedIDs = append(missedIDs, id)
-			continue
-		}
-		hitMap[id] = &detail
-	}
-
-	return hitMap, missedIDs, nil
 }
 
 // SetPostDetails 批量写入帖子实体快照到 Redis
