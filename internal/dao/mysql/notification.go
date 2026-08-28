@@ -19,12 +19,21 @@ func NewNotificationDao(db *gorm.DB) *NotificationDao {
 	return &NotificationDao{db: db}
 }
 
-// CreateNotification 创建通知记录
-func (d *NotificationDao) CreateNotification(ctx context.Context, notif *model.UserNotification) error {
-	if err := d.db.WithContext(ctx).Create(notif).Error; err != nil {
+// CreateNotificationInTx 在事务中创建通知记录
+func (d *NotificationDao) CreateNotificationInTx(ctx context.Context, tx *gorm.DB, notif *model.UserNotification) error {
+	db := d.db
+	if tx != nil {
+		db = tx
+	}
+	if err := db.WithContext(ctx).Create(notif).Error; err != nil {
 		return fmt.Errorf("create notification failed: %w", err)
 	}
 	return nil
+}
+
+// CreateNotification 创建通知记录
+func (d *NotificationDao) CreateNotification(ctx context.Context, notif *model.UserNotification) error {
+	return d.CreateNotificationInTx(ctx, nil, notif)
 }
 
 // GetNotifications 分页获取用户的通知列表

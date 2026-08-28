@@ -79,6 +79,7 @@ func main() {
 
 	// 7. 启动后台异步消费 Worker 容器
 	workers := consumer.NewWorkersContainer(
+		gormDB,
 		eventBus,
 		notifDao,
 		notifCache,

@@ -45,6 +45,29 @@ func (c *FeedCache) SetUserFeed(ctx context.Context, userID int64, postIDs []int
 	return err
 }
 
+// BatchPushFeed 批量将新动态推入多个用户的 Feed 流 (采用 Pipeline 批量写入降低 RTT)
+func (c *FeedCache) BatchPushFeed(ctx context.Context, userIDs []int64, postID int64, timestamp int64, ttl time.Duration) error {
+	if len(userIDs) == 0 || postID == 0 {
+		return nil
+	}
+
+	postIDStr := strconv.FormatInt(postID, 10)
+	score := float64(timestamp)
+
+	pipe := c.rdb.Pipeline()
+	for _, uid := range userIDs {
+		key := redisKey(keyUserFeedPrefix + strconv.FormatInt(uid, 10))
+		pipe.ZAdd(ctx, key, goredis.Z{
+			Score:  score,
+			Member: postIDStr,
+		})
+		pipe.Expire(ctx, key, ttl)
+	}
+
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
 // GetUserFeedPage 基于时间戳游标（Cursor）分页拉取 Feed 动态
 func (c *FeedCache) GetUserFeedPage(ctx context.Context, userID int64, cursor int64, size int64) ([]string, error) {
 	key := redisKey(keyUserFeedPrefix + strconv.FormatInt(userID, 10))

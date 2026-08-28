@@ -13,9 +13,21 @@ import (
 	"bluebell/pkg/event"
 
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
+
+const (
+	ConsumerGroupNotification = "notification_worker"
+	ConsumerGroupFeed         = "feed_worker"
+	ConsumerGroupCounter      = "counter_worker"
+
+	// 大 V 粉丝数阈值：超过 500 粉丝则视为大 V，避免全量同步写扩散
+	BigVFollowerThreshold = 500
+)
+
 // WorkersContainer 管理所有后台异步消费 Worker
 type WorkersContainer struct {
+	db          *gorm.DB
 	eventBus    *mq.EventBus
 	notifDao    *mysql.NotificationDao
 	notifCache  *redis.NotificationCache
@@ -29,6 +41,7 @@ type WorkersContainer struct {
 
 // NewWorkersContainer 创建 Worker 容器
 func NewWorkersContainer(
+	db *gorm.DB,
 	eventBus *mq.EventBus,
 	notifDao *mysql.NotificationDao,
 	notifCache *redis.NotificationCache,
@@ -40,6 +53,7 @@ func NewWorkersContainer(
 	relationDao *mysql.RelationDao,
 ) *WorkersContainer {
 	return &WorkersContainer{
+		db:          db,
 		eventBus:    eventBus,
 		notifDao:    notifDao,
 		notifCache:  notifCache,
@@ -73,10 +87,43 @@ func (c *WorkersContainer) Start(ctx context.Context) error {
 		return err
 	}
 
+	// 4. 监听专属死信队列 (DLQ) 并输出告警日志与监控追踪
+	dlqList := []string{mq.QueueNotificationDLQ, mq.QueueFeedDLQ, mq.QueueCounterDLQ}
+	for _, dlqName := range dlqList {
+		queue := dlqName
+		if err := c.eventBus.StartQueueConsumer(ctx, queue, func(ctx context.Context, raw *event.RawEvent) error {
+			return c.handleDeadLetterQueue(ctx, queue, raw)
+		}); err != nil {
+			zap.L().Warn("start DLQ consumer warning", zap.String("queue", queue), zap.Error(err))
+		}
+	}
+
+	return nil
+}
+
+// handleDeadLetterQueue 处理死信队列消息，记录严重告警日志供可观测性系统采集
+func (c *WorkersContainer) handleDeadLetterQueue(ctx context.Context, queueName string, raw *event.RawEvent) error {
+	zap.L().Error("CRITICAL: Dead Letter Queue (DLQ) message received, requires investigation or manual retry",
+		zap.String("dlq_queue", queueName),
+		zap.String("event_id", raw.EventID),
+		zap.String("event_type", raw.EventType),
+		zap.Int64("actor_id", raw.ActorID),
+		zap.String("producer", raw.Producer),
+		zap.Int64("timestamp", raw.Timestamp),
+	)
 	return nil
 }
 
 func (c *WorkersContainer) handleNotificationQueue(ctx context.Context, raw *event.RawEvent) error {
+	// 1. Redis 前置快速防重拦截
+	ok, err := c.dedupCache.AcquireEventLock(ctx, ConsumerGroupNotification, raw.EventID, 60*time.Second)
+	if err != nil || !ok {
+		return nil // 已有协程正在处理或已处理，直接跳过
+	}
+	defer func() {
+		_ = c.dedupCache.MarkEventDone(ctx, ConsumerGroupNotification, raw.EventID, 24*time.Hour)
+	}()
+
 	switch raw.EventType {
 	case event.EventTypeCommentCreated:
 		return c.handleCommentCreated(ctx, raw)
@@ -89,6 +136,15 @@ func (c *WorkersContainer) handleNotificationQueue(ctx context.Context, raw *eve
 }
 
 func (c *WorkersContainer) handleFeedQueue(ctx context.Context, raw *event.RawEvent) error {
+	// 1. Redis 前置快速防重拦截
+	ok, err := c.dedupCache.AcquireEventLock(ctx, ConsumerGroupFeed, raw.EventID, 60*time.Second)
+	if err != nil || !ok {
+		return nil
+	}
+	defer func() {
+		_ = c.dedupCache.MarkEventDone(ctx, ConsumerGroupFeed, raw.EventID, 24*time.Hour)
+	}()
+
 	switch raw.EventType {
 	case event.EventTypePostPublished:
 		return c.handleFeedPostPublished(ctx, raw)
@@ -99,6 +155,15 @@ func (c *WorkersContainer) handleFeedQueue(ctx context.Context, raw *event.RawEv
 }
 
 func (c *WorkersContainer) handleCounterQueue(ctx context.Context, raw *event.RawEvent) error {
+	// 1. Redis 前置快速防重拦截
+	ok, err := c.dedupCache.AcquireEventLock(ctx, ConsumerGroupCounter, raw.EventID, 60*time.Second)
+	if err != nil || !ok {
+		return nil
+	}
+	defer func() {
+		_ = c.dedupCache.MarkEventDone(ctx, ConsumerGroupCounter, raw.EventID, 24*time.Hour)
+	}()
+
 	switch raw.EventType {
 	case event.EventTypeVoteCast:
 		return c.handleCounterVoteCast(ctx, raw)
@@ -106,22 +171,34 @@ func (c *WorkersContainer) handleCounterQueue(ctx context.Context, raw *event.Ra
 	return nil
 }
 
-// handleFeedPostPublished 当发布新帖时，异步推送到所有在线/活跃粉丝的 Feed 流 (Push 模式)
+// handleFeedPostPublished 当发布新帖时，采用推拉结合 + Pipeline 批量写入粉丝 Feed 流
 func (c *WorkersContainer) handleFeedPostPublished(ctx context.Context, raw *event.RawEvent) error {
 	var payload event.PostPublishedEvent
 	if err := json.Unmarshal(raw.Payload, &payload); err != nil {
 		return err
 	}
 
-	followerIDs, _, err := c.relationDao.GetFollowerList(ctx, payload.AuthorID, 1, 1000)
+	// 查询粉丝总数与第一批粉丝
+	followerIDs, total, err := c.relationDao.GetFollowerList(ctx, payload.AuthorID, 1, 1000)
 	if err != nil || len(followerIDs) == 0 {
 		return nil
 	}
 
 	now := time.Now().Unix()
-	for _, followerID := range followerIDs {
-		_ = c.feedCache.SetUserFeed(ctx, followerID, []int64{payload.PostID}, []int64{now}, 10*time.Minute)
+
+	// 1. 如果是大 V (粉丝量超出阈值)，限制单次最大推扩散人数（如前 500 名活跃粉丝），其余走读扩散拉取
+	pushTargets := followerIDs
+	if total > BigVFollowerThreshold && len(pushTargets) > BigVFollowerThreshold {
+		pushTargets = pushTargets[:BigVFollowerThreshold]
+		zap.L().Info("author is Big-V, apply hybrid push-pull feed strategy",
+			zap.Int64("author_id", payload.AuthorID),
+			zap.Int64("total_followers", total),
+			zap.Int("pushed_count", len(pushTargets)),
+		)
 	}
+
+	// 2. 利用 Pipeline 批量推入 Feed 缓存
+	_ = c.feedCache.BatchPushFeed(ctx, pushTargets, payload.PostID, now, 10*time.Minute)
 
 	return nil
 }
@@ -154,22 +231,25 @@ func (c *WorkersContainer) handleFeedUserFollowed(ctx context.Context, raw *even
 	return nil
 }
 
-// handleCounterVoteCast 异步消费投票事件记录及同步统计
+// handleCounterVoteCast 异步消费投票事件记录及同步统计（支持强幂等落库）
 func (c *WorkersContainer) handleCounterVoteCast(ctx context.Context, raw *event.RawEvent) error {
 	var payload event.VoteCastEvent
 	if err := json.Unmarshal(raw.Payload, &payload); err != nil {
 		return err
 	}
 
-	// 消费去重防护
-	const group = "counter_worker"
-	ok, err := c.dedupCache.AcquireEventLock(ctx, group, raw.EventID, 60*time.Second)
-	if err != nil || !ok {
-		return nil
+	// 本地 MySQL 事务：记录强幂等 processed_events
+	if c.db != nil {
+		err := c.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			return c.eventLogDao.InsertProcessedEvent(ctx, tx, raw.EventID, ConsumerGroupCounter, raw.EventType)
+		})
+		if err != nil {
+			zap.L().Warn("counter event already processed in DB transaction, skipping",
+				zap.String("event_id", raw.EventID),
+				zap.Error(err))
+			return nil
+		}
 	}
-	defer func() {
-		_ = c.dedupCache.MarkEventDone(ctx, group, raw.EventID, 24*time.Hour)
-	}()
 
 	zap.L().Info("consumed vote event for counter aggregation",
 		zap.Int64("post_id", payload.PostID),
@@ -219,9 +299,23 @@ func (c *WorkersContainer) handleCommentCreated(ctx context.Context, raw *event.
 		ExtraInfo:   string(extra),
 	}
 
-	if err := c.notifDao.CreateNotification(ctx, notif); err != nil {
-		zap.L().Error("consumer: create notification failed", zap.Error(err))
-		return err
+	// 本地事务：原子落库 Notification 与 ProcessedEvent
+	if c.db != nil {
+		err := c.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			if err := c.notifDao.CreateNotificationInTx(ctx, tx, notif); err != nil {
+				return err
+			}
+			return c.eventLogDao.InsertProcessedEvent(ctx, tx, raw.EventID, ConsumerGroupNotification, raw.EventType)
+		})
+		if err != nil {
+			zap.L().Error("consumer: atomic create notification & event log failed", zap.Error(err))
+			return err
+		}
+	} else {
+		if err := c.notifDao.CreateNotification(ctx, notif); err != nil {
+			zap.L().Error("consumer: create notification failed", zap.Error(err))
+			return err
+		}
 	}
 
 	// 增加 Redis 红点计数
@@ -259,9 +353,23 @@ func (c *WorkersContainer) handleUserFollowed(ctx context.Context, raw *event.Ra
 		ExtraInfo:   string(extra),
 	}
 
-	if err := c.notifDao.CreateNotification(ctx, notif); err != nil {
-		zap.L().Error("consumer: create follow notification failed", zap.Error(err))
-		return err
+	// 本地事务：原子落库 Notification 与 ProcessedEvent
+	if c.db != nil {
+		err := c.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			if err := c.notifDao.CreateNotificationInTx(ctx, tx, notif); err != nil {
+				return err
+			}
+			return c.eventLogDao.InsertProcessedEvent(ctx, tx, raw.EventID, ConsumerGroupNotification, raw.EventType)
+		})
+		if err != nil {
+			zap.L().Error("consumer: atomic create follow notification & event log failed", zap.Error(err))
+			return err
+		}
+	} else {
+		if err := c.notifDao.CreateNotification(ctx, notif); err != nil {
+			zap.L().Error("consumer: create follow notification failed", zap.Error(err))
+			return err
+		}
 	}
 
 	_ = c.notifCache.IncrUnread(ctx, payload.FollowingID, "follow")
