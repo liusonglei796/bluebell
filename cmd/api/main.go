@@ -66,12 +66,6 @@ func main() {
 	}
 	defer mysqldao.Close(gormDB)
 
-	rdb, err := redisdao.Init(cfg)
-	if err != nil {
-		zap.L().Fatal("Init Redis failed", zap.Error(err))
-	}
-	defer redisdao.Close(rdb)
-
 	// 初始化 Validator
 	if err := translate.InitTrans(); err != nil {
 		zap.L().Fatal("init validator trans failed", zap.Error(err))
@@ -79,28 +73,47 @@ func main() {
 
 	// ====== 依赖装配（自下而上） ======
 
-	// 1) DAO 层
+	// 1) DAO 层 (MySQL)
 	postDao := mysqldao.NewPostDao(gormDB)
 	communityDao := mysqldao.NewCommunityDao(gormDB)
 	userDao := mysqldao.NewUserDao(gormDB)
-	voteDao := mysqldao.NewVoteDao(gormDB)
 	commentDao := mysqldao.NewCommentDao(gormDB)
 	relationDao := mysqldao.NewRelationDao(gormDB)
 	notifDao := mysqldao.NewNotificationDao(gormDB)
 	bookmarkDao := mysqldao.NewBookmarkDao(gormDB)
 	tagDao := mysqldao.NewTagDao(gormDB)
 
-	postCache, refresher := redisdao.NewPostCacheWithRefresher(rdb)
-	tokenCache := redisdao.NewUserTokenCache(rdb)
-	relationCache := redisdao.NewUserRelationCache(rdb)
-	notifCache := redisdao.NewNotificationCache(rdb)
-	bookmarkCache := redisdao.NewBookmarkCache(rdb)
-	feedCache := redisdao.NewFeedCache(rdb)
-	pinCache := redisdao.NewPinCache(rdb)
+	// 2) Cache 层 (Redis)
+	var postCache *redisdao.PostCache
+	var tokenCache *redisdao.UserTokenCache
+	var relationCache *redisdao.UserRelationCache
+	var notifCache *redisdao.NotificationCache
+	var bookmarkCache *redisdao.BookmarkCache
+	var feedCache *redisdao.FeedCache
+	var pinCache *redisdao.PinCache
 
-	// 启动 Gravity 热度分数定时刷新任务
-	refresher.Start()
-	defer refresher.Stop()
+	if !cfg.App.DisableRedis {
+		rdb, err := redisdao.Init(cfg)
+		if err != nil {
+			zap.L().Fatal("Init Redis failed", zap.Error(err))
+		}
+		defer redisdao.Close(rdb)
+
+		var refresher *redisdao.HotScoreRefresher
+		postCache, refresher = redisdao.NewPostCacheWithRefresher(rdb)
+		tokenCache = redisdao.NewUserTokenCache(rdb)
+		relationCache = redisdao.NewUserRelationCache(rdb)
+		notifCache = redisdao.NewNotificationCache(rdb)
+		bookmarkCache = redisdao.NewBookmarkCache(rdb)
+		feedCache = redisdao.NewFeedCache(rdb)
+		pinCache = redisdao.NewPinCache(rdb)
+
+		// 启动 Gravity 热度分数定时刷新任务
+		refresher.Start()
+		defer refresher.Stop()
+	} else {
+		zap.L().Info("Redis is disabled by config (app.disable_redis=true), bypassing Redis and operating directly on MySQL")
+	}
 
 	// 2) MQ 事件总线（发布端）
 	amqpURL := ""
@@ -117,7 +130,6 @@ func main() {
 	postSvc := service.NewPostService(
 		postDao,
 		postCache,
-		voteDao,
 		commentDao,
 		tagDao,
 		pinCache,

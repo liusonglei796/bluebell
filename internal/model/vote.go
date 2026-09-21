@@ -1,7 +1,5 @@
 package model
 
-import "gorm.io/gorm"
-
 // 投票方向常量
 const (
 	VoteUp     int8 = 1  // 赞成
@@ -13,18 +11,11 @@ const (
 // 来源：Reddit 早期算法中，一票约等于 432 分（基于时间衰减模型）
 const scorePerVote = 432
 
-// Vote 投票数据模型
-// 对应数据库 vote 表
+// Vote 投票领域模型（纯内存/业务对象，无需关系表持久化）
 type Vote struct {
-	gorm.Model
-	PostID    int64 `gorm:"column:post_id;not null;index:idx_post_user,unique"`
-	UserID    int64 `gorm:"column:user_id;not null;index:idx_post_user,unique"`
-	Direction int8  `gorm:"column:direction;not null"` // 1: 赞成, -1: 反对, 0: 取消
-}
-
-// TableName 自定义表名
-func (Vote) TableName() string {
-	return "vote"
+	PostID    int64 `json:"post_id"`
+	UserID    int64 `json:"user_id"`
+	Direction int8  `json:"direction"` // 1: 赞成, -1: 反对, 0: 取消
 }
 
 // Validate 校验投票方向是否合法

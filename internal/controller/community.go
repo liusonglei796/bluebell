@@ -75,6 +75,8 @@ func (h *CommunityController) CreateCommunityHandler(c *gin.Context) {
 		HandleError(c, model.ErrNeedLogin)
 		return
 	}
+	roleVal, _ := c.Get("UserRoleKey")
+	role, _ := roleVal.(int)
 
 	p := &communityreq.CreateCommunityRequest{}
 	if !bindJSON(c, p) {
@@ -83,7 +85,7 @@ func (h *CommunityController) CreateCommunityHandler(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	if err := h.communitySvc.CreateCommunity(ctx, p.Name, p.Introduction, userID.(int64)); err != nil {
+	if err := h.communitySvc.CreateCommunity(ctx, p.Name, p.Introduction, userID.(int64), role); err != nil {
 		HandleError(c, err)
 		return
 	}

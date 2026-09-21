@@ -2,6 +2,7 @@ app:
   name: "bluebell"
   port: 8080
   mode: "dev"
+  disable_redis: false
 
 snowflake:
   start_time: 1577836800000
@@ -20,8 +21,8 @@ mysql:
   passwd: "15939087780Ll@"
   db_name: "bluebell"
   user: "root"
-  max_open_conns: 50
-  max_idle_conns: 25
+  max_open_conns: 500
+  max_idle_conns: 250
 
 redis:
   host: "127.0.0.1"
@@ -34,8 +35,8 @@ rabbitmq:
   url: "amqp://guest:guest@127.0.0.1:5672/"
 
 ratelimit:
-  fill_interval: "10ms"
-  capacity: 200
+  fill_interval: "200ms"
+  capacity: 5
 
 timeout:
   timeout: "30s"

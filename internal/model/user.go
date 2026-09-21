@@ -19,7 +19,7 @@ const (
 // 对应数据库 user 表结构
 type User struct {
 	gorm.Model
-	UserID         int64  `gorm:"column:user_id"`
+	UserID         int64  `gorm:"column:user_id;uniqueIndex"`
 	// user_name 唯一索引：并发注册同名用户时由数据库兜底，防止 check-then-insert 竞态产生重复数据
 	UserName       string `gorm:"column:user_name;size:64;not null;uniqueIndex"`
 	Passwd         string `gorm:"column:passwd;size:255;not null"`

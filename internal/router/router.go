@@ -48,8 +48,8 @@ func NewRouter(
 		middleware.GinLogger(),
 		middleware.GinRecovery(true),
 		middleware.Cors(), // 跨域中间件
-		middleware.RateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity), // 令牌桶限流
 		middleware.TimeoutMiddleware(timeout),
+		middleware.SQLTraceMiddleware(),
 	)
 
 	// Swagger & PProf (仅在非生产环境)
@@ -99,8 +99,8 @@ func NewRouter(
 		authGroup.POST("/post", postController.CreatePostHandler)
 		authGroup.DELETE("/post/:id", postController.DeletePostHandler)
 		authGroup.POST("/post/pin", postController.PinPostHandler)
-		authGroup.GET("/feed", postController.GetFeedListHandler)
-		authGroup.POST("/vote", postController.PostVoteHandler)
+		// 帖子投票接口：全站唯一挂载单用户维度令牌桶限流（仅限制本接口防刷票，全站其他接口不受任何限流影响）
+		authGroup.POST("/vote", middleware.UserRateLimitMiddleware(fillInterval, cfg.RateLimit.Capacity), postController.PostVoteHandler)
 
 		// 二级楼中楼评论操作（需登录）
 		authGroup.POST("/comment", commentController.CreateCommentHandler)

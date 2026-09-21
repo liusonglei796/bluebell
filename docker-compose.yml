@@ -23,9 +23,10 @@ services:
       retries: 5
 
   redis:
-    image: redis:alpine
+    image: redis/redis-stack-server:latest
     container_name: bluebell_redis
-    command: ["redis-server", "--requirepass", "bluebell_redis_password_secure"]
+    environment:
+      - REDIS_ARGS=--requirepass bluebell_redis_password_secure
     volumes:
       - ./data/redis:/data
     restart: always

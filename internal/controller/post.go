@@ -60,13 +60,13 @@ func (h *PostController) CreatePostHandler(c *gin.Context) {
 	}
 
 	ctx := c.Request.Context()
-	_, err := h.postSvc.CreatePost(ctx, p, userID.(int64))
+	postID, err := h.postSvc.CreatePost(ctx, p, userID.(int64))
 	if err != nil {
 		HandleError(c, err)
 		return
 	}
 
-	HandleSuccess(c, nil)
+	HandleSuccess(c, gin.H{"id": postID, "post_id": postID})
 }
 
 // GetPostDetailHandler 获取帖子详情

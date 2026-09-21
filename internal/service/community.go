@@ -68,16 +68,9 @@ func (s *CommunityService) GetCommunityDetail(ctx context.Context, id int64) (*c
 }
 
 // CreateCommunity 创建社区（仅管理员）
-func (s *CommunityService) CreateCommunity(ctx context.Context, name, introduction string, userID int64) error {
-	// 1. 校验用户角色是否为管理员
-	user, err := s.userDao.CheckUserExistsByID(ctx, userID)
-	if err != nil {
-		zap.L().Error("userDao.CheckUserExistsByID failed",
-			zap.Int64("user_id", userID),
-			zap.Error(err))
-		return model.Wrap(model.ErrServerBusy, err)
-	}
-	if user == nil || !user.IsAdmin() {
+func (s *CommunityService) CreateCommunity(ctx context.Context, name, introduction string, userID int64, role int) error {
+	// 1. 直接基于 JWT Claims 校验用户角色是否为管理员（0 次 DB I/O）
+	if role != model.RoleAdmin {
 		return model.ErrForbidden
 	}
 

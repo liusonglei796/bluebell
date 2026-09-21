@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -28,6 +29,7 @@ const (
 	keyPostCreateDedupPrefix    = "post:create_dedup:" // post:create_dedup:{authorID}:{titleHash} - 防重复提交
 	keyPostDetailPrefix         = "post:detail:"       // bluebell:post:detail:{postID} - 帖子实体快照 JSON 缓存
 	defaultPostDetailTTL        = 24 * time.Hour
+	defaultPostDetailJitter     = 30 * time.Minute // 防雪崩：最大随机抖动窗口 30 分钟
 	// 投票相关常量
 	oneWeekInSeconds = 100 * 7 * 24 * 3600 // 增加到100周，方便压测
 	// Gravity 算法衰减因子（Reddit/Hacker News 标准值）
@@ -35,17 +37,58 @@ const (
 	gravity = 1.8
 )
 
+// CalculateJitterTTL 计算带有随机抖动的过期时间（防雪崩）
+// actualTTL = baseTTL + rand(0, maxJitter)，打散集中到期时间
+func CalculateJitterTTL(baseTTL, maxJitter time.Duration) time.Duration {
+	if baseTTL <= 0 {
+		baseTTL = defaultPostDetailTTL
+	}
+	if maxJitter <= 0 {
+		return baseTTL
+	}
+	jitter := time.Duration(rand.Int63n(int64(maxJitter)))
+	return baseTTL + jitter
+}
+
 // ========== PostCache ==========
 
 // PostCache 帖子缓存数据访问对象
-// 负责帖子在 Redis 中的排序、分页与投票数据
+// 负责帖子在 Redis 中的排序、分页、实体缓存与布隆过滤
 type PostCache struct {
-	rdb *goredis.Client
+	rdb   *goredis.Client
+	bloom *PostBloomFilter
 }
 
 // NewPostCache 创建 PostCache 实例
 func NewPostCache(rdb *goredis.Client) *PostCache {
-	return &PostCache{rdb: rdb}
+	bloom := NewPostBloomFilter(rdb, "")
+	if rdb != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			_ = bloom.EnsureReserved(ctx, defaultBloomErrorRate, defaultBloomCapacity)
+		}()
+	}
+	return &PostCache{
+		rdb:   rdb,
+		bloom: bloom,
+	}
+}
+
+// AddPostBloom 将帖子ID加入布隆过滤器 (防穿透)
+func (c *PostCache) AddPostBloom(ctx context.Context, postID string) error {
+	if c == nil || c.bloom == nil {
+		return nil
+	}
+	return c.bloom.Add(ctx, postID)
+}
+
+// CheckPostInBloom 检查帖子ID是否存在于布隆过滤器中 (防穿透)
+func (c *PostCache) CheckPostInBloom(ctx context.Context, postID string) (bool, error) {
+	if c == nil || c.bloom == nil {
+		return true, nil
+	}
+	return c.bloom.Exists(ctx, postID)
 }
 
 // GetPostDetail 通过客户端缓存(CSC)读取单帖实体快照：命中进程内 L1 为 0 RTT，
@@ -67,7 +110,7 @@ func (c *PostCache) GetPostDetail(ctx context.Context, id string) (*postResp.Det
 
 // NewPostCacheWithRefresher 创建 PostCache 实例和热度刷新器
 func NewPostCacheWithRefresher(rdb *goredis.Client) (*PostCache, *HotScoreRefresher) {
-	c := &PostCache{rdb: rdb}
+	c := NewPostCache(rdb)
 	refresher := NewHotScoreRefresher(rdb)
 	return c, refresher
 }
@@ -455,7 +498,7 @@ func (c *PostCache) GetPostDetailCache(ctx context.Context, postID string) (*pos
 	return &resp, nil
 }
 
-// SetPostDetails 批量写入帖子实体快照到 Redis
+// SetPostDetails 批量写入帖子实体快照到 Redis（带随机抖动 TTL 防雪崩）
 func (c *PostCache) SetPostDetails(ctx context.Context, posts []*postResp.DetailResponse, ttl time.Duration) error {
 	if len(posts) == 0 {
 		return nil
@@ -474,10 +517,26 @@ func (c *PostCache) SetPostDetails(ctx context.Context, posts []*postResp.Detail
 			continue
 		}
 		key := redisKey(keyPostDetailPrefix + p.ID)
-		pipe.Set(ctx, key, data, ttl)
+		// 防雪崩：为每个实体快照独立叠加 0~30 分钟随机抖动，避免集中过期
+		itemTTL := CalculateJitterTTL(ttl, defaultPostDetailJitter)
+		pipe.Set(ctx, key, data, itemTTL)
 	}
 	_, err := pipe.Exec(ctx)
 	return err
+}
+
+// SetPostDetailWithJitter 写入单个帖子实体快照并指定随机抖动范围 (防雪崩)
+func (c *PostCache) SetPostDetailWithJitter(ctx context.Context, post *postResp.DetailResponse, baseTTL, maxJitter time.Duration) error {
+	if post == nil || post.ID == "" {
+		return nil
+	}
+	data, err := json.Marshal(post)
+	if err != nil {
+		return err
+	}
+	actualTTL := CalculateJitterTTL(baseTTL, maxJitter)
+	key := redisKey(keyPostDetailPrefix + post.ID)
+	return c.rdb.Set(ctx, key, data, actualTTL).Err()
 }
 
 // DeletePostDetailCache 删除单个帖子实体快照缓存

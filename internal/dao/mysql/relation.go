@@ -38,10 +38,20 @@ func (d *RelationDao) Follow(ctx context.Context, followerID, followingID int64)
 			return fmt.Errorf("upsert follow relation failed: %w", err)
 		}
 
-		// 更新 follower 的 following_count
-		tx.Model(&model.User{}).Where("user_id = ?", followerID).Update("following_count", gorm.Expr("following_count + 1"))
-		// 更新 following 的 follower_count
-		tx.Model(&model.User{}).Where("user_id = ?", followingID).Update("follower_count", gorm.Expr("follower_count + 1"))
+		// 严格按 user_id 升序更新计数器，消除并发关注时的 AB-BA 循环死锁 (Deadlock 1213)
+		firstID, secondID := followerID, followingID
+		firstCol, secondCol := "following_count", "follower_count"
+		if firstID > secondID {
+			firstID, secondID = followingID, followerID
+			firstCol, secondCol = "follower_count", "following_count"
+		}
+
+		if err := tx.Model(&model.User{}).Where("user_id = ?", firstID).Update(firstCol, gorm.Expr(firstCol+" + 1")).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(&model.User{}).Where("user_id = ?", secondID).Update(secondCol, gorm.Expr(secondCol+" + 1")).Error; err != nil {
+			return err
+		}
 
 		return nil
 	})
@@ -58,8 +68,20 @@ func (d *RelationDao) Unfollow(ctx context.Context, followerID, followingID int6
 		}
 
 		if res.RowsAffected > 0 {
-			tx.Model(&model.User{}).Where("user_id = ? AND following_count > 0", followerID).Update("following_count", gorm.Expr("following_count - 1"))
-			tx.Model(&model.User{}).Where("user_id = ? AND follower_count > 0", followingID).Update("follower_count", gorm.Expr("follower_count - 1"))
+			// 严格按 user_id 升序更新计数器，消除死锁
+			firstID, secondID := followerID, followingID
+			firstCol, secondCol := "following_count", "follower_count"
+			if firstID > secondID {
+				firstID, secondID = followingID, followerID
+				firstCol, secondCol = "follower_count", "following_count"
+			}
+
+			if err := tx.Model(&model.User{}).Where("user_id = ? AND "+firstCol+" > 0", firstID).Update(firstCol, gorm.Expr(firstCol+" - 1")).Error; err != nil {
+				return err
+			}
+			if err := tx.Model(&model.User{}).Where("user_id = ? AND "+secondCol+" > 0", secondID).Update(secondCol, gorm.Expr(secondCol+" - 1")).Error; err != nil {
+				return err
+			}
 		}
 
 		return nil

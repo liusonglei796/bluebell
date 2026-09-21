@@ -10,10 +10,11 @@ import (
 )
 
 type AppConfig struct {
-	Name    string `mapstructure:"name"`
-	Mode    string `mapstructure:"mode"`
-	Version string `mapstructure:"version"`
-	Port    int    `mapstructure:"port"`
+	Name         string `mapstructure:"name"`
+	Mode         string `mapstructure:"mode"`
+	Version      string `mapstructure:"version"`
+	Port         int    `mapstructure:"port"`
+	DisableRedis bool   `mapstructure:"disable_redis"`
 }
 
 type LogConfig struct {

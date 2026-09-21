@@ -87,6 +87,15 @@ func (d *BookmarkDao) AddBookmark(ctx context.Context, userID, folderID int64, p
 // RemoveBookmark 从收藏夹移除帖子
 func (d *BookmarkDao) RemoveBookmark(ctx context.Context, userID, folderID int64, postID int64) error {
 	return d.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 若未显式传入 folderID，先查询出该收藏记录所属的 folder_id，确保 post_count 精准扣减
+		actualFolderID := folderID
+		if actualFolderID == 0 {
+			var b model.PostBookmark
+			if err := tx.Where("user_id = ? AND post_id = ?", userID, postID).First(&b).Error; err == nil {
+				actualFolderID = b.FolderID
+			}
+		}
+
 		query := tx.Where("user_id = ? AND post_id = ?", userID, postID)
 		if folderID > 0 {
 			query = query.Where("folder_id = ?", folderID)
@@ -98,8 +107,8 @@ func (d *BookmarkDao) RemoveBookmark(ctx context.Context, userID, folderID int64
 		}
 
 		if res.RowsAffected > 0 {
-			if folderID > 0 {
-				tx.Model(&model.BookmarkFolder{}).Where("id = ? AND post_count > 0", folderID).Update("post_count", gorm.Expr("post_count - 1"))
+			if actualFolderID > 0 {
+				tx.Model(&model.BookmarkFolder{}).Where("id = ? AND post_count > 0", actualFolderID).Update("post_count", gorm.Expr("post_count - 1"))
 			}
 			tx.Model(&model.Post{}).Where("post_id = ? AND bookmark_count > 0", postID).Update("bookmark_count", gorm.Expr("bookmark_count - 1"))
 		}

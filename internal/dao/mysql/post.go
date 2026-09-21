@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"time"
 
 	"bluebell/internal/model"
 
@@ -42,7 +44,11 @@ func (d *PostDao) CreatePostWithAuthor(ctx context.Context, post *model.Post, au
 		return fmt.Errorf("创建帖子失败: %w", err)
 	}
 	// 关联作者到中间表
-	if err := d.db.WithContext(ctx).Model(post).Association("Authors").Append(author); err != nil {
+	postAuthor := &model.PostAuthor{
+		PostID: post.PostID,
+		UserID: author.UserID,
+	}
+	if err := d.db.WithContext(ctx).Create(postAuthor).Error; err != nil {
 		return fmt.Errorf("关联作者失败: %w", err)
 	}
 	return nil
@@ -95,7 +101,7 @@ func (d *PostDao) GetPostListByIDsWithJoins(ctx context.Context, ids []string) (
 	// 按照传入的 ids 顺序排列结果
 	postMap := make(map[string]*model.Post, len(mPosts))
 	for _, m := range mPosts {
-		postMap[m.PostID] = m
+		postMap[strconv.FormatInt(m.PostID, 10)] = m
 	}
 
 	orderedPosts := make([]*model.Post, 0, len(ids))
@@ -116,6 +122,7 @@ func (d *PostDao) GetPostListByIDsSingleTable(ctx context.Context, ids []string)
 
 	var mPosts []*model.Post
 	err = d.db.WithContext(ctx).
+		Select("id", "post_id", "author_id", "author_name", "community_id", "community_name", "post_title", "tag_names", "status", "is_pinned", "is_highlighted", "bookmark_count", "comment_count", "vote_num", "score", "created_at").
 		Where("post_id IN ?", ids).
 		Where("status = ?", model.PostStatusPublished).
 		Find(&mPosts).Error
@@ -125,7 +132,7 @@ func (d *PostDao) GetPostListByIDsSingleTable(ctx context.Context, ids []string)
 
 	postMap := make(map[string]*model.Post, len(mPosts))
 	for _, m := range mPosts {
-		postMap[m.PostID] = m
+		postMap[strconv.FormatInt(m.PostID, 10)] = m
 	}
 
 	orderedPosts := make([]*model.Post, 0, len(ids))
@@ -137,20 +144,8 @@ func (d *PostDao) GetPostListByIDsSingleTable(ctx context.Context, ids []string)
 	return orderedPosts, nil
 }
 
-// DeletePostByAuthor 软删除帖子（带作者验证）
-func (d *PostDao) DeletePostByAuthor(ctx context.Context, postID string, authorID int64) error {
-	// 先验证用户是否为该帖子的作者
-	var count int64
-	err := d.db.WithContext(ctx).Model(&model.PostAuthor{}).
-		Where("post_id = ? AND user_id = ?", postID, authorID).
-		Count(&count).Error
-	if err != nil {
-		return fmt.Errorf("验证作者失败: %w", err)
-	}
-	if count == 0 {
-		return model.ErrForbidden
-	}
-
+// DeletePostByAuthor 软删除帖子（权限已在领域模型层校验，无需重复 SELECT 鉴权）
+func (d *PostDao) DeletePostByAuthor(ctx context.Context, postID int64, authorID int64) error {
 	result := d.db.WithContext(ctx).Model(&model.Post{}).
 		Where("post_id = ?", postID).
 		Where("status = ?", model.PostStatusPublished).
@@ -183,4 +178,47 @@ func (d *PostDao) GetPostListByAuthorIDs(ctx context.Context, authorIDs []int64,
 		return nil, fmt.Errorf("find posts by author ids failed: %w", err)
 	}
 	return posts, nil
+}
+
+// GetPostList 直查 MySQL 分页列表（无 Redis 模式，基于单表冗余字段极速分页，排除 content 大字段）
+func (d *PostDao) GetPostList(ctx context.Context, page, size int64, order string) ([]*model.Post, error) {
+	var posts []*model.Post
+	offset := int((page - 1) * size)
+	query := d.db.WithContext(ctx).
+		Select("id", "post_id", "author_id", "author_name", "community_id", "community_name", "post_title", "tag_names", "status", "is_pinned", "is_highlighted", "bookmark_count", "comment_count", "vote_num", "score", "created_at").
+		Where("status = ?", model.PostStatusPublished)
+
+	if order == "score" {
+		query = query.Order("score DESC, created_at DESC")
+	} else {
+		query = query.Order("created_at DESC, id DESC")
+	}
+
+	err := query.Offset(offset).Limit(int(size)).Find(&posts).Error
+	if err != nil {
+		return nil, fmt.Errorf("直查帖子列表失败: %w", err)
+	}
+	return posts, nil
+}
+
+// VotePost 直写 MySQL 投票（单条原子更新，无长事务与 FOR UPDATE 排他锁排队）
+func (d *PostDao) VotePost(ctx context.Context, postID int64, direction int8) error {
+	txCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	delta := int64(direction)
+	res := d.db.WithContext(txCtx).Model(&model.Post{}).
+		Where("post_id = ? AND status = ?", postID, model.PostStatusPublished).
+		Updates(map[string]interface{}{
+			"vote_num": gorm.Expr("vote_num + ?", delta),
+			"score":    gorm.Expr("score + ?", delta*432),
+		})
+
+	if res.Error != nil {
+		return fmt.Errorf("原子更新投票失败: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return model.ErrNotFound
+	}
+	return nil
 }

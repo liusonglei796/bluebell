@@ -49,7 +49,7 @@ func TestJWTAuthMiddleware_JTIBlacklist(t *testing.T) {
 	})
 
 	userID := int64(8888)
-	aToken, _, err := jwt.GenToken(cfg, userID)
+	aToken, _, err := jwt.GenToken(cfg, userID, 1)
 	require.NoError(t, err)
 
 	claims, err := jwt.ParseTokenClaims(cfg, aToken, jwt.AccessTokenType)
@@ -103,7 +103,7 @@ func TestJWTOptionalAuthMiddleware(t *testing.T) {
 	assert.Contains(t, w1.Body.String(), `"logged_in":false`)
 
 	// 2. 有效 Token 请求 -> 200 OK, logged_in = true, user_id = 9999
-	aToken, _, err := jwt.GenToken(cfg, 9999)
+	aToken, _, err := jwt.GenToken(cfg, 9999, 1)
 	require.NoError(t, err)
 
 	req2, _ := http.NewRequest(http.MethodGet, "/public", nil)

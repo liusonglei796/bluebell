@@ -10,12 +10,38 @@ import (
 	"bluebell/internal/config"
 	"bluebell/internal/model"
 	"bluebell/internal/snowflake"
+	"bluebell/pkg/sqltrace"
 
 	"go.uber.org/zap"
 	gmysql "gorm.io/driver/mysql"
 	gorm "gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+type sqlTraceLogger struct {
+	logger.Interface
+}
+
+func (l *sqlTraceLogger) LogMode(level logger.LogLevel) logger.Interface {
+	return &sqlTraceLogger{
+		Interface: l.Interface.LogMode(level),
+	}
+}
+
+func (l *sqlTraceLogger) Trace(ctx context.Context, begin time.Time, fc func() (sql string, rowsAffected int64), err error) {
+	cost := time.Since(begin)
+	if tracker := sqltrace.FromContext(ctx); tracker != nil {
+		var sql string
+		var rows int64
+		if fc != nil {
+			sql, rows = fc()
+		}
+		tracker.Add(sql, cost, rows, err)
+	}
+	if l.Interface != nil {
+		l.Interface.Trace(ctx, begin, fc, err)
+	}
+}
 
 // Init 初始化 MySQL 连接，返回数据库连接实例
 func Init(cfg *config.Config) (*gorm.DB, error) {
@@ -56,8 +82,10 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 		gormLogger = logger.Default.LogMode(logger.Silent)
 	}
 
+	wrappedLogger := &sqlTraceLogger{Interface: gormLogger}
+
 	gormConfig := &gorm.Config{
-		Logger:                                   gormLogger,
+		Logger:                                   wrappedLogger,
 		DisableForeignKeyConstraintWhenMigrating: true,
 		PrepareStmt:                              true,
 		// 开启错误翻译：唯一索引冲突时 Create 返回 gorm.ErrDuplicatedKey，
@@ -90,7 +118,6 @@ func Init(cfg *config.Config) (*gorm.DB, error) {
 		&model.Community{},
 		&model.Post{},
 		&model.PostAuthor{},
-		&model.Vote{},
 		&model.Comment{},
 		&model.UserRelation{},
 		&model.UserNotification{},

@@ -20,9 +20,10 @@ const (
 	RefreshTokenType TokenType = "refresh"
 )
 
-// CustomClaims 自定义 Claims 包含 token 类型
+// CustomClaims 自定义 Claims 包含 token 类型与用户角色
 type CustomClaims struct {
 	TokenType TokenType `json:"type"`
+	Role      int       `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -73,14 +74,15 @@ func ParseToken(cfg *config.Config, tokenString string, expectedType TokenType) 
 	return userID, nil
 }
 
-// GenToken 生成 Access Token 和 Refresh Token（附带唯一 JTI）
-func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err error) {
+// GenToken 生成 Access Token 和 Refresh Token（附带唯一 JTI 与用户角色）
+func GenToken(cfg *config.Config, userID int64, role int) (aToken, rToken string, err error) {
 	aJTI := strconv.FormatInt(snowflake.GenID(), 10)
 	if aJTI == "0" {
 		aJTI = fmt.Sprintf("%d_%d", userID, time.Now().UnixNano())
 	}
 	aClaims := CustomClaims{
 		TokenType: AccessTokenType,
+		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        aJTI,
 			Subject:   fmt.Sprintf("%d", userID),
@@ -99,6 +101,7 @@ func GenToken(cfg *config.Config, userID int64) (aToken, rToken string, err erro
 	}
 	rClaims := CustomClaims{
 		TokenType: RefreshTokenType,
+		Role:      role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        rJTI,
 			Subject:   fmt.Sprintf("%d", userID),

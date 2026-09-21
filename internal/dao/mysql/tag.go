@@ -3,8 +3,6 @@ package mysql
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"bluebell/internal/model"
 
@@ -67,13 +65,6 @@ func (d *TagDao) BindPostTags(ctx context.Context, postID int64, communityID int
 		// 递增标签的 post_count
 		if err := tx.Model(&model.Tag{}).Where("id IN ?", tagIDs).Update("post_count", gorm.Expr("post_count + 1")).Error; err != nil {
 			return err
-		}
-
-		// 查询标签名并同步冗余到 post 表的 tag_names 字段
-		var tagNames []string
-		if err := tx.Model(&model.Tag{}).Where("id IN ?", tagIDs).Pluck("name", &tagNames).Error; err == nil && len(tagNames) > 0 {
-			tagStr := strings.Join(tagNames, ",")
-			_ = tx.Model(&model.Post{}).Where("post_id = ?", strconv.FormatInt(postID, 10)).Update("tag_names", tagStr).Error
 		}
 
 		return nil

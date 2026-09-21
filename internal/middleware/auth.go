@@ -82,6 +82,7 @@ func JWTAuthMiddleware(cfg *config.Config, tokenRepo *redis.UserTokenCache) gin.
 		}
 		// 5. 将用户上下文及 Token 元数据写入 Gin Context
 		c.Set("UserIDKey", userID)
+		c.Set("UserRoleKey", claims.Role)
 		c.Set("JTIKey", claims.ID)
 		if claims.ExpiresAt != nil {
 			c.Set("TokenExpKey", claims.ExpiresAt.Time)
@@ -121,6 +122,7 @@ func JWTOptionalAuthMiddleware(cfg *config.Config, tokenRepo *redis.UserTokenCac
 
 		if userID, err := strconv.ParseInt(claims.Subject, 10, 64); err == nil {
 			c.Set("UserIDKey", userID)
+			c.Set("UserRoleKey", claims.Role)
 			c.Set("JTIKey", claims.ID)
 			if claims.ExpiresAt != nil {
 				c.Set("TokenExpKey", claims.ExpiresAt.Time)

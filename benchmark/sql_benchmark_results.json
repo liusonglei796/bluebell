@@ -1,0 +1,805 @@
+[
+  {
+    "index": 1,
+    "name": "用户注册 (User1)",
+    "method": "POST",
+    "url": "/api/v1/signup",
+    "status": 200,
+    "duration": 104048500,
+    "sql_count": 1,
+    "sql_cost": "8.5647ms",
+    "sql_cost_dur": 8564700,
+    "sql_details": [
+      {
+        "sql": "INSERT INTO `user` (`created_at`,`updated_at`,`deleted_at`,`user_id`,`user_name`,`passwd`,`role`,`following_count`,`follower_count`) VALUES ('2026-09-21 09:35:48.907','2026-09-21 09:35:48.907',NULL,889686322317365248,'testuser_14000','$2a$10$DJrl/C7YpORxkFKLFW7Yr.gSJwhVozDQbDLjl4MHIjA4TOhucHwcu',1,0,0)",
+        "cost": "8.5647ms"
+      }
+    ]
+  },
+  {
+    "index": 2,
+    "name": "用户登录 (User1)",
+    "method": "POST",
+    "url": "/api/v1/login",
+    "status": 200,
+    "duration": 132192400,
+    "sql_count": 1,
+    "sql_cost": "42.3812ms",
+    "sql_cost_dur": 42381200,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `user` WHERE user_name = 'testuser_14000' AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "42.3812ms"
+      }
+    ]
+  },
+  {
+    "index": 3,
+    "name": "管理员登录 (admin)",
+    "method": "POST",
+    "url": "/api/v1/login",
+    "status": 200,
+    "duration": 94120000,
+    "sql_count": 1,
+    "sql_cost": "1.1452ms",
+    "sql_cost_dur": 1145200,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `user` WHERE user_name = 'admin' AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "1.1452ms"
+      }
+    ]
+  },
+  {
+    "index": 4,
+    "name": "刷新 Token",
+    "method": "POST",
+    "url": "/api/v1/refresh_token",
+    "status": 200,
+    "duration": 3382800,
+    "sql_count": 1,
+    "sql_cost": "1.6731ms",
+    "sql_cost_dur": 1673100,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id = 889686322317365248 AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "1.6731ms"
+      }
+    ]
+  },
+  {
+    "index": 5,
+    "name": "获取社区列表",
+    "method": "GET",
+    "url": "/api/v1/community",
+    "status": 200,
+    "duration": 1621900,
+    "sql_count": 1,
+    "sql_cost": "1.0791ms",
+    "sql_cost_dur": 1079100,
+    "sql_details": [
+      {
+        "sql": "SELECT `id`,`community_name`,`introduction` FROM `community` WHERE `community`.`deleted_at` IS NULL",
+        "cost": "1.0791ms"
+      }
+    ]
+  },
+  {
+    "index": 6,
+    "name": "获取社区详情 (id=1)",
+    "method": "GET",
+    "url": "/api/v1/community/1",
+    "status": 200,
+    "duration": 526200,
+    "sql_count": 0,
+    "sql_cost": "0s",
+    "sql_cost_dur": 0,
+    "sql_details": null
+  },
+  {
+    "index": 7,
+    "name": "创建社区 (Admin)",
+    "method": "POST",
+    "url": "/api/v1/community",
+    "status": 200,
+    "duration": 7459800,
+    "sql_count": 1,
+    "sql_cost": "5.8684ms",
+    "sql_cost_dur": 5868400,
+    "sql_details": [
+      {
+        "sql": "INSERT INTO `community` (`created_at`,`updated_at`,`deleted_at`,`community_name`,`introduction`) VALUES ('2026-09-21 09:35:49.148','2026-09-21 09:35:49.148',NULL,'GoCommunity_14000','Go language discussion and sharing')",
+        "cost": "5.8684ms"
+      }
+    ]
+  },
+  {
+    "index": 8,
+    "name": "创建社区标签",
+    "method": "POST",
+    "url": "/api/v1/tag",
+    "status": 200,
+    "duration": 51389100,
+    "sql_count": 3,
+    "sql_cost": "49.7186ms",
+    "sql_cost_dur": 49718600,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id = 889686322317365248 AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "40.8304ms"
+      },
+      {
+        "sql": "SELECT * FROM `community` WHERE id = 1 AND `community`.`deleted_at` IS NULL ORDER BY `community`.`id` LIMIT 1",
+        "cost": "2.1416ms"
+      },
+      {
+        "sql": "INSERT INTO `tag` (`community_id`,`name`,`post_count`) VALUES (1,'Golang_14000',0)",
+        "cost": "6.7466ms"
+      }
+    ]
+  },
+  {
+    "index": 9,
+    "name": "获取社区标签列表",
+    "method": "GET",
+    "url": "/api/v1/tags?community_id=1",
+    "status": 200,
+    "duration": 43290100,
+    "sql_count": 1,
+    "sql_cost": "43.2901ms",
+    "sql_cost_dur": 43290100,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `tag` WHERE community_id = 1 ORDER BY post_count DESC",
+        "cost": "43.2901ms"
+      }
+    ]
+  },
+  {
+    "index": 10,
+    "name": "创建帖子",
+    "method": "POST",
+    "url": "/api/v1/post",
+    "status": 200,
+    "duration": 106842200,
+    "sql_count": 7,
+    "sql_cost": "101.1679ms",
+    "sql_cost_dur": 101167900,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id = 889686322317365248 AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "1.1285ms"
+      },
+      {
+        "sql": "SELECT * FROM `community` WHERE id = 1 AND `community`.`deleted_at` IS NULL ORDER BY `community`.`id` LIMIT 1",
+        "cost": "537µs"
+      },
+      {
+        "sql": "INSERT INTO `post` (`created_at`,`updated_at`,`deleted_at`,`post_id`,`author_id`,`community_id`,`post_title`,`author_name`,`community_name`,`tag_names`,`content`,`content_hash`,`status`,`is_pinned`,`is_highlighted`,`bookmark_count`,`comment_count`,`vote_num`,`score`) VALUES ('2026-09-21 09:35:49.254','2026-09-21 09:35:49.254',NULL,889686324150276096,889686322317365248,1,'Test Post Title 14000','testuser_14000','Go','','This is a test post content for SQL latency benchmarking.','f7e7356a8a2f7cef77b2ad79f92c5b88',1,0,0,0,0,0,0)",
+        "cost": "7.5986ms"
+      },
+      {
+        "sql": "INSERT INTO `post_author` (`created_at`,`updated_at`,`deleted_at`,`post_id`,`user_id`) VALUES ('2026-09-21 09:35:49.304','2026-09-21 09:35:49.304',NULL,889686324150276096,889686322317365248)",
+        "cost": "49.3961ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "40.505ms"
+      },
+      {
+        "sql": "SELECT * FROM `community` WHERE id = 1 AND `community`.`deleted_at` IS NULL ORDER BY `community`.`id` LIMIT 1",
+        "cost": "634.5µs"
+      },
+      {
+        "sql": "SELECT `tag`.`name` FROM `tag` JOIN post_tag ON tag.id = post_tag.tag_id WHERE post_tag.post_id = 889686324150276096",
+        "cost": "1.3682ms"
+      }
+    ]
+  },
+  {
+    "index": 11,
+    "name": "获取帖子列表 (按时间)",
+    "method": "GET",
+    "url": "/api/v1/posts?page=1\u0026size=10\u0026order=time",
+    "status": 200,
+    "duration": 4305600,
+    "sql_count": 2,
+    "sql_cost": "1.0863ms",
+    "sql_cost_dur": 1086300,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `community` WHERE id = 1 AND `community`.`deleted_at` IS NULL ORDER BY `community`.`id` LIMIT 1",
+        "cost": "555.4µs"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "530.9µs"
+      }
+    ]
+  },
+  {
+    "index": 12,
+    "name": "获取帖子列表 (按热度)",
+    "method": "GET",
+    "url": "/api/v1/posts?page=1\u0026size=10\u0026order=score",
+    "status": 200,
+    "duration": 4299100,
+    "sql_count": 2,
+    "sql_cost": "1.0846ms",
+    "sql_cost_dur": 1084600,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `community` WHERE id = 1 AND `community`.`deleted_at` IS NULL ORDER BY `community`.`id` LIMIT 1",
+        "cost": "543.9µs"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "540.7µs"
+      }
+    ]
+  },
+  {
+    "index": 13,
+    "name": "获取帖子详情 (id=889686324150276096)",
+    "method": "GET",
+    "url": "/api/v1/post/889686324150276096",
+    "status": 200,
+    "duration": 5394600,
+    "sql_count": 2,
+    "sql_cost": "1.0804ms",
+    "sql_cost_dur": 1080400,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `community` WHERE id = 1 AND `community`.`deleted_at` IS NULL ORDER BY `community`.`id` LIMIT 1",
+        "cost": "539.3µs"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "541.1µs"
+      }
+    ]
+  },
+  {
+    "index": 14,
+    "name": "置顶帖子 (Admin)",
+    "method": "POST",
+    "url": "/api/v1/post/pin?community_id=1",
+    "status": 200,
+    "duration": 2157200,
+    "sql_count": 0,
+    "sql_cost": "0s",
+    "sql_cost_dur": 0,
+    "sql_details": null
+  },
+  {
+    "index": 15,
+    "name": "帖子投票 (+1 赞同)",
+    "method": "POST",
+    "url": "/api/v1/vote",
+    "status": 200,
+    "duration": 3292400,
+    "sql_count": 0,
+    "sql_cost": "0s",
+    "sql_cost_dur": 0,
+    "sql_details": null
+  },
+  {
+    "index": 16,
+    "name": "发表根评论",
+    "method": "POST",
+    "url": "/api/v1/comment",
+    "status": 200,
+    "duration": 60541000,
+    "sql_count": 6,
+    "sql_cost": "54.7584ms",
+    "sql_cost_dur": 54758400,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `post_author` WHERE `post_author`.`post_id` = 889686324150276096",
+        "cost": "1.0494ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE `user`.`user_id` = 889686322317365248 AND `user`.`deleted_at` IS NULL",
+        "cost": "1.0706ms"
+      },
+      {
+        "sql": "SELECT `post`.`id`,`post`.`created_at`,`post`.`updated_at`,`post`.`deleted_at`,`post`.`post_id`,`post`.`author_id`,`post`.`community_id`,`post`.`post_title`,`post`.`author_name`,`post`.`community_name`,`post`.`tag_names`,`post`.`content`,`post`.`content_hash`,`post`.`status`,`post`.`is_pinned`,`post`.`is_highlighted`,`post`.`bookmark_count`,`post`.`comment_count`,`post`.`vote_num`,`post`.`score`,`Community`.`id` AS `Community__id`,`Community`.`created_at` AS `Community__created_at`,`Community`.`updated_at` AS `Community__updated_at`,`Community`.`deleted_at` AS `Community__deleted_at`,`Community`.`community_name` AS `Community__community_name`,`Community`.`introduction` AS `Community__introduction` FROM `post` LEFT JOIN `community` `Community` ON `post`.`community_id` = `Community`.`id` AND `Community`.`deleted_at` IS NULL WHERE post.post_id = 889686324150276096 AND post.status = 1 AND `post`.`deleted_at` IS NULL ORDER BY `post`.`id` LIMIT 1",
+        "cost": "4.2679ms"
+      },
+      {
+        "sql": "INSERT INTO `post_comment` (`post_id`,`root_id`,`parent_id`,`author_id`,`reply_to_uid`,`content`,`like_count`,`reply_count`,`status`,`id`) VALUES (889686324150276096,0,0,889686322317365248,889686322317365248,'This is a root comment for testing.',0,0,1,889686324703924224)",
+        "cost": "2.6991ms"
+      },
+      {
+        "sql": "UPDATE `post` SET `comment_count`=comment_count + 1,`updated_at`='2026-09-21 09:35:49.386' WHERE post_id = 889686324150276096 AND `post`.`deleted_at` IS NULL",
+        "cost": "1.6059ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id = 889686322317365248 AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "44.0655ms"
+      }
+    ]
+  },
+  {
+    "index": 17,
+    "name": "发表二级楼中楼回复",
+    "method": "POST",
+    "url": "/api/v1/comment",
+    "status": 200,
+    "duration": 56326600,
+    "sql_count": 7,
+    "sql_cost": "49.8929ms",
+    "sql_cost_dur": 49892900,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `post_author` WHERE `post_author`.`post_id` = 889686324150276096",
+        "cost": "545.7µs"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE `user`.`user_id` = 889686322317365248 AND `user`.`deleted_at` IS NULL",
+        "cost": "537µs"
+      },
+      {
+        "sql": "SELECT `post`.`id`,`post`.`created_at`,`post`.`updated_at`,`post`.`deleted_at`,`post`.`post_id`,`post`.`author_id`,`post`.`community_id`,`post`.`post_title`,`post`.`author_name`,`post`.`community_name`,`post`.`tag_names`,`post`.`content`,`post`.`content_hash`,`post`.`status`,`post`.`is_pinned`,`post`.`is_highlighted`,`post`.`bookmark_count`,`post`.`comment_count`,`post`.`vote_num`,`post`.`score`,`Community`.`id` AS `Community__id`,`Community`.`created_at` AS `Community__created_at`,`Community`.`updated_at` AS `Community__updated_at`,`Community`.`deleted_at` AS `Community__deleted_at`,`Community`.`community_name` AS `Community__community_name`,`Community`.`introduction` AS `Community__introduction` FROM `post` LEFT JOIN `community` `Community` ON `post`.`community_id` = `Community`.`id` AND `Community`.`deleted_at` IS NULL WHERE post.post_id = 889686324150276096 AND post.status = 1 AND `post`.`deleted_at` IS NULL ORDER BY `post`.`id` LIMIT 1",
+        "cost": "2.3134ms"
+      },
+      {
+        "sql": "INSERT INTO `post_comment` (`post_id`,`root_id`,`parent_id`,`author_id`,`reply_to_uid`,`content`,`like_count`,`reply_count`,`status`,`id`) VALUES (889686324150276096,889686324703924224,889686324703924224,889686322317365248,889686322317365248,'This is a sub reply comment.',0,0,1,889686324951388160)",
+        "cost": "1.0658ms"
+      },
+      {
+        "sql": "UPDATE `post_comment` SET `reply_count`=reply_count + 1,`updated_at`='2026-09-21 09:35:49.443' WHERE id = 889686324703924224",
+        "cost": "1.6015ms"
+      },
+      {
+        "sql": "UPDATE `post` SET `comment_count`=comment_count + 1,`updated_at`='2026-09-21 09:35:49.444' WHERE post_id = 889686324150276096 AND `post`.`deleted_at` IS NULL",
+        "cost": "1.6057ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id = 889686322317365248 AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "42.2238ms"
+      }
+    ]
+  },
+  {
+    "index": 18,
+    "name": "获取帖子评论列表",
+    "method": "GET",
+    "url": "/api/v1/comments?post_id=889686324150276096\u0026page=1\u0026size=10",
+    "status": 200,
+    "duration": 5456300,
+    "sql_count": 4,
+    "sql_cost": "4.9328ms",
+    "sql_cost_dur": 4932800,
+    "sql_details": [
+      {
+        "sql": "SELECT count(*) FROM `post_comment` WHERE post_id = 889686324150276096 AND root_id = 0 AND status != 2",
+        "cost": "1.683ms"
+      },
+      {
+        "sql": "SELECT * FROM `post_comment` WHERE post_id = 889686324150276096 AND root_id = 0 AND status != 2 ORDER BY like_count DESC, created_at DESC LIMIT 10",
+        "cost": "1.6383ms"
+      },
+      {
+        "sql": "\n\t\tWITH ranked_replies AS (\n\t\t\tSELECT id, post_id, root_id, parent_id, author_id, reply_to_uid, content, like_count, reply_count, status, created_at, updated_at,\n\t\t\t       ROW_NUMBER() OVER(PARTITION BY root_id ORDER BY created_at ASC) as rn\n\t\t\tFROM post_comment\n\t\t\tWHERE post_id = 889686324150276096 AND root_id IN (889686324703924224) AND status != 2\n\t\t)\n\t\tSELECT id, post_id, root_id, parent_id, author_id, reply_to_uid, content, like_count, reply_count, status, created_at, updated_at\n\t\tFROM ranked_replies\n\t\tWHERE rn \u003c= 3\n\t\tORDER BY root_id, created_at ASC;\n\t",
+        "cost": "1.0866ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "524.9µs"
+      }
+    ]
+  },
+  {
+    "index": 19,
+    "name": "获取楼中楼子回复列表",
+    "method": "GET",
+    "url": "/api/v1/comment/replies?post_id=889686324150276096\u0026root_id=889686324703924224\u0026page=1\u0026size=10",
+    "status": 200,
+    "duration": 3189900,
+    "sql_count": 3,
+    "sql_cost": "2.6555ms",
+    "sql_cost_dur": 2655500,
+    "sql_details": [
+      {
+        "sql": "SELECT count(*) FROM `post_comment` WHERE post_id = 889686324150276096 AND root_id = 889686324703924224 AND status != 2",
+        "cost": "1.0833ms"
+      },
+      {
+        "sql": "SELECT * FROM `post_comment` WHERE post_id = 889686324150276096 AND root_id = 889686324703924224 AND status != 2 ORDER BY created_at ASC LIMIT 10",
+        "cost": "1.0424ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "529.8µs"
+      }
+    ]
+  },
+  {
+    "index": 20,
+    "name": "注册用户 (User2)",
+    "method": "POST",
+    "url": "/api/v1/signup",
+    "status": 200,
+    "duration": 95308800,
+    "sql_count": 1,
+    "sql_cost": "7.9598ms",
+    "sql_cost_dur": 7959800,
+    "sql_details": [
+      {
+        "sql": "INSERT INTO `user` (`created_at`,`updated_at`,`deleted_at`,`user_id`,`user_name`,`passwd`,`role`,`following_count`,`follower_count`) VALUES ('2026-09-21 09:35:49.592','2026-09-21 09:35:49.592',NULL,889686325207240704,'testuser2_14000','$2a$10$eA.zw7DJn1Jnf6/JgzwakOWxNYkqFYoJMeUIVV17OjQLWgtOQjshC',1,0,0)",
+        "cost": "7.9598ms"
+      }
+    ]
+  },
+  {
+    "index": 21,
+    "name": "登录用户 (User2)",
+    "method": "POST",
+    "url": "/api/v1/login",
+    "status": 200,
+    "duration": 135673300,
+    "sql_count": 1,
+    "sql_cost": "41.8663ms",
+    "sql_cost_dur": 41866300,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `user` WHERE user_name = 'testuser2_14000' AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "41.8663ms"
+      }
+    ]
+  },
+  {
+    "index": 22,
+    "name": "关注用户 (User1 -\u003e User2)",
+    "method": "POST",
+    "url": "/api/v1/user/follow",
+    "status": 200,
+    "duration": 12991000,
+    "sql_count": 4,
+    "sql_cost": "6.0258ms",
+    "sql_cost_dur": 6025800,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id = 889686325207240704 AND `user`.`deleted_at` IS NULL ORDER BY `user`.`id` LIMIT 1",
+        "cost": "538.3µs"
+      },
+      {
+        "sql": "INSERT INTO `user_relation` (`follower_id`,`following_id`,`status`) VALUES (889686322317365248,889686325207240704,1) ON DUPLICATE KEY UPDATE `status`=VALUES(`status`),`updated_at`=VALUES(`updated_at`)",
+        "cost": "2.241ms"
+      },
+      {
+        "sql": "UPDATE `user` SET `following_count`=following_count + 1,`updated_at`='2026-09-21 09:35:49.738' WHERE user_id = 889686322317365248 AND `user`.`deleted_at` IS NULL",
+        "cost": "1.6488ms"
+      },
+      {
+        "sql": "UPDATE `user` SET `follower_count`=follower_count + 1,`updated_at`='2026-09-21 09:35:49.74' WHERE user_id = 889686325207240704 AND `user`.`deleted_at` IS NULL",
+        "cost": "1.5977ms"
+      }
+    ]
+  },
+  {
+    "index": 23,
+    "name": "获取关注列表 (User1 Following)",
+    "method": "GET",
+    "url": "/api/v1/user/889686322317365248/following?page=1\u0026size=10",
+    "status": 200,
+    "duration": 44249200,
+    "sql_count": 3,
+    "sql_cost": "43.63ms",
+    "sql_cost_dur": 43630000,
+    "sql_details": [
+      {
+        "sql": "SELECT count(*) FROM `user_relation` WHERE follower_id = 889686322317365248 AND status = 1",
+        "cost": "42.494ms"
+      },
+      {
+        "sql": "SELECT `following_id` FROM `user_relation` WHERE follower_id = 889686322317365248 AND status = 1 ORDER BY created_at DESC LIMIT 10",
+        "cost": "595.9µs"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686325207240704) AND `user`.`deleted_at` IS NULL",
+        "cost": "540.1µs"
+      }
+    ]
+  },
+  {
+    "index": 24,
+    "name": "获取粉丝列表 (User2 Followers)",
+    "method": "GET",
+    "url": "/api/v1/user/889686325207240704/followers?page=1\u0026size=10",
+    "status": 200,
+    "duration": 3296900,
+    "sql_count": 3,
+    "sql_cost": "3.2969ms",
+    "sql_cost_dur": 3296900,
+    "sql_details": [
+      {
+        "sql": "SELECT count(*) FROM `user_relation` WHERE following_id = 889686325207240704 AND status = 1",
+        "cost": "1.1251ms"
+      },
+      {
+        "sql": "SELECT `follower_id` FROM `user_relation` WHERE following_id = 889686325207240704 AND status = 1 ORDER BY created_at DESC LIMIT 10",
+        "cost": "1.0811ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "1.0907ms"
+      }
+    ]
+  },
+  {
+    "index": 25,
+    "name": "获取通知列表 (User2)",
+    "method": "GET",
+    "url": "/api/v1/notifications?page=1\u0026size=10",
+    "status": 200,
+    "duration": 5499800,
+    "sql_count": 3,
+    "sql_cost": "4.3958ms",
+    "sql_cost_dur": 4395800,
+    "sql_details": [
+      {
+        "sql": "SELECT count(*) FROM `user_notification` WHERE recipient_id = 889686325207240704 AND is_deleted = 0",
+        "cost": "2.2165ms"
+      },
+      {
+        "sql": "SELECT * FROM `user_notification` WHERE recipient_id = 889686325207240704 AND is_deleted = 0 ORDER BY created_at DESC LIMIT 10",
+        "cost": "1.0925ms"
+      },
+      {
+        "sql": "SELECT count(*) FROM `user_notification` WHERE recipient_id = 889686325207240704 AND is_read = 0 AND is_deleted = 0",
+        "cost": "1.0868ms"
+      }
+    ]
+  },
+  {
+    "index": 26,
+    "name": "获取未读通知数 (User2)",
+    "method": "GET",
+    "url": "/api/v1/notifications/unread",
+    "status": 200,
+    "duration": 2744500,
+    "sql_count": 1,
+    "sql_cost": "535.9µs",
+    "sql_cost_dur": 535900,
+    "sql_details": [
+      {
+        "sql": "SELECT count(*) FROM `user_notification` WHERE recipient_id = 889686325207240704 AND is_read = 0 AND is_deleted = 0",
+        "cost": "535.9µs"
+      }
+    ]
+  },
+  {
+    "index": 27,
+    "name": "标记通知已读 (User2)",
+    "method": "POST",
+    "url": "/api/v1/notifications/read",
+    "status": 200,
+    "duration": 4502900,
+    "sql_count": 1,
+    "sql_cost": "2.8779ms",
+    "sql_cost_dur": 2877900,
+    "sql_details": [
+      {
+        "sql": "UPDATE `user_notification` SET `is_read`=1,`updated_at`='2026-09-21 09:35:49.805' WHERE recipient_id = 889686325207240704 AND is_read = 0",
+        "cost": "2.8779ms"
+      }
+    ]
+  },
+  {
+    "index": 28,
+    "name": "创建收藏夹",
+    "method": "POST",
+    "url": "/api/v1/bookmark/folder",
+    "status": 200,
+    "duration": 51332100,
+    "sql_count": 1,
+    "sql_cost": "49.7409ms",
+    "sql_cost_dur": 49740900,
+    "sql_details": [
+      {
+        "sql": "INSERT INTO `bookmark_folder` (`user_id`,`name`,`is_default`,`is_public`,`post_count`,`id`) VALUES (889686322317365248,'MyFavorites_14000',0,1,0,889686326494892032)",
+        "cost": "49.7409ms"
+      }
+    ]
+  },
+  {
+    "index": 29,
+    "name": "获取用户收藏夹列表",
+    "method": "GET",
+    "url": "/api/v1/bookmark/folders",
+    "status": 200,
+    "duration": 98215000,
+    "sql_count": 3,
+    "sql_cost": "96.6383ms",
+    "sql_cost_dur": 96638300,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `bookmark_folder` WHERE user_id = 889686322317365248 AND is_default = 1 ORDER BY `bookmark_folder`.`id` LIMIT 1",
+        "cost": "43.9799ms"
+      },
+      {
+        "sql": "INSERT INTO `bookmark_folder` (`user_id`,`name`,`is_default`,`is_public`,`post_count`,`id`) VALUES (889686322317365248,'默认收藏夹',1,0,0,889686326708801536)",
+        "cost": "7.7067ms"
+      },
+      {
+        "sql": "SELECT * FROM `bookmark_folder` WHERE user_id = 889686322317365248 ORDER BY is_default DESC, created_at ASC",
+        "cost": "44.9517ms"
+      }
+    ]
+  },
+  {
+    "index": 30,
+    "name": "添加帖子到收藏夹",
+    "method": "POST",
+    "url": "/api/v1/bookmark",
+    "status": 200,
+    "duration": 12379300,
+    "sql_count": 3,
+    "sql_cost": "5.3556ms",
+    "sql_cost_dur": 5355600,
+    "sql_details": [
+      {
+        "sql": "INSERT INTO `post_bookmark` (`user_id`,`folder_id`,`post_id`) VALUES (889686322317365248,889686326494892032,889686324150276096) ON DUPLICATE KEY UPDATE `id`=`id`",
+        "cost": "2.141ms"
+      },
+      {
+        "sql": "UPDATE `bookmark_folder` SET `post_count`=post_count + 1,`updated_at`='2026-09-21 09:35:49.962' WHERE id = 889686326494892032",
+        "cost": "2.1355ms"
+      },
+      {
+        "sql": "UPDATE `post` SET `bookmark_count`=bookmark_count + 1,`updated_at`='2026-09-21 09:35:49.964' WHERE post_id = 889686324150276096 AND `post`.`deleted_at` IS NULL",
+        "cost": "1.0791ms"
+      }
+    ]
+  },
+  {
+    "index": 31,
+    "name": "获取收藏帖子列表",
+    "method": "GET",
+    "url": "/api/v1/bookmarks?folder_id=889686326494892032\u0026page=1\u0026size=10",
+    "status": 200,
+    "duration": 53432000,
+    "sql_count": 8,
+    "sql_cost": "52.6993ms",
+    "sql_cost_dur": 52699300,
+    "sql_details": [
+      {
+        "sql": "SELECT count(*) FROM `post_bookmark` WHERE folder_id = 889686326494892032",
+        "cost": "45.3297ms"
+      },
+      {
+        "sql": "SELECT `post_id` FROM `post_bookmark` WHERE folder_id = 889686326494892032 ORDER BY created_at DESC LIMIT 10",
+        "cost": "508.8µs"
+      },
+      {
+        "sql": "SELECT * FROM `post_author` WHERE `post_author`.`post_id` = 889686324150276096",
+        "cost": "976.8µs"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE `user`.`user_id` = 889686322317365248 AND `user`.`deleted_at` IS NULL",
+        "cost": "505.9µs"
+      },
+      {
+        "sql": "SELECT `post`.`id`,`post`.`created_at`,`post`.`updated_at`,`post`.`deleted_at`,`post`.`post_id`,`post`.`author_id`,`post`.`community_id`,`post`.`post_title`,`post`.`author_name`,`post`.`community_name`,`post`.`tag_names`,`post`.`content`,`post`.`content_hash`,`post`.`status`,`post`.`is_pinned`,`post`.`is_highlighted`,`post`.`bookmark_count`,`post`.`comment_count`,`post`.`vote_num`,`post`.`score`,`Community`.`id` AS `Community__id`,`Community`.`created_at` AS `Community__created_at`,`Community`.`updated_at` AS `Community__updated_at`,`Community`.`deleted_at` AS `Community__deleted_at`,`Community`.`community_name` AS `Community__community_name`,`Community`.`introduction` AS `Community__introduction` FROM `post` LEFT JOIN `community` `Community` ON `post`.`community_id` = `Community`.`id` AND `Community`.`deleted_at` IS NULL WHERE post.post_id IN ('889686324150276096') AND post.status = 1 AND `post`.`deleted_at` IS NULL",
+        "cost": "3.1904ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE user_id IN (889686322317365248) AND `user`.`deleted_at` IS NULL",
+        "cost": "1.0198ms"
+      },
+      {
+        "sql": "SELECT * FROM `community` WHERE id = 1 AND `community`.`deleted_at` IS NULL ORDER BY `community`.`id` LIMIT 1",
+        "cost": "507.8µs"
+      },
+      {
+        "sql": "SELECT `tag`.`name` FROM `tag` JOIN post_tag ON tag.id = post_tag.tag_id WHERE post_tag.post_id = 889686324150276096",
+        "cost": "660.1µs"
+      }
+    ]
+  },
+  {
+    "index": 32,
+    "name": "取消收藏帖子",
+    "method": "DELETE",
+    "url": "/api/v1/bookmark",
+    "status": 200,
+    "duration": 57915800,
+    "sql_count": 4,
+    "sql_cost": "49.6204ms",
+    "sql_cost_dur": 49620400,
+    "sql_details": [
+      {
+        "sql": "DELETE FROM `post_bookmark` WHERE (user_id = 889686322317365248 AND post_id = 889686324150276096) AND folder_id = 889686326494892032",
+        "cost": "1.6271ms"
+      },
+      {
+        "sql": "UPDATE `bookmark_folder` SET `post_count`=post_count - 1,`updated_at`='2026-09-21 09:35:50.029' WHERE id = 889686326494892032 AND post_count \u003e 0",
+        "cost": "1.6126ms"
+      },
+      {
+        "sql": "UPDATE `post` SET `bookmark_count`=bookmark_count - 1,`updated_at`='2026-09-21 09:35:50.031' WHERE (post_id = 889686324150276096 AND bookmark_count \u003e 0) AND `post`.`deleted_at` IS NULL",
+        "cost": "1.6442ms"
+      },
+      {
+        "sql": "SELECT count(*) FROM `post_bookmark` WHERE user_id = 889686322317365248 AND post_id = 889686324150276096",
+        "cost": "44.7365ms"
+      }
+    ]
+  },
+  {
+    "index": 33,
+    "name": "删除评论 (id=889686324951388160)",
+    "method": "DELETE",
+    "url": "/api/v1/comment/889686324951388160",
+    "status": 200,
+    "duration": 13681500,
+    "sql_count": 4,
+    "sql_cost": "7.2084ms",
+    "sql_cost_dur": 7208400,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `post_comment` WHERE id = 889686324951388160 AND author_id = 889686322317365248 ORDER BY `post_comment`.`id` LIMIT 1",
+        "cost": "2.6611ms"
+      },
+      {
+        "sql": "UPDATE `post_comment` SET `status`=0,`updated_at`='2026-09-21 09:35:50.087' WHERE id = 889686324951388160",
+        "cost": "1.7352ms"
+      },
+      {
+        "sql": "UPDATE `post_comment` SET `reply_count`=reply_count - 1,`updated_at`='2026-09-21 09:35:50.088' WHERE id = 889686324703924224 AND reply_count \u003e 0",
+        "cost": "1.7254ms"
+      },
+      {
+        "sql": "UPDATE `post` SET `comment_count`=comment_count - 1,`updated_at`='2026-09-21 09:35:50.09' WHERE (post_id = 889686324150276096 AND comment_count \u003e 0) AND `post`.`deleted_at` IS NULL",
+        "cost": "1.0867ms"
+      }
+    ]
+  },
+  {
+    "index": 34,
+    "name": "删除帖子 (id=889686324150276096)",
+    "method": "DELETE",
+    "url": "/api/v1/post/889686324150276096",
+    "status": 200,
+    "duration": 103148000,
+    "sql_count": 5,
+    "sql_cost": "102.7281ms",
+    "sql_cost_dur": 102728100,
+    "sql_details": [
+      {
+        "sql": "SELECT * FROM `post_author` WHERE `post_author`.`post_id` = 889686324150276096",
+        "cost": "1.2398ms"
+      },
+      {
+        "sql": "SELECT * FROM `user` WHERE `user`.`user_id` = 889686322317365248 AND `user`.`deleted_at` IS NULL",
+        "cost": "505.7µs"
+      },
+      {
+        "sql": "SELECT `post`.`id`,`post`.`created_at`,`post`.`updated_at`,`post`.`deleted_at`,`post`.`post_id`,`post`.`author_id`,`post`.`community_id`,`post`.`post_title`,`post`.`author_name`,`post`.`community_name`,`post`.`tag_names`,`post`.`content`,`post`.`content_hash`,`post`.`status`,`post`.`is_pinned`,`post`.`is_highlighted`,`post`.`bookmark_count`,`post`.`comment_count`,`post`.`vote_num`,`post`.`score`,`Community`.`id` AS `Community__id`,`Community`.`created_at` AS `Community__created_at`,`Community`.`updated_at` AS `Community__updated_at`,`Community`.`deleted_at` AS `Community__deleted_at`,`Community`.`community_name` AS `Community__community_name`,`Community`.`introduction` AS `Community__introduction` FROM `post` LEFT JOIN `community` `Community` ON `post`.`community_id` = `Community`.`id` AND `Community`.`deleted_at` IS NULL WHERE post.post_id = 889686324150276096 AND post.status = 1 AND `post`.`deleted_at` IS NULL ORDER BY `post`.`id` LIMIT 1",
+        "cost": "44.4806ms"
+      },
+      {
+        "sql": "UPDATE `post_comment` SET `status`=0,`updated_at`='2026-09-21 09:35:50.143' WHERE post_id = 889686324150276096",
+        "cost": "8.6342ms"
+      },
+      {
+        "sql": "UPDATE `post` SET `status`=0,`updated_at`='2026-09-21 09:35:50.192' WHERE post_id = 889686324150276096 AND status = 1 AND `post`.`deleted_at` IS NULL",
+        "cost": "47.8678ms"
+      }
+    ]
+  },
+  {
+    "index": 35,
+    "name": "用户登出 (User1)",
+    "method": "POST",
+    "url": "/api/v1/logout",
+    "status": 200,
+    "duration": 1600600,
+    "sql_count": 0,
+    "sql_cost": "0s",
+    "sql_cost_dur": 0,
+    "sql_details": null
+  }
+]

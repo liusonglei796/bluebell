@@ -72,7 +72,7 @@ func (s *UserService) SignUp(ctx context.Context, p *userreq.SignUpRequest) erro
 }
 
 // Login 处理用户登录业务逻辑（无状态发牌，不往 Redis 写入 AccessToken）
-func (s *UserService) Login(ctx context.Context, p *userreq.LoginRequest) (string, string, error) {
+func (s *UserService) Login(ctx context.Context, p *userreq.LoginRequest) (string, string, *model.User, error) {
 	user := &model.User{
 		UserName: p.Username,
 		Passwd:   p.Password,
@@ -81,23 +81,23 @@ func (s *UserService) Login(ctx context.Context, p *userreq.LoginRequest) (strin
 	err := s.userDao.VerifyUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, model.ErrUserNotExist) || errors.Is(err, model.ErrInvalidPassword) {
-			return "", "", err
+			return "", "", nil, err
 		}
 		zap.L().Error("userDao.VerifyUser failed",
 			zap.String("username", p.Username),
 			zap.Error(err))
-		return "", "", model.Wrap(model.ErrServerBusy, err)
+		return "", "", nil, model.Wrap(model.ErrServerBusy, err)
 	}
 
-	aToken, rToken, err := jwt.GenToken(s.jwtCfg, user.UserID)
+	aToken, rToken, err := jwt.GenToken(s.jwtCfg, user.UserID, user.Role)
 	if err != nil {
 		zap.L().Error("jwt.GenToken failed",
 			zap.Int64("user_id", user.UserID),
 			zap.Error(err))
-		return "", "", model.Wrap(model.ErrServerBusy, err)
+		return "", "", nil, model.Wrap(model.ErrServerBusy, err)
 	}
 
-	return aToken, rToken, nil
+	return aToken, rToken, user, nil
 }
 
 // RefreshToken 刷新 Token（旧 Token 加入黑名单防重放，新 Token 无状态颁发）
@@ -109,7 +109,7 @@ func (s *UserService) RefreshToken(ctx context.Context, p *userreq.RefreshTokenR
 	}
 
 	// 2. 检查 Refresh Token 是否已被黑名单拦截
-	if rClaims.ID != "" {
+	if rClaims.ID != "" && s.tokenCache != nil {
 		isBlacklisted, err := s.tokenCache.IsBlacklisted(ctx, rClaims.ID)
 		if err == nil && isBlacklisted {
 			return "", "", model.ErrInvalidToken
@@ -131,7 +131,7 @@ func (s *UserService) RefreshToken(ctx context.Context, p *userreq.RefreshTokenR
 	}
 
 	// 4. 将旧 AccessToken 的 JTI 加入黑名单（若传递了 Authorization 且不同于 RefreshToken）
-	if p.Authorization != "" {
+	if p.Authorization != "" && s.tokenCache != nil {
 		parts := strings.SplitN(p.Authorization, " ", 2)
 		tokenStr := p.Authorization
 		if len(parts) == 2 && parts[0] == "Bearer" {
@@ -145,12 +145,12 @@ func (s *UserService) RefreshToken(ctx context.Context, p *userreq.RefreshTokenR
 	}
 
 	// 5. 旧 RefreshToken 也加入黑名单（Token Rotation 机制）
-	if rClaims.ID != "" && rClaims.ExpiresAt != nil {
+	if rClaims.ID != "" && rClaims.ExpiresAt != nil && s.tokenCache != nil {
 		_ = s.tokenCache.AddBlacklist(ctx, rClaims.ID, time.Until(rClaims.ExpiresAt.Time))
 	}
 
 	// 6. 生成全新 Access Token 与 Refresh Token
-	newAToken, newRToken, err = jwt.GenToken(s.jwtCfg, user.UserID)
+	newAToken, newRToken, err = jwt.GenToken(s.jwtCfg, user.UserID, user.Role)
 	if err != nil {
 		zap.L().Error("jwt.GenToken failed in refresh",
 			zap.Int64("user_id", user.UserID),
@@ -163,7 +163,7 @@ func (s *UserService) RefreshToken(ctx context.Context, p *userreq.RefreshTokenR
 
 // Logout 用户登出，将当前 Token 的 JTI 写入 Redis 黑名单（到期自动逐出）
 func (s *UserService) Logout(ctx context.Context, jti string, expiresAt time.Time) error {
-	if jti == "" {
+	if jti == "" || s.tokenCache == nil {
 		return nil
 	}
 	remainingTTL := time.Until(expiresAt)

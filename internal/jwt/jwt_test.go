@@ -19,7 +19,7 @@ func TestJWT_JTIAndBlacklistFlow(t *testing.T) {
 	}
 
 	userID := int64(10086)
-	aToken, rToken, err := GenToken(cfg, userID)
+	aToken, rToken, err := GenToken(cfg, userID, 1)
 	require.NoError(t, err)
 	assert.NotEmpty(t, aToken)
 	assert.NotEmpty(t, rToken)

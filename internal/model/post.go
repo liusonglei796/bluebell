@@ -22,22 +22,25 @@ const (
 // 对应数据库 post 表
 type Post struct {
 	gorm.Model
-	PostID        string     `gorm:"column:post_id;not null;uniqueIndex;size:255"`
-	CommunityID   int64      `gorm:"column:community_id"`
+	PostID        int64      `gorm:"column:post_id;not null;uniqueIndex" json:"post_id,string"`
+	AuthorID      int64      `gorm:"column:author_id;not null;default:0;index:idx_author_id" json:"author_id,string"`
+	CommunityID   int64      `gorm:"column:community_id;index:idx_community_status_created,priority:1"`
 	PostTitle     string     `gorm:"column:post_title;not null;type:text"`
 	AuthorName    string     `gorm:"column:author_name;type:varchar(64);not null;default:''"`
 	CommunityName string     `gorm:"column:community_name;type:varchar(128);not null;default:''"`
 	TagNames      string     `gorm:"column:tag_names;type:varchar(255);not null;default:''"`
-	Authors       []User     `gorm:"many2many:post_author;"`
+	Authors       []User     `gorm:"many2many:post_author;foreignKey:PostID;joinForeignKey:PostID;References:UserID;joinReferences:UserID"`
 	Community     *Community
 	Tags          []Tag      `gorm:"many2many:post_tag;foreignKey:PostID;joinForeignKey:PostID;References:ID;joinReferences:TagID"`
 	Content       string     `gorm:"column:content;type:text;not null"`
 	ContentHash   string     `gorm:"column:content_hash;size:64;not null;uniqueIndex:idx_community_hash"`
-	Status        int8       `gorm:"column:status;default:1"`
+	Status        int8       `gorm:"column:status;default:1;index:idx_status_created_at,priority:1;index:idx_status_score_created,priority:1;index:idx_community_status_created,priority:2"`
 	IsPinned      int8       `gorm:"column:is_pinned;not null;default:0"`
 	IsHighlighted int8       `gorm:"column:is_highlighted;not null;default:0"`
 	BookmarkCount int        `gorm:"column:bookmark_count;not null;default:0"`
 	CommentCount  int        `gorm:"column:comment_count;not null;default:0"`
+	VoteNum       int64      `gorm:"column:vote_num;not null;default:0" json:"vote_num"`
+	Score         int64      `gorm:"column:score;not null;default:0;index:idx_status_score_created,priority:2" json:"score"`
 }
 
 // TableName 自定义表名
@@ -53,7 +56,7 @@ func (p *Post) ComputeContentHash() string {
 
 // Validate 校验帖子内容是否合法
 func (p *Post) Validate() error {
-	if p == nil || p.PostID == "" {
+	if p == nil || p.PostID == 0 {
 		return ErrInvalidParam
 	}
 	if strings.TrimSpace(p.PostTitle) == "" || strings.TrimSpace(p.Content) == "" {

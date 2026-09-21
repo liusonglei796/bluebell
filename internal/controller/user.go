@@ -49,14 +49,7 @@ func (h *UserController) LoginHandler(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	aToken, rToken, err := h.userSvc.Login(ctx, p)
-	if err != nil {
-		HandleError(c, err)
-		return
-	}
-
-	// 获取用户信息（用于返回给前端）
-	userInfo, err := h.userSvc.GetUserByUsername(ctx, p.Username)
+	aToken, rToken, userInfo, err := h.userSvc.Login(ctx, p)
 	if err != nil {
 		HandleError(c, err)
 		return
