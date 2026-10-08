@@ -54,24 +54,128 @@ func (d *PostDao) CreatePostWithAuthor(ctx context.Context, post *model.Post, au
 	return nil
 }
 
-// GetPostByID 根据帖子ID查询帖子详情
+// postJoinRow 接收单条 LEFT JOIN 查询的扁平结果
+type postJoinRow struct {
+	PostID        int64      `gorm:"column:post_id"`
+	AuthorID      int64      `gorm:"column:author_id"`
+	AuthorName    string     `gorm:"column:author_name"`
+	CommunityID   int64      `gorm:"column:community_id"`
+	CommunityName string     `gorm:"column:community_name"`
+	PostTitle     string     `gorm:"column:post_title"`
+	Content       string     `gorm:"column:content"`
+	Status        int8       `gorm:"column:status"`
+	CreatedAt     time.Time  `gorm:"column:created_at"`
+	VoteNum       int64      `gorm:"column:vote_num"`
+	Score         int64      `gorm:"column:score"`
+	CID           *int64     `gorm:"column:c_id"`
+	CName         *string    `gorm:"column:c_name"`
+	CIntro        *string    `gorm:"column:c_intro"`
+	CCreatedAt    *time.Time `gorm:"column:c_created_at"`
+	UID           *int64     `gorm:"column:u_user_id"`
+	UName         *string    `gorm:"column:u_user_name"`
+}
+
+// GetPostByID 根据帖子ID查询帖子详情（当前调用方案2：应用层轻量聚合方案）
 func (d *PostDao) GetPostByID(ctx context.Context, pid int64) (*model.Post, error) {
-	m := new(model.Post)
+	return d.GetPostByIDManualAggregate(ctx, pid)
+}
 
+// GetPostByIDWithJoin 方案1：单条 LEFT JOIN 方案（将 3 次 SQL 压缩为 1 次）
+func (d *PostDao) GetPostByIDWithJoin(ctx context.Context, pid int64) (*model.Post, error) {
+	var rows []postJoinRow
+	query := `
+		SELECT 
+			p.post_id, p.author_id, p.author_name, p.community_id, p.community_name,
+			p.post_title, p.content, p.status, p.created_at, p.vote_num, p.score,
+			c.id AS c_id, c.community_name AS c_name, c.introduction AS c_intro, c.created_at AS c_created_at,
+			u.user_id AS u_user_id, u.user_name AS u_user_name
+		FROM post p
+		LEFT JOIN community c ON p.community_id = c.id
+		LEFT JOIN post_author pa ON p.post_id = pa.post_id
+		LEFT JOIN user u ON pa.user_id = u.user_id
+		WHERE p.post_id = ? AND p.status = 1
+	`
+	err := d.db.WithContext(ctx).Raw(query, pid).Scan(&rows).Error
+	if err != nil {
+		return nil, fmt.Errorf("join查询帖子失败: %w", err)
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+
+	first := rows[0]
+	post := &model.Post{
+		PostID:        first.PostID,
+		AuthorID:      first.AuthorID,
+		AuthorName:    first.AuthorName,
+		CommunityID:   first.CommunityID,
+		CommunityName: first.CommunityName,
+		PostTitle:     first.PostTitle,
+		Content:       first.Content,
+		Status:        first.Status,
+		VoteNum:       first.VoteNum,
+		Score:         first.Score,
+	}
+	post.CreatedAt = first.CreatedAt
+
+	if first.CID != nil && *first.CID > 0 {
+		post.Community = &model.Community{
+			CommunityName: *first.CName,
+			Introduction:  *first.CIntro,
+		}
+		post.Community.ID = uint(*first.CID)
+		if first.CCreatedAt != nil {
+			post.Community.CreatedAt = *first.CCreatedAt
+		}
+	}
+
+	seenAuthors := make(map[int64]bool)
+	for _, r := range rows {
+		if r.UID != nil && *r.UID > 0 && !seenAuthors[*r.UID] {
+			seenAuthors[*r.UID] = true
+			author := model.User{
+				UserID: *r.UID,
+			}
+			if r.UName != nil {
+				author.UserName = *r.UName
+			}
+			post.Authors = append(post.Authors, author)
+		}
+	}
+
+	return post, nil
+}
+
+// GetPostByIDManualAggregate 方案2：应用层轻量聚合方案（无反射、轻量分步查）
+func (d *PostDao) GetPostByIDManualAggregate(ctx context.Context, pid int64) (*model.Post, error) {
+	// 1. 查 Post 主表 (单表主键点查)
+	post := new(model.Post)
 	err := d.db.WithContext(ctx).
-		Preload("Authors").
-		Joins("Community").
-		Where("post.post_id = ?", pid).
-		Where("post.status = ?", model.PostStatusPublished).
-		First(m).Error
-
+		Where("post_id = ? AND status = ?", pid, model.PostStatusPublished).
+		First(post).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("查询帖子失败: %w", err)
+		return nil, fmt.Errorf("查询帖子主表失败: %w", err)
 	}
-	return m, nil
+
+	// 2. 查 Community (单表点查)
+	if post.CommunityID > 0 {
+		comm := new(model.Community)
+		if err := d.db.WithContext(ctx).Where("id = ?", post.CommunityID).First(comm).Error; err == nil {
+			post.Community = comm
+		}
+	}
+
+	// 3. 查 Authors (轻量 JOIN 查多对多关系，单次查询，无 GORM Preload 反射)
+	var authors []model.User
+	query := `SELECT u.user_id, u.user_name FROM user u JOIN post_author pa ON u.user_id = pa.user_id WHERE pa.post_id = ?`
+	if err := d.db.WithContext(ctx).Raw(query, pid).Scan(&authors).Error; err == nil {
+		post.Authors = authors
+	}
+
+	return post, nil
 }
 
 // GetPostListByIDsWithPreload 根据给定的ID列表查询帖子详情（使用 LEFT JOIN 替代 Preload，将三表联查缩减为1次SQL）

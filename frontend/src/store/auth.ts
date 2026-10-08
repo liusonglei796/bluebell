@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { appwriteService } from '../services/appwriteService';
 
 interface User {
   user_id: string;
@@ -23,7 +24,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('user_id', userId);
       localStorage.setItem('role', String(role));
     },
-    clearAuth() {
+    async clearAuth() {
       this.token = '';
       this.refreshToken = '';
       this.user = null;
@@ -32,6 +33,7 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem('username');
       localStorage.removeItem('user_id');
       localStorage.removeItem('role');
+      await appwriteService.logout();
     },
     updateTokens(token: string, refreshToken: string) {
       this.token = token;
@@ -39,17 +41,35 @@ export const useAuthStore = defineStore('auth', {
       localStorage.setItem('token', token);
       localStorage.setItem('refresh_token', refreshToken);
     },
-    init() {
+    async init() {
       const username = localStorage.getItem('username');
       const userId = localStorage.getItem('user_id');
       const role = localStorage.getItem('role');
       if (username && userId) {
-        this.user = { username, user_id: userId, role: role ? parseInt(role) : 1 };
+        this.user = { username, user_id: userId, role: role ? parseInt(role, 10) : 1 };
+      }
+      
+      // 尝试从 Appwrite 自动同步真实 Session 登录态
+      try {
+        const currentUser = await appwriteService.getCurrentUser();
+        if (currentUser) {
+          const validUsername = currentUser.username || 'User';
+          this.user = {
+            user_id: currentUser.user_id,
+            username: validUsername,
+            role: currentUser.role,
+          };
+          this.token = currentUser.user_id;
+          localStorage.setItem('username', validUsername);
+          localStorage.setItem('user_id', currentUser.user_id);
+        }
+      } catch {
+        // 未登录或 Session 过期
       }
     },
-    // 检查是否为管理员
+    // 检查是否为管理员或已登录创作者
     isAdmin(): boolean {
-      return this.user?.role === 2;
+      return this.user?.role === 2 || this.user !== null;
     }
   },
 });

@@ -21,8 +21,8 @@ mysql:
   passwd: "15939087780Ll@"
   db_name: "bluebell"
   user: "root"
-  max_open_conns: 500
-  max_idle_conns: 250
+  max_open_conns: 200
+  max_idle_conns: 100
 
 redis:
   host: "127.0.0.1"

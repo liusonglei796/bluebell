@@ -61,10 +61,9 @@ const submitPost = async () => {
   loading.value = true;
   errorMsg.value = '';
   try {
-    // API expects community_id as integer
     const payload = {
       ...form.value,
-      community_id: parseInt(form.value.community_id as string, 10),
+      community_id: String(form.value.community_id),
     };
     const res: any = await request.post('/post', payload);
     if (res.code === 1000) {

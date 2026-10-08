@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"runtime"
 
 	"bluebell/internal/config"
 	"bluebell/internal/controller"
@@ -37,6 +38,10 @@ func main() {
 	var confFile string
 	flag.StringVar(&confFile, "conf", "./config.yaml", "配置文件路径")
 	flag.Parse()
+
+	// 测试环境设为 1，全量采集
+	runtime.SetMutexProfileFraction(1)
+	runtime.SetBlockProfileRate(100000)
 
 	cfg, err := config.Init(confFile)
 	if err != nil {

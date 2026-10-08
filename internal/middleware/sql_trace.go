@@ -7,7 +7,6 @@ import (
 	"bluebell/pkg/sqltrace"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 )
 
 // SQLTraceMiddleware 统计每个 HTTP 请求生命周期内的所有 SQL 耗时
@@ -44,13 +43,6 @@ func SQLTraceMiddleware() gin.HandlerFunc {
 			if bytes, err := json.Marshal(simpleList); err == nil {
 				c.Header("X-SQL-Details", string(bytes))
 			}
-
-			zap.L().Info("api sql trace",
-				zap.String("method", c.Request.Method),
-				zap.String("path", c.Request.URL.Path),
-				zap.Int("sql_count", count),
-				zap.Duration("sql_cost", cost),
-			)
 		}
 	}
 }

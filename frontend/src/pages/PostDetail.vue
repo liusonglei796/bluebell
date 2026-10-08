@@ -78,7 +78,7 @@ import request from '../api/request';
 
 const route = useRoute();
 const router = useRouter();
-const postId = ref(Number(route.params.id));
+const postId = ref(String(route.params.id));
 const post = ref<any>(null);
 const comments = ref<any[]>([]);
 const totalComments = ref(0);

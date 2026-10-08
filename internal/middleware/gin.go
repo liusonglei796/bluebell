@@ -35,8 +35,6 @@ func GinLogger() gin.HandlerFunc {
 			zap.L().Error("server error", fields...)
 		} else if status >= 400 {
 			zap.L().Warn("client error", fields...)
-		} else {
-			zap.L().Info("http request", fields...)
 		}
 	}
 }

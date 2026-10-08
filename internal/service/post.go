@@ -457,44 +457,78 @@ func rerankPosts(items []*postResp.DetailResponse, order string) []*postResp.Det
 	return items
 }
 
-// GetPostByID 查询单个帖子详情（三级缓存 + 防穿透 + 防击穿 + 防雪崩）
+// GetPostByID 查询单个帖子详情（使用 GORM Preload 加载社区和用户信息，无缓存模式）
 func (s *PostService) GetPostByID(ctx context.Context, pid int64, currentUID int64) (*postResp.DetailResponse, error) {
-	// 1. 防穿透：参数有效性前置拦截
+	// 1. 参数有效性前置拦截
 	if pid <= 0 {
 		return nil, model.ErrInvalidParam
 	}
 
-	// 无 Redis 模式：直接查 MySQL
-	if s.postCache == nil {
-		post, err := s.postDao.GetPostByID(ctx, pid)
-		if err != nil {
-			return nil, model.Wrap(model.ErrServerBusy, err)
-		}
-		if post == nil {
-			return nil, model.ErrNotFound
-		}
-		dtos := s.FormatPostListDTOs(ctx, []*model.Post{post}, []string{strconv.FormatInt(pid, 10)}, currentUID)
-		if len(dtos) == 0 {
-			return nil, model.ErrNotFound
-		}
-		return dtos[0], nil
+	// 2. 直接查询 MySQL（通过 GORM Preload 加载 Authors 与 Community，完全绕过 Redis/CSC 缓存）
+	post, err := s.postDao.GetPostByID(ctx, pid)
+	if err != nil {
+		return nil, model.Wrap(model.ErrServerBusy, err)
 	}
-
-	pidStr := strconv.FormatInt(pid, 10)
-
-	// 2. 防穿透：布隆过滤器拦截绝对不存在的 ID（0 次查询 MySQL 与实体缓存）
-	if s.postCache != nil {
-		exists, err := s.postCache.CheckPostInBloom(ctx, pidStr)
-		if err == nil && !exists {
-			return nil, model.ErrNotFound
-		}
-	}
-
-	res := s.HydrateAndRerankPosts(ctx, []string{pidStr}, currentUID, postreq.OrderTime)
-	if len(res) == 0 {
+	if post == nil {
 		return nil, model.ErrNotFound
 	}
-	return res[0], nil
+
+	// 3. 从 Preload 出来的 post.Authors 与 post.Community 组装 DTO
+	var primaryAuthorName string
+	var authorNames []string
+	if len(post.Authors) > 0 {
+		for _, a := range post.Authors {
+			authorNames = append(authorNames, a.UserName)
+		}
+		primaryAuthorName = post.Authors[0].UserName
+	}
+	if primaryAuthorName == "" {
+		primaryAuthorName = post.AuthorName
+	}
+	if len(authorNames) == 0 && primaryAuthorName != "" {
+		authorNames = []string{primaryAuthorName}
+	}
+
+	communityName := post.CommunityName
+	var communityObj *communityResp.Response
+	if post.Community != nil {
+		communityName = post.Community.CommunityName
+		communityObj = &communityResp.Response{
+			ID:           strconv.FormatInt(int64(post.Community.ID), 10),
+			Name:         post.Community.CommunityName,
+			Introduction: post.Community.Introduction,
+			CreateTime:   post.Community.CreatedAt,
+		}
+	} else if communityName != "" {
+		communityObj = &communityResp.Response{
+			ID:         strconv.FormatInt(post.CommunityID, 10),
+			Name:       communityName,
+			CreateTime: post.CreatedAt,
+		}
+	}
+
+	postIDStr := strconv.FormatInt(post.PostID, 10)
+	resp := &postResp.DetailResponse{
+		ID:            postIDStr,
+		AuthorIDs:     formatAuthorIDs(post.Authors, post.AuthorID),
+		AuthorNames:   authorNames,
+		AuthorName:    primaryAuthorName,
+		CommunityID:   post.CommunityID,
+		CommunityName: communityName,
+		Community:     communityObj,
+		Status:        post.Status,
+		Title:         post.PostTitle,
+		Content:       post.Content,
+		CreateTime:    post.CreatedAt,
+		VoteNum:       post.VoteNum,
+		Score:         post.VoteNum,
+		IsPinned:      post.IsPinned == 1,
+		IsHighlighted: post.IsHighlighted == 1,
+		BookmarkCount: post.BookmarkCount,
+		CommentCount:  post.CommentCount,
+	}
+
+	return resp, nil
 }
 
 // GetPostList 获取帖子列表（L1/L2/L3 多级缓存 + 内存聚合与动态重排序）

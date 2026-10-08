@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -62,5 +63,9 @@ func getWriteSyncer(filename string, maxsize int, maxage int, maxbackups int) za
 		MaxAge:     maxage,
 		MaxBackups: maxbackups,
 	}
-	return zapcore.AddSync(lumberjackLogger)
+	return &zapcore.BufferedWriteSyncer{
+		WS:            zapcore.AddSync(lumberjackLogger),
+		Size:          256 * 1024,
+		FlushInterval: 5 * time.Second,
+	}
 }
